@@ -1,0 +1,6 @@
+# Store and check out every text file with LF line endings, regardless of the
+# committer's core.autocrlf setting.  The repository was authored on Windows;
+# without this a Linux or macOS clone and a Windows clone can disagree about
+# every line of every file, which turns a one-line change into a whole-file
+# diff.
+* text=auto eol=lf
