@@ -17,6 +17,8 @@ gives bit-identical numbers.
     ev.py        the solver: stand / hit / double / split EV by enumeration
     strategy.py  the printed total-dependent chart, and the fallbacks around it
     simulate.py  Monte Carlo harness that re-derives the same numbers
+    chart.py     renders either chart as Markdown, and parses one back
+    cli.py       the command line: advise one hand, or print the derived chart
 
 Every entry point starts from a fresh shoe minus the visible cards, or from a
 shoe the caller supplies.  Nothing carries state between hands.

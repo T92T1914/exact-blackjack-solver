@@ -33,6 +33,9 @@ dependencies = ["numpy"]
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
 
+[project.scripts]
+bj-advise = "bj.cli:main"
+
 [project.urls]
 Repository = "https://github.com/T92T1914/exact-blackjack-solver"
 
