@@ -1,6 +1,8 @@
 # exact-blackjack-solver
 
 [![CI](https://github.com/T92T1914/exact-blackjack-solver/actions/workflows/ci.yml/badge.svg)](https://github.com/T92T1914/exact-blackjack-solver/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 An exact, composition-dependent blackjack solver: for any hand against any
 dealer upcard, it computes the true expected value of hit, stand, double, and
@@ -46,6 +48,64 @@ dress up as a firm rule. Soft 18 versus a 3 flips the other way: **double**, at
 *available* action — is the honest measure of how much a decision is worth, and
 the tool prints it next to every recommendation.
 
+## How it works
+
+One hand is a single-agent, finite-horizon Markov decision process, and the
+solver is the dynamic program that values it. The state is the player's
+(total, softness), the dealer's upcard and the exact composition of the cards
+nobody has seen; an action is stand, hit, double or split; a transition is one
+card drawn *without replacement* from that composition; the reward is the
+settlement. The dealer is part of the environment — a fixed drawing rule, never
+an opponent.
+
+```mermaid
+flowchart TD
+    A["best_action(cards, upcard, shoe)<br/>shoe = every card the player cannot see"] --> S
+    A --> H
+    A --> D
+    A --> P
+    S["STAND<br/>settle against the dealer's exact final-total distribution"]
+    H["HIT<br/>one card, then max(stand, hit) again"]
+    D["DOUBLE<br/>one card, then stand, two units at risk"]
+    P["SPLIT<br/>two hands sharing one pool of resplits,<br/>each played out like a fresh hand"]
+    H -->|"every rank, weighted by its post-peek draw<br/>probability from the depleted shoe"| H
+    H --> S
+    D --> S
+    P --> H
+    S --> DD["dealer_distribution(upcard, shoe)<br/>P(17) … P(21), P(bust): the hole card conditioned<br/>on the peek, every dealer draw without replacement"]
+    DD --> O["outcome per unit staked: +1 win, 0 push, −1 loss<br/>(×2 when doubled; a natural is paid 3:2 before any of this)"]
+```
+
+Three details carry most of the weight, and each has a test with its name on it:
+
+- **Every draw comes out of the actual remaining shoe.** A three-card 8,5,3
+  against a ten *stands*, while a two-card T,6 — the same hard 16 — hits,
+  because the three low cards that would have rescued the hit are already in
+  the hand. An infinite-deck model cannot tell those hands apart
+  (`test_multi_card_sixteen_versus_ten`).
+- **The peek is applied where the table applies it.** The dealer peeks under a
+  ten or an ace *before* the player acts, so by decision time the player knows
+  the hole card is not the one that completes a natural. Both the dealer's
+  distribution and the player's own draw probabilities are conditioned on
+  that; the second correction is worth up to 0.0025 on 11 vs A and is exactly
+  zero against a 2 through 9 (`test_the_peek_only_touches_the_two_upcards_it_can_touch`).
+  The hole card is never *read* — a solver that maximised over it would report
+  +0.1867 for hitting 11 vs A instead of the correct +0.1476, and that number
+  is pinned so the mistake cannot come back (`test_eleven_vs_ace_is_not_played_clairvoyantly`).
+- **Memoisation on an immutable shoe tuple.** Every cached value is keyed on
+  `(total, soft, shoe, s17)`, and a tuple of counts cannot be mutated out from
+  under the cache, so 2,3 and 3,2 collapse into one subproblem and clearing the
+  caches reproduces every number bit for bit
+  (`test_results_are_identical_before_and_after_clearing_caches`).
+
+The solver's main approximation is that split hands are valued independently
+against the shoe as it stood at the split; `bj/ev.py` records its direction
+(slightly optimistic) and measured size (under 0.001 on a split). The resplit
+budget is modelled as the shared pool a real table enforces, with a greedy
+resplit decision inside it that `bj/ev.py` brackets to at most 0.00084 on the
+worst pair cell. Every approximation the solver makes is listed there with its
+size.
+
 ## What's in the box
 
 ```
@@ -53,10 +113,12 @@ bj/
   core.py       ranks, hands, the immutable shoe, the Rules dataclass
   dealer.py     exact dealer outcome distribution (peek + hole-card modeled)
   ev.py         the solver: stand / hit / double / split EV by enumeration
-  strategy.py   total-dependent basic strategy derived from the solver
+  strategy.py   total-dependent basic strategy, transcribed, with its fallbacks
   simulate.py   a Monte-Carlo harness that re-derives the same numbers
-demo.py         advise one hand, ranked, with the EV of every action
-tests/          the four test modules below
+  chart.py      renders a chart as Markdown, and parses one back
+  cli.py        the command line: advise one hand, or print the derived chart
+demo.py         runs the command line from a checkout, nothing installed
+tests/          one module per module above, plus the shared session fixtures
 ```
 
 `ev.py` is the core. `dealer.py` computes, for a given upcard and shoe, the
@@ -65,7 +127,9 @@ dealer natural resolves before the player acts) modeled where it changes the
 math. `strategy.py` derives the fixed chart from the solver so the two can be
 cross-checked. `simulate.py` exists to check the exact math a second,
 independent way: it plays hands under fresh randomness and its long-run figures
-must land on the enumerated ones.
+must land on the enumerated ones. `chart.py` and `cli.py` are the presentation
+layer: the chart below and the worked decision are both their output, and both
+are checked against the solver by the tests.
 
 ## A worked decision
 
@@ -92,6 +156,71 @@ the bottom line is the honest one: played perfectly, every hand at this table is
 worth **−0.4044%** to the player. Perfect play makes the loss small; it does not
 make it positive.
 
+## The chart the solver derives
+
+`python demo.py --table` prices all 350 cells of a printed basic-strategy chart
+with the exact solver — every hard total averaged over its two-card
+compositions, every soft total, every pair with and without double-after-split
+— and prints the result as Markdown. What follows is that output, pasted
+verbatim. `tests/test_chart.py` parses this section back out of the README and
+compares it cell by cell with `derive_table()`, so it cannot silently drift from
+the code.
+
+<!-- chart:begin -->
+Basic strategy derived by the exact solver: 6 decks, dealer stands on soft 17, double after split, dealer peeks, no surrender, up to 4 hands, split aces get one card, blackjack pays 3:2.
+
+### Hard totals
+
+| Hard | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | A |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 4-8 | H | H | H | H | H | H | H | H | H | H |
+| 9 | H | D | D | D | D | H | H | H | H | H |
+| 10 | D | D | D | D | D | D | D | D | H | H |
+| 11 | D | D | D | D | D | D | D | D | D | H |
+| 12 | H | H | S | S | S | H | H | H | H | H |
+| 13-16 | S | S | S | S | S | H | H | H | H | H |
+| 17-20 | S | S | S | S | S | S | S | S | S | S |
+
+### Soft totals
+
+| Soft | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | A |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| A,2 | H | H | H | D | D | H | H | H | H | H |
+| A,3 | H | H | H | D | D | H | H | H | H | H |
+| A,4 | H | H | D | D | D | H | H | H | H | H |
+| A,5 | H | H | D | D | D | H | H | H | H | H |
+| A,6 | H | D | D | D | D | H | H | H | H | H |
+| A,7 | S | Ds | Ds | Ds | Ds | S | S | H | H | H |
+| A,8 | S | S | S | S | S | S | S | S | S | S |
+| A,9 | S | S | S | S | S | S | S | S | S | S |
+
+### Pairs
+
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | A |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| A,A | P | P | P | P | P | P | P | P | P | P |
+| T,T | S | S | S | S | S | S | S | S | S | S |
+| 9,9 | P | P | P | P | P | S | P | P | S | S |
+| 8,8 | P | P | P | P | P | P | P | P | P | P |
+| 7,7 | P | P | P | P | P | P | H | H | H | H |
+| 6,6 | Ph | P | P | P | P | H | H | H | H | H |
+| 5,5 | D | D | D | D | D | D | D | D | H | H |
+| 4,4 | H | H | H | Ph | Ph | H | H | H | H | H |
+| 3,3 | Ph | Ph | P | P | P | P | H | H | H | H |
+| 2,2 | Ph | Ph | P | P | P | P | H | H | H | H |
+
+Legend: **H** hit; **S** stand; **D** double, else hit; **Ds** double, else stand; **P** split; **Ph** split only if doubling after a split is allowed, else play the hard total
+<!-- chart:end -->
+
+Two rows look different from a printed chart, for honest reasons. The solver
+derives a hard 4, which only exists as a pair of twos that could not be split,
+so it prints "4-8" where a chart prints "5-8". And a two-card hard 21 needs an
+ace, which makes it a natural, so there is nothing to derive above 20 and the
+last row is "17-20" rather than "17+". Everything else is the chart you would
+find on a casino gift-shop card — and `tests/test_ev.py` proves the transcribed
+chart in `bj/strategy.py` agrees with this derivation on every cell the two
+share.
+
 ## What is verified, and how
 
 The test suite runs the solver against independent checks rather than against
@@ -100,15 +229,27 @@ itself:
 - **Exact vs. simulated.** `simulate.py` plays hands under fresh randomness; its
   long-run dealer-bust rate and its house edge must match the enumerated figures
   (the heavy runs are multi-million-hand simulations, gated behind `BJ_SLOW=1`).
+- **Exact vs. published.** All 45 stand/hit/double cells of the published
+  marginal-hand table are held to 0.0001 — the tables print four decimals — and
+  the composition-dependent optimum is pinned at −0.4029%, 3e-06 from the
+  published −0.4026%.
 - **Two decision paths agree.** A compiled fast-path action function is checked
   against the solver's `basic_action` across every hand shape and dealer upcard.
+- **The transcription equals the derivation.** The chart typed into
+  `bj/strategy.py` and the chart `derive_table()` recomputes agree on every
+  cell they share — 160 hard, 80 soft, 100 pair — with no permitted
+  exceptions; the two hard rows only one of them has (a hard 4, and a hard 21
+  no two ace-free cards can make) are accounted for by name.
 - **Rule sensitivity is pinned.** Doubling after split, dealer S17 vs H17,
   resplit and hit-split-aces, deck count, and blackjack payout each move the EV
   in a known direction, and the tests assert those directions rather than magic
   constants.
+- **This README is tested.** The chart above is parsed and compared with the
+  solver's output, and the worked decision is the command line's pinned output
+  (`tests/test_chart.py`, `tests/test_cli.py`).
 
 ```
-831 passed, 6 skipped   (the 6 are the BJ_SLOW statistical runs)
+866 passed, 6 skipped   (the 6 are the BJ_SLOW statistical runs)
 ```
 
 ## What this does not prove
@@ -116,7 +257,8 @@ itself:
 - **The headline numbers are one table.** The solver is parameterized by a
   `Rules` object, and the tests exercise rule variations, but the worked example
   and the −0.4044% are a single six-deck, S17, 3:2 table. A different table is a
-  config change, not a re-derivation, and its numbers are its own.
+  config change, not a re-derivation, and its numbers are its own — `--decks`,
+  `--h17` and `--no-das` on the command line are that config change.
 - **It models one hand, not a session.** Every entry point starts from a fresh
   shoe minus the visible cards. There is no cross-hand shoe tracking, so **card
   counting is out of scope by construction** — this prices the decision in front
@@ -129,16 +271,34 @@ itself:
   of a table that allows them is computed correctly on request; it just is not
   the default.
 
+## Where the reference numbers come from
+
+The published figures the tests hold the solver to — the marginal-hand EV
+table, the dealer outcome table, the −0.4026% optimum, the S17/H17 and DAS
+sensitive cells — are Wizard of Odds' six-deck, S17, DAS, dealer-peeks numbers,
+as transcribed into the original project's design notes. The code and tests
+call those notes "the spec". They are private and not in this repository, but
+every number they supplied is reproduced in `tests/`, so nothing here depends on
+having them; where the spec contradicted itself or the solver, the tests say
+which side the arithmetic is on rather than tuning anything to agree.
+
 ## Run it
 
 ```
-python demo.py 8,8 T                 # one decision, ranked, with EVs
-python demo.py T,6 T                 # hard 16 vs ten - the coin flip
-python -m pytest -q                  # 831 tests, ~2 minutes
+pip install -e .                     # installs `bj-advise`; or: pip install -r requirements.txt
+bj-advise 8,8 T                      # one decision, ranked, with EVs
+bj-advise T,6 T                      # hard 16 vs ten - the coin flip
+bj-advise A,7 3                      # soft 18 vs 3 - a real edge
+bj-advise 6,5 A --h17                # the same solver at a dealer-hits-soft-17 table
+bj-advise --table                    # the chart above, derived (about a minute)
+python demo.py 8,8 T                 # any of the above from a checkout, nothing installed
+python -m pytest -q                  # the suite, ~3 minutes
 BJ_SLOW=1 python -m pytest -q        # + the multi-million-hand statistical runs
+ruff check .                         # what CI lints with (pip install -r requirements-dev.txt)
 ```
 
-Requires `numpy` and `pytest` (`pip install -r requirements.txt`). Python 3.11+.
+Python 3.11+ and `numpy` (used only by the Monte Carlo harness). CI lints and
+runs the suite on Python 3.11, 3.12 and 3.13.
 
 ## License
 

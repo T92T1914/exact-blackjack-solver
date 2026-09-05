@@ -118,3 +118,26 @@ def test_describe_rules_reflects_every_flag_it_names():
     assert text == ('1 deck, dealer hits on soft 17, no double after split, no peek, '
                     'surrender, up to 2 hands, split aces may be hit, blackjack pays 6:5')
     assert 'blackjack pays 2:1' in describe_rules(Rules(blackjack_payout=2.0))
+
+
+# --- the README ------------------------------------------------------------
+
+def _readme_chart() -> str:
+    text = README.read_text(encoding='utf-8')
+    assert CHART_BEGIN in text and CHART_END in text, 'README chart markers are missing'
+    return text.split(CHART_BEGIN, 1)[1].split(CHART_END, 1)[0]
+
+
+def test_readme_chart_is_the_solvers_chart(derived):
+    """The chart in README.md is bj.ev.derive_table's output, cell for cell.
+
+    Not the transcription: the README section is compared with the solver's
+    own derivation, so a hand edit to either the README or the solver shows up
+    here.  (The transcription is separately proven equal to the derivation in
+    tests/test_ev.py.)
+    """
+    assert parse_chart(_readme_chart()) == derived
+
+
+def test_readme_chart_names_the_rules_it_was_derived_for():
+    assert describe_rules(STANDARD) in _readme_chart()
