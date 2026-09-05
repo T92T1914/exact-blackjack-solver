@@ -2,13 +2,13 @@
 
 Three jobs, in order of importance:
 
-1.  Prove the printed chart in the handoff is the chart in the code.  Every
+1.  Prove the printed chart in the spec is the chart in the code.  Every
     cell of all three tables is driven through basic_action with a real hand,
     so a typo in a table literal fails a test instead of costing money.
 2.  Prove the fallbacks (no double button, no split left, DAS off) downgrade
     the way the table intends rather than silently returning something else.
-3.  Prove the engine reproduces the 37-hand log in section 5 of the handoff,
-    which is the only real-world data this project has.
+3.  Prove the engine reproduces the 37-hand log of real play recorded in the
+    spec, which is the only real-world data this project has.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from bj.strategy import (
     take_insurance,
 )
 
-S17_DAS = Rules()                       # the the example table table
+S17_DAS = Rules()                       # the original table
 NO_DAS = Rules(das=False)
 H17 = Rules(s17=False)
 
@@ -181,7 +181,7 @@ PH_CELLS = [('6,6', '2'), ('4,4', '5'), ('4,4', '6'),
             ('3,3', '2'), ('3,3', '3'), ('2,2', '2'), ('2,2', '3')]
 
 
-def test_ph_cells_are_exactly_the_ones_the_handoff_lists():
+def test_ph_cells_are_exactly_the_ones_the_spec_lists():
     found = sorted(k for k, code in PAIR_TABLE.items() if code == 'Ph')
     assert found == sorted(PH_CELLS)
 
@@ -209,11 +209,10 @@ def test_the_corrected_4_4_row():
         4,4 vs 4   split +0.00870   hit +0.04803   -> hit better by 0.03932
         4,4 vs 5   split +0.11085   hit +0.08362   -> split better by 0.02722
         4,4 vs 6   split +0.16681   hit +0.12440   -> split better by 0.04241
-    The owner ruled the corrected pair row to be H H H Ph Ph H H H H H with a
-    DAS note of "4,4 vs 5 and 6".  This test pins the corrected row so that
-    reverting it is a deliberate act with a failing test attached.  Note that
-    the handoff markdown had not been edited to match when this was written;
-    see SPEC CORRECTION in bj/strategy.py.
+    The corrected pair row is H H H Ph Ph H H H H H with a DAS note of
+    "4,4 vs 5 and 6".  This test pins it so that reverting it is a deliberate
+    act with a failing test attached; see SPEC CORRECTION in bj/strategy.py
+    for the printed row it departs from.
     """
     assert PAIR_TABLE[('4,4', '4')] == 'H'
     assert basic_action(('4', '4'), '4', S17_DAS).action == HIT
@@ -386,7 +385,7 @@ def test_soft_18_vs_ace_exception_needs_the_ace_upcard():
 
 
 def test_soft_18_vs_ace_exception_needs_four_cards():
-    # A,7 vs A is the printed cell: hit, by 0.0049 (handoff appendix section 2)
+    # A,7 vs A is the printed cell: hit, by 0.0049 (spec appendix)
     assert basic_action(('A', '7'), 'A', S17_DAS).action == HIT
     assert basic_action(('A', '7'), 'A', S17_DAS).source == 'table'
     # no 3-card soft 18 can be built from aces, 2s and 3s alone, so there is
@@ -424,7 +423,7 @@ def test_never_split_tens(up):
 
 
 def test_never_split_tens_even_when_the_app_offers_it():
-    # the app offers SPLIT on Q,J; core collapses both to 'T'
+    # the original game offers SPLIT on Q,J; core collapses both to 'T'
     adv = basic_action('QJ', '6', S17_DAS, can_split=True)
     assert adv.action == STAND
 
@@ -570,7 +569,7 @@ def test_busted_and_short_hands_are_errors_not_advice():
 
 
 def test_action_word_leads_and_reason_is_one_line():
-    """The owner reads this on a phone mid-hand. One word, then one line."""
+    """The advisory tool showed this mid-hand. One word, then one line."""
     hands = list(HARD_HANDS.values())
     hands += [('A', str(n)) for n in range(2, 10)]                  # soft rows
     hands += [(r, r) for r in ('A', 'T', '9', '8', '7', '6', '5', '4', '3', '2')]
@@ -590,9 +589,9 @@ def test_action_word_leads_and_reason_is_one_line():
 
 
 # --- the 37-hand log -------------------------------------------------------
-# Section 5 of the handoff.  Every decision the owner made at the table, in
-# order.  Hand 1 resolved on a dealer natural before any action, so it has no
-# decision to check.  kwargs mark the hands that came out of a split.
+# The spec's log of one real session.  Every decision the player made at the
+# table, in order.  Hand 1 resolved on a dealer natural before any action, so
+# it has no decision to check.  kwargs mark the hands that came out of a split.
 
 LOG = [
     ('2  6,4 vs T',        ('6', '4'), 'T', {}, 'HIT'),

@@ -6,7 +6,7 @@ bj.ev is the only module in the project that can say a recommendation is worth
 0.044 units rather than 0.0008.  Nothing downstream can catch it being wrong,
 because nothing downstream has an independent opinion.  So the tests here are
 mostly external: they check the solver against numbers Wizard of Odds
-published for this exact ruleset, transcribed into the handoff appendix.
+published for this exact ruleset, transcribed into the spec's appendix.
 
 THE RULE THESE TESTS OBEY
 -------------------------
@@ -43,7 +43,7 @@ quietly edited away.
 
 MEASURED RESIDUALS, computed minus published, 2026-09-02, post-fix
 ------------------------------------------------------------------
-All 15 rows of handoff appendix section 4, 6 decks S17 DAS peek, exact card
+All 15 rows of the spec's marginal-hand table, 6 decks S17 DAS peek, exact card
 removal for the named two-card composition:
 
     hand           stand      hit     double     split
@@ -76,7 +76,7 @@ HOUSE EDGE, computed 2026-09-02
     the printed chart in bj.strategy -0.004044 (published working ~-0.0041)
 The optimum moved from -0.004068 to -0.004029 across the peek and shared-pool
 fixes, i.e. TOWARDS the published -0.004026, and it now sits 3e-06 from it.
-The chart moved from -0.004083 to -0.004044, i.e. away from the handoff's
+The chart moved from -0.004083 to -0.004044, i.e. away from the spec's
 rounded "about 0.41%" and towards 0.40%.  Two honest notes on that:
 
   * -0.0041 is a rounded working figure quoted in prose, not a solved cell, and
@@ -139,7 +139,7 @@ from bj import strategy as st
 from bj.strategy import basic_action
 
 # --- the published reference -----------------------------------------------
-# Handoff appendix section 4, "EV tables for marginal hands (6-deck S17, per
+# Spec appendix, "EV tables for marginal hands (6-deck S17, per
 # unit; WoO Appendix 9 6ds17r4)".  Transcribed verbatim, including the two-card
 # composition each row names, because the composition is the whole point: a
 # 12 vs 2 made of T,2 is not the same problem as one made of 7,5.
@@ -450,7 +450,7 @@ def test_published_best_action_column(row):
 
     This is the assertion that actually matters at the table.  An EV can be a
     thousandth off and cost nothing; a wrong Best column is a wrong button.
-    Includes the three near-ties the handoff calls out (12 vs 4 at 0.0008,
+    Includes the three near-ties the spec calls out (12 vs 4 at 0.0008,
     A,7 vs A at 0.005, 16 vs 10 at 0.0063), which is the whole reason the
     dealer and the player are both solved exactly.
     """
@@ -509,10 +509,10 @@ def test_multi_card_sixteen_versus_ten(cards, up, claimed_stand_minus_hit):
 def test_the_exception_is_about_composition_not_card_count():
     """A three-card 16 vs a ten does NOT always stand.
 
-    This is a finding, not a rule the handoff prints.  Of the fifteen hard
+    This is a finding, not a rule the spec prints.  Of the fifteen hard
     three-card 16s, the solver stands on nine and hits six.  4,6,6 in
     particular hits by 0.0043 despite containing a 4, because it has eaten two
-    of the sixes that would have busted the hit.  The handoff's loose rule
+    of the sixes that would have busted the hit.  The spec's loose rule
     ("3+ cards -> stand") is right on 9 of 15; its sharper rule ("contains a 4
     or a 5") is right on 12 of 15, missing 4,6,6 and wrongly hitting A,7,8 and
     2,7,7.  The test asserts the two ends of that spread so nobody upgrades
@@ -700,7 +700,7 @@ def test_the_frozen_split_ace_is_never_offered_a_hit_or_a_double():
     """A split ace gets one card, so HIT and DOUBLE are not on the table.
 
     Under resplit_aces with hit_split_aces off - a real combination, and one of
-    the two rules the handoff lists as unconfirmed at the example table - best_action
+    the two rules the spec lists as unconfirmed at the original table - best_action
     used to hand back HIT and DOUBLE entries for a split pair of aces because
     the "no decision" shortcut was skipped whenever a resplit was available.
     That breaks its own docstring promise that unavailable actions are absent,
@@ -733,7 +733,7 @@ def test_a_split_seven_that_drew_an_ace_is_not_a_frozen_split_ace():
 
 
 def test_splitting_eights_against_a_ten_beats_giving_up_and_hitting():
-    # The handoff calls this out specifically: do not "give up" on 8,8 vs 10.
+    # The spec calls this out specifically: do not "give up" on 8,8 vs 10.
     shoe = ev.initial_shoe_for(('8', '8'), 'T')
     action, evs, margin = ev.best_action(('8', '8'), 'T', shoe)
     assert action == SPLIT
@@ -757,8 +757,8 @@ def test_das_is_worth_something_and_the_solver_can_see_it():
 
 
 def test_split_aces_get_one_card_unless_the_rules_say_otherwise():
-    # The two unknown rules from the handoff.  Turning both on is worth a lot
-    # per split hand, which is why the handoff says the house edge could drop
+    # The two unknown rules from the spec.  Turning both on is worth a lot
+    # per split hand, which is why the spec says the house edge could drop
     # toward 0.30% if they turn out to be allowed.
     shoe = ev.initial_shoe_for(('A', 'A'), '6')
     strict = ev.ev_split('A', '6', shoe, STANDARD)
@@ -782,7 +782,7 @@ def test_never_split_tens(up):
     """A project honesty rule, checked as arithmetic rather than asserted.
 
     Splitting tens is the most expensive common mistake in the game (~8% per
-    the handoff).  The tool is forbidden from recommending it; this shows the
+    the spec).  The tool is forbidden from recommending it; this shows the
     solver would not want to anyway, against every upcard.
     """
     shoe = ev.initial_shoe_for(('T', 'T'), up)
@@ -891,10 +891,10 @@ def test_the_chart_cannot_beat_the_optimum(edge_optimal, edge_chart):
 
 
 def test_the_chart_costs_less_than_a_hundredth_of_a_percent(edge_optimal, edge_chart):
-    # Recorded because it is the honest answer to "should I carry the phone
-    # tool or the card?".  About 1.5e-05 per unit: one and a half gems per
-    # hundred thousand wagered.  The tool's value is not the edge, it is not
-    # making the mistake the owner made on hand 37.
+    # Recorded because it is the honest answer to "should I carry the solver
+    # or the printed card?".  About 1.5e-05 per unit: one and a half units per
+    # hundred thousand wagered.  The solver's value is not the edge over the
+    # chart; it is the mistakes it stops a human making against either.
     assert 0.0 <= edge_optimal - edge_chart < 0.0001
     assert edge_optimal - edge_chart == pytest.approx(1.5e-05, abs=5e-06)
 
@@ -968,7 +968,7 @@ def test_derived_table_matches_the_transcribed_chart(derived, section, printed):
 def test_the_four_four_cell_that_used_to_be_disputed(derived):
     """4,4 vs 4: the transcription dispute, now settled, quantified anyway.
 
-    The handoff's pairs row printed Ph here and bj.strategy transcribed it;
+    The spec's pairs row printed Ph here and bj.strategy transcribed it;
     this solver said H and said it by a wide margin.  bj.strategy now says H
     too, so the cell is no longer a disagreement - but the margin is pinned
     because that is the evidence the resolution rested on, and a cell that
@@ -987,7 +987,7 @@ def test_the_four_four_cell_that_used_to_be_disputed(derived):
 
 
 def test_derived_table_reproduces_the_s17_sensitive_cells(derived):
-    # Handoff section 4: these three cells are the ones that would flip under
+    # Spec: these three cells are the ones that would flip under
     # H17, and getting them wrong is the classic way to play the wrong chart.
     assert derived['hard'][(11, 'A')] == 'H'
     assert derived['soft'][('A,7', '2')] == 'S'
@@ -995,9 +995,9 @@ def test_derived_table_reproduces_the_s17_sensitive_cells(derived):
 
 
 def test_derived_table_reproduces_the_das_sensitive_cells(derived):
-    # Handoff appendix section 1: the cells you split only because DAS exists.
+    # Spec appendix: the cells you split only because DAS exists.
     # That list also names 4,4 vs 4, which is deliberately NOT checked here:
-    # the solver hits it by 0.039 and bj.strategy now agrees, so the handoff's
+    # the solver hits it by 0.039 and bj.strategy now agrees, so the spec's
     # pairs table and its own cheat sheet ("4,4 split vs 5 to 6") disagree with
     # each other and the cheat sheet is the one that matches the arithmetic.
     for key in (('2,2', '2'), ('2,2', '3'), ('3,3', '2'), ('3,3', '3'),
@@ -1005,7 +1005,7 @@ def test_derived_table_reproduces_the_das_sensitive_cells(derived):
         assert derived['pairs'][key] == 'Ph', key
 
 
-def test_h17_moves_the_cells_the_handoff_says_it_moves():
+def test_h17_moves_the_cells_the_spec_says_it_moves():
     """Run the whole derivation again under H17 and diff the two charts.
 
     bj.strategy carries a hand-written three-cell H17 overlay.  This is the

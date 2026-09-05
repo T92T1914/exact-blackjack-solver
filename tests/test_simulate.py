@@ -2,7 +2,7 @@
 
 Six jobs, in descending order of how expensive the bug would be:
 
-1.  Prove the COMPILED strategy is the same strategy the phone tool plays.
+1.  Prove the COMPILED strategy is the same strategy the advisory tool plays.
     The simulator does not call bj.strategy in its hot loop; it compiles it
     into lookup arrays.  If a compiled cell were wrong, every number this
     project quotes would describe a strategy nobody plays, and nothing else in
@@ -96,7 +96,7 @@ from bj.simulate import (
 from bj.simulate import _Accum, _merge, _seed_sequence, _shape_class, _stats
 from bj.strategy import DEALER_UPS, basic_action
 
-S17_DAS = Rules()                                  # the the example table table
+S17_DAS = Rules()                                  # the original table
 NO_DAS = Rules(das=False)
 H17 = Rules(s17=False)
 LIBERAL = Rules(resplit_aces=True, hit_split_aces=True)
@@ -331,7 +331,8 @@ def test_compiled_action_refuses_a_busted_hand():
 # --- the shape class, which is the compiled key's only concession to
 # --- composition-dependent play
 
-#: bj.strategy's soft-18-vs-ace exception, enumerated in docs/pending-fixes.md.
+#: bj.strategy's soft-18-vs-ace exception, enumerated with the exact solver and
+#: pinned with its EV gains in tests/test_strategy.py.
 #: The three HITs are the whole reason the rule is not just "four or more
 #: cards"; a compiled key that gets the six STANDs and also stands on these has
 #: implemented the naive version.
@@ -507,7 +508,7 @@ def test_a_doubled_hand_never_acts_again():
 
 @pytest.mark.parametrize('extra', (0, 1, 2, 3))
 def test_max_extra_units_caps_the_money(extra):
-    """The parameter the bet module's honesty rests on.
+    """The parameter any honest bet-sizing analysis rests on.
 
     extra=0 is an all-in bet.  There is no money left, so the DOUBLE and SPLIT
     buttons might as well not exist, and the strategy must fall back through
@@ -529,7 +530,7 @@ def test_max_extra_units_caps_the_money(extra):
 
 
 def test_all_in_is_a_much_worse_game_than_the_quoted_house_edge():
-    """The number the bet module exists to respect.
+    """The number any bet-sizing analysis has to respect.
 
     Basic strategy's 0.41 percent assumes the player can double and split.  An
     all-in player cannot.  If this ever stops being a large, clearly separated
@@ -599,7 +600,7 @@ def test_das_flag_gates_doubling_after_a_split():
 
 
 def test_the_engine_never_splits_tens():
-    """Honesty rule, enforced where the money is.  The app offers SPLIT on Q,J;
+    """Honesty rule, enforced where the money is.  The original game offers SPLIT on Q,J;
     the simulator must never take it, at any budget."""
     for up in DEALER_UPS:
         assert compiled_action(('T', 'T'), up, can_double=True,
@@ -646,7 +647,7 @@ def test_no_peek_is_refused_rather_than_approximated():
 def test_a_round_draws_a_real_six_deck_shoe_without_replacement():
     """Draw the whole shoe inside one round and count it.
 
-    This is the simulator-side version of the handoff's own persistence test:
+    This is the simulator-side version of the spec's own persistence test:
     a seventh copy of any rank would prove the draw is not a shoe.  Here the
     entire shoe is dealt out and must come back as exactly 24 of each rank and
     96 tens, no more and no fewer.
@@ -736,7 +737,7 @@ def exact_overall_dealer_bust(rules: Rules = STANDARD) -> float:
     return total
 
 
-#: the handoff appendix's per-upcard dealer bust row, quoted verbatim.  It is
+#: the spec appendix's per-upcard dealer bust row, quoted verbatim.  It is
 #: the OTHER half of the 28.3 percent contradiction: these ten numbers and that
 #: headline are printed a dozen lines apart and do not agree.
 PUBLISHED_BUST_BY_UPCARD = {
@@ -761,12 +762,12 @@ def weighted_published_bust() -> float:
     return total
 
 
-def test_the_handoff_contradicts_itself_on_the_dealer_bust_rate():
+def test_the_spec_contradicts_itself_on_the_dealer_bust_rate():
     """APPROXIMATIONS note 3, checked rather than asserted.
 
     The note used to blame the engine's 28.20 percent on player card removal.
-    It is not that.  The handoff's headline 28.3 percent disagrees with the
-    handoff's own per-upcard bust table: weight those ten rows by upcard
+    It is not that.  The spec's headline 28.3 percent disagrees with the
+    spec's own per-upcard bust table: weight those ten rows by upcard
     frequency, apply the peek, and they come to 0.2819.  This project's exact
     dealer solver, on the same convention, gives 0.28192.  The engine matches
     both; the headline is the outlier.
@@ -928,7 +929,7 @@ def test_moderate_run_lands_near_the_published_numbers():
 def test_published_win_loss_split_is_a_known_disagreement():
     """PINNED, NOT TUNED.
 
-    The handoff quotes win 42.2 percent and loss 49.1 percent.  This engine
+    The spec quotes win 42.2 percent and loss 49.1 percent.  This engine
     measures about 43.6 and 47.9 at twenty million rounds.  Everything around
     those two numbers agrees - EV, SD, push rate, both natural rates, the
     dealer's whole final-total distribution, and the exact stand-only
@@ -1079,7 +1080,7 @@ def test_the_double_term_in_the_docstring_arithmetic():
 
 
 # ===========================================================================
-# outcome distributions, for the bet module
+# outcome distributions (built for the original project's bet-sizing module)
 # ===========================================================================
 
 def test_outcome_distributions_shape_and_support():
@@ -1123,15 +1124,15 @@ def test_outcome_distributions_accepts_unlimited():
     assert set(d) == {0, None}
 
 
-#: The all-in round - no double, no split - enumerated exactly in
-#: out/scratch/reference_exact.py: every player two-card hand, every dealer
-#: upcard, every hole card, full composition dependence, peek applied by hand,
-#: no sampling anywhere.  Written to out/allin_exact_distribution.json.
+#: The all-in round - no double, no split - enumerated exactly by a scratch
+#: script in the original project (not included here): every player two-card
+#: hand, every dealer upcard, every hole card, full composition dependence,
+#: peek applied by hand, no sampling anywhere.
 #:
 #: This is the strongest check in the file.  extras=0 is the distribution the
-#: bold-play and ladder answers are built on, and it is the one place where a
-#: Monte Carlo number in this project has an exact counterpart to be graded
-#: against rather than another simulation.
+#: original project's bet-sizing answers were built on, and it is the one
+#: place where a Monte Carlo number in this project has an exact counterpart
+#: to be graded against rather than another simulation.
 ALLIN_EXACT = {-1.0: 0.48012466, 0.0: 0.08586196,
                1.0: 0.38869039, 1.5: 0.04532299}
 
@@ -1373,7 +1374,7 @@ def test_outcome_distributions_workers_reaches_every_budget():
 
 def test_throughput_clears_the_target():
     """Spec target is 30,000 rounds per second per core.  Measured on the
-    owner's sixteen-core machine, 2026-09-02: about 290,000 serial, and between
+    author's sixteen-core machine, 2026-09-02: about 290,000 serial, and between
     850,000 and 1,760,000 for a full 35,000,000-round parallel run including
     pool startup - the spread is other work on the box, which is exactly why
     the assertion is not near the measured rate.  Widening the compiled key
@@ -1398,7 +1399,7 @@ def test_throughput_clears_the_target():
 def test_two_million_rounds_cannot_decide_the_specs_ev_tolerance():
     """A finding about the spec, not about the engine.
 
-    The handoff asks for "at least 2,000,000 rounds" and accepts EV per hand
+    The spec asks for "at least 2,000,000 rounds" and accepts EV per hand
     in [-0.0048, -0.0035] around -0.0041.  That band is not symmetric; its
     tighter half is 0.0006.  The standard error of the mean at two million
     rounds is 1.1547/sqrt(2e6) = 0.00082, so the band is +/-0.73 standard

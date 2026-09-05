@@ -3,7 +3,7 @@
 Two kinds of test live here and they are kept visibly separate.
 
 1.  REFERENCE tests compare the solver against numbers published by somebody
-    else (Wizard of Odds, via the handoff appendix).  These can fail for a
+    else (Wizard of Odds, via the spec's appendix).  These can fail for a
     reason that is not a bug: the published source may use a different
     convention.  When one fails, the job is to find out which convention
     differs, not to nudge a constant until it passes.  The tolerances below are
@@ -44,7 +44,7 @@ from bj.dealer import (
 
 # --- published reference data ----------------------------------------------
 
-#: Handoff appendix section 5, "Dealer probabilities (6-deck S17, after peek)".
+#: Spec appendix, "Dealer probabilities (6-deck S17, after peek)".
 #: Columns are 17, 18, 19, 20, 21, Bust.  Source: Wizard of Odds,
 #: "Dealer Odds, US Rules".  Printed to four decimal places.
 PUBLISHED_AFTER_PEEK = {
@@ -60,7 +60,7 @@ PUBLISHED_AFTER_PEEK = {
     'A': (.1881, .1892, .1889, .1894, .0774, .1670),
 }
 
-#: Handoff section 4, "Dealer bust probability by upcard".  Printed to one
+#: Spec, "Dealer bust probability by upcard".  Printed to one
 #: decimal place as a percentage, i.e. to 0.001 as a probability.
 PUBLISHED_BUST = {
     '2': .354, '3': .374, '4': .396, '5': .418, '6': .423,
@@ -157,7 +157,7 @@ def test_bust_probability_ordering():
 
 
 def test_dealer_natural_probability_with_ace_up():
-    """96/311 = 0.30868, the number the app itself quotes as 'about 31 percent'.
+    """96/311 = 0.30868, the number the original game's insurance prompt calls 'about 31%'.
 
     311 = 312 cards minus the ace already showing; 96 = the ten-value cards in
     six decks.  Exact rational arithmetic, so this is asserted to 1e-6 as the
@@ -254,7 +254,8 @@ def test_composition_awareness_removing_tens_cuts_the_bust_rate():
 def test_composition_awareness_player_cards_change_the_answer():
     """Removing the player's own cards moves the dealer distribution.
 
-    Handoff hand 13: player 9,5 against a ten.  The realistic shoe for that
+    Hand 13 of the logged session (tests/test_strategy.py): player 9,5 against
+    a ten.  The realistic shoe for that
     decision is 312 minus the upcard minus those two cards, and it is not the
     same shoe the published chart uses.  The difference is small - this is a
     six-deck game, which is exactly why counting is worthless here - but it is
@@ -310,7 +311,7 @@ S17_INERT_UPCARDS = ('7', '8', '9', 'T')
 def test_h17_busts_more_where_soft_17_is_reachable(up):
     """Hitting soft 17 gives the dealer extra chances to break.
 
-    The handoff prices the S17 credit at +0.22% to the player; part of the
+    The spec prices the S17 credit at +0.22% to the player; part of the
     mechanism is visible here as a higher dealer bust rate under H17.
     """
     shoe = shoe_minus_upcard(up)
@@ -437,10 +438,10 @@ def test_clear_caches_actually_empties_them():
     assert dealer_module._distribution.cache_info().currsize == 0
 
 
-def test_solver_is_fast_enough_for_a_live_phone_decision():
+def test_solver_is_fast_enough_for_a_live_decision():
     """Cold, all ten upcards from a fresh shoe, well under a second.
 
-    The handoff's requirement is a decision 'within a few seconds of seeing the
+    The spec's requirement is a decision 'within a few seconds of seeing the
     cards', and the EV solver will call this many times per decision.  This is a
     smoke test on the order of magnitude, not a benchmark, so the bound is
     deliberately loose enough not to flake on a busy machine.
