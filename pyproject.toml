@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exact-blackjack-solver"
+dynamic = ["version"]
+description = "Exact, composition-dependent blackjack solver: the true EV of hit, stand, double and split by enumeration over the remaining shoe."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Trinidy Farris" }]
+keywords = ["blackjack", "expected-value", "dynamic-programming", "markov-decision-process", "monte-carlo"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed",
+]
+# numpy is used only by bj.simulate (the Monte Carlo harness); the exact
+# solver itself is pure Python.  It is a hard dependency rather than an
+# extra because the package is small and the harness is part of the point.
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[project.urls]
+Repository = "https://github.com/T92T1914/exact-blackjack-solver"
+
+[tool.setuptools]
+packages = ["bj"]
+
+[tool.setuptools.dynamic]
+version = { attr = "bj.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: heavy statistical run; set BJ_SLOW=1 to include it",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# pyflakes (F) catches real defects: unused imports and variables, undefined
+# names.  pycodestyle (E, W) keeps the layout consistent.  Nothing stylistic
+# beyond that is enforced, so the linter can fail the build without arguing
+# about taste.
+select = ["E", "F", "W"]
