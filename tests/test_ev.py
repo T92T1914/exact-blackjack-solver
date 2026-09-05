@@ -110,7 +110,8 @@ RUNTIME
 -------
 The two house_edge calls and the two derive_table calls dominate: roughly 90 s,
 5 s, 75 s and 15 s cold, sharing memo tables, so the suite lands around two
-minutes.  They are session-scoped fixtures so each runs once.  The shared
+minutes.  They are session-scoped fixtures (tests/conftest.py) so each runs
+once.  The shared
 resplit pool is part of why the optimum is slower than it was; it evaluates
 split subtrees the halved budget could not reach.
 """
@@ -136,7 +137,6 @@ from bj.core import (
 )
 from bj import ev
 from bj import strategy as st
-from bj.strategy import basic_action
 
 # --- the published reference -----------------------------------------------
 # Spec appendix, "EV tables for marginal hands (6-deck S17, per
@@ -186,22 +186,9 @@ def _evs(cards, up, rules=STANDARD):
     return out
 
 
-# --- session fixtures: the three expensive computations --------------------
-
-@pytest.fixture(scope='session')
-def edge_optimal():
-    return ev.house_edge()
-
-
-@pytest.fixture(scope='session')
-def edge_chart():
-    return ev.house_edge(strategy=basic_action)
-
-
-@pytest.fixture(scope='session')
-def derived():
-    return ev.derive_table()
-
+# The three expensive computations - edge_optimal, edge_chart and derived -
+# are session fixtures in tests/conftest.py, shared with the CLI and chart
+# tests so each runs once per session.
 
 # ===========================================================================
 # 1. Shape and units.  Cheap tests that would catch a catastrophe before the
