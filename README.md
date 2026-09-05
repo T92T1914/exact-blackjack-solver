@@ -38,6 +38,49 @@ assume and both are wrong:
   adversarial. It is a single-agent finite-horizon **Markov decision process
   solved exactly by dynamic programming.**
 
+## Run it
+
+```
+pip install -e .                     # use: installs the `bj-advise` command; numpy is the one dependency
+pip install -e ".[dev]"              # tests: the same plus pytest and ruff
+python demo.py 8,8 T                 # one decision, ranked, with EVs (`bj-advise 8,8 T` once installed)
+python demo.py --table               # the chart below, derived by the solver (about a minute)
+python -m pytest -q                  # the suite, ~3 minutes
+```
+
+Python 3.11+ and `numpy` (used only by the Monte Carlo harness). CI lints and
+runs the suite on Python 3.11, 3.12 and 3.13. The two hands in the bold line
+above are `bj-advise T,6 T` and `bj-advise A,7 3`; `--decks`, `--h17` and
+`--no-das` change the table (`bj-advise 6,5 A --h17` is a dealer-hits-soft-17
+table); `BJ_SLOW=1 python -m pytest -q` adds the multi-million-hand
+statistical runs; `ruff check .` is what CI lints with, installing from
+`requirements.txt` and `requirements-dev.txt`.
+
+## A worked decision
+
+`python demo.py 8,8 T` — the famous split-eights hand, against a dealer ten:
+
+```
+Hand: 8 8  (16)  vs dealer T
+
+  SPLIT    EV -0.4749  <- recommended
+  HIT      EV -0.5354
+  STAND    EV -0.5369
+  DOUBLE   EV -1.0707
+
+Recommended: SPLIT  (margin +0.0605 over the next-best action)
+
+Player EV per hand at this table under exact basic strategy: -0.4044%
+```
+
+Every EV is negative — 16 versus a ten is a losing spot no matter what — and the
+solver's job is to lose the *least*. Splitting into two hands of 8 is worth
++0.0605 over just hitting, because two hands each starting on 8 face the ten
+better than one stuck on 16. Nothing told it that; it is the enumeration. And
+the bottom line is the honest one: played perfectly, every hand at this table is
+worth **−0.4044%** to the player. Perfect play makes the loss small; it does not
+make it positive.
+
 ## Why composition-dependent, and why it is not a table
 
 Most blackjack "basic strategy" is a fixed chart: 16 vs 10 → hit, always. That
@@ -137,31 +180,6 @@ independent way: it plays hands under fresh randomness and its long-run figures
 must land on the enumerated ones. `chart.py` and `cli.py` are the presentation
 layer: the chart below and the worked decision are both their output, and both
 are checked against the solver by the tests.
-
-## A worked decision
-
-`python demo.py 8,8 T` — the famous split-eights hand, against a dealer ten:
-
-```
-Hand: 8 8  (16)  vs dealer T
-
-  SPLIT    EV -0.4749  <- recommended
-  HIT      EV -0.5354
-  STAND    EV -0.5369
-  DOUBLE   EV -1.0707
-
-Recommended: SPLIT  (margin +0.0605 over the next-best action)
-
-Player EV per hand at this table under exact basic strategy: -0.4044%
-```
-
-Every EV is negative — 16 versus a ten is a losing spot no matter what — and the
-solver's job is to lose the *least*. Splitting into two hands of 8 is worth
-+0.0605 over just hitting, because two hands each starting on 8 face the ten
-better than one stuck on 16. Nothing told it that; it is the enumeration. And
-the bottom line is the honest one: played perfectly, every hand at this table is
-worth **−0.4044%** to the player. Perfect play makes the loss small; it does not
-make it positive.
 
 ## The chart the solver derives
 
@@ -288,24 +306,6 @@ call those notes "the spec". They are private and not in this repository, but
 every number they supplied is reproduced in `tests/`, so nothing here depends on
 having them; where the spec contradicted itself or the solver, the tests say
 which side the arithmetic is on rather than tuning anything to agree.
-
-## Run it
-
-```
-pip install -e .                     # installs `bj-advise`; or: pip install -r requirements.txt
-bj-advise 8,8 T                      # one decision, ranked, with EVs
-bj-advise T,6 T                      # hard 16 vs ten - the coin flip
-bj-advise A,7 3                      # soft 18 vs 3 - a real edge
-bj-advise 6,5 A --h17                # the same solver at a dealer-hits-soft-17 table
-bj-advise --table                    # the chart above, derived (about a minute)
-python demo.py 8,8 T                 # any of the above from a checkout, nothing installed
-python -m pytest -q                  # the suite, ~3 minutes
-BJ_SLOW=1 python -m pytest -q        # + the multi-million-hand statistical runs
-ruff check .                         # what CI lints with (pip install -r requirements-dev.txt)
-```
-
-Python 3.11+ and `numpy` (used only by the Monte Carlo harness). CI lints and
-runs the suite on Python 3.11, 3.12 and 3.13.
 
 ## License
 
