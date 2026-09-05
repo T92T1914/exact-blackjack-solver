@@ -1,0 +1,8 @@
+# Tools CI and contributors need that the test suite itself does not.
+# The library and tests need only requirements.txt.
+
+# Linter.  Replaces the earlier `python -m pyflakes ... || true` step, which
+# never ran because pyflakes was not installed.  ruff bundles pyflakes' checks
+# (F) with pycodestyle (E, W) in one fast binary; its rule set and line length
+# live in pyproject.toml so the command line is just `ruff check .`.
+ruff
