@@ -218,9 +218,9 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -270,12 +270,12 @@ _THREE = RANK_INDEX['3']
 _SMALL = frozenset(RANK_INDEX[r] for r in _STRATEGY_SMALL_RANKS)
 
 #: card value with every ace counted as 1; the soft +10 is applied separately
-_VALUE: Tuple[int, ...] = tuple(
+_VALUE: tuple[int, ...] = tuple(
     1 if r == 'A' else (10 if r == 'T' else int(r)) for r in RANKS
 )
 
 #: rank index -> column in the strategy charts, whose order is 2..9, T, A
-_UP_COL: Tuple[int, ...] = tuple(DEALER_UPS.index(r) for r in RANKS)
+_UP_COL: tuple[int, ...] = tuple(DEALER_UPS.index(r) for r in RANKS)
 
 # action codes inside the engine.  Small ints because they index nothing but
 # are compared millions of times.
@@ -337,7 +337,7 @@ def _shape_class(idx: Sequence[int]) -> int:
     return 2 if (_FOUR in idx or _FIVE in idx) else 1
 
 
-def _representative_hands() -> Tuple[Tuple[str, ...], ...]:
+def _representative_hands() -> tuple[tuple[str, ...], ...]:
     """Real card lists covering every reachable (total, soft, shape class).
 
     Two- and three-card combinations cover classes 0, 1 and 2: bj.strategy
@@ -362,21 +362,21 @@ def _representative_hands() -> Tuple[Tuple[str, ...], ...]:
     stopping at six cards; 3,3,3,3,3,3,3 is not reachable under basic strategy
     but ``compiled_action`` is a public function and is allowed to be asked.
     """
-    two: List[Tuple[str, ...]] = []
+    two: list[tuple[str, ...]] = []
     for i in range(10):
         for j in range(i, 10):
             two.append((RANKS[i], RANKS[j]))
     two.sort(key=lambda h: h[0] == h[1])          # pairs last
-    three: List[Tuple[str, ...]] = []
+    three: list[tuple[str, ...]] = []
     for i in range(10):
         for j in range(i, 10):
             for k in range(j, 10):
                 three.append((RANKS[i], RANKS[j], RANKS[k]))
 
     small = sorted(_SMALL)                        # rank indices, ascending
-    allsmall: List[Tuple[str, ...]] = []
+    allsmall: list[tuple[str, ...]] = []
 
-    def grow(prefix: List[int], start: int, hard: int) -> None:
+    def grow(prefix: list[int], start: int, hard: int) -> None:
         if len(prefix) >= 4:
             allsmall.append(tuple(RANKS[c] for c in prefix))
         for pos in range(start, len(small)):
@@ -495,7 +495,7 @@ class Cards:
 
     def __init__(self, rng=None, decks: int = 6, block: int = 8192):
         self._gen = np.random.default_rng(rng)
-        arr: List[int] = []
+        arr: list[int] = []
         for idx, per_deck in enumerate(CARDS_PER_DECK):
             arr.extend([idx] * (per_deck * decks))
         self._arr = arr
@@ -558,7 +558,7 @@ class RoundResult:
     doubled: bool
     split: bool
     dealer_final: int
-    player_finals: List[int]
+    player_finals: list[int]
 
 
 @dataclass
@@ -599,7 +599,7 @@ class Stats:
     dealer_bust_rate: float
     double_rate: float
     split_rate: float
-    net_distribution: Dict[float, float]
+    net_distribution: dict[float, float]
     hands_per_round: float = 1.0
     wagered_per_round: float = 1.0
     hand_win_rate: float = 0.0
@@ -733,8 +733,8 @@ def _play(cards: Cards, cfg, dec, spl, max_extra, strategy):
               False,
               [p1, p2],
               p1 in SMALL and p2 in SMALL]]
-    finals: List[int] = []
-    bets: List[float] = []
+    finals: list[int] = []
+    bets: list[float] = []
     n_extra = 0
     doubled = False
     did_split = False
@@ -908,8 +908,8 @@ def _check_rules(rules: Rules) -> None:
 
 
 def play_round(rng, rules: Rules = STANDARD, *,
-               max_extra_units: Optional[int] = None,
-               strategy: Optional[Callable[..., str]] = None,
+               max_extra_units: int | None = None,
+               strategy: Callable[..., str] | None = None,
                comp16_requires_45: bool = False) -> RoundResult:
     """Play one complete round and return what it paid.
 
@@ -974,7 +974,7 @@ class _Accum:
     dealer_bust: int = 0
     doubles: int = 0
     splits: int = 0
-    nets: Dict[float, int] = field(default_factory=dict)
+    nets: dict[float, int] = field(default_factory=dict)
 
 
 def _merge(parts: Sequence[_Accum]) -> _Accum:
@@ -1011,7 +1011,7 @@ def _stats(acc: _Accum) -> Stats:
     else:
         var = 0.0
     sd = math.sqrt(var) if var > 0.0 else 0.0
-    dist: Dict[float, float] = {}
+    dist: dict[float, float] = {}
     for k, v in acc.nets.items():
         key = round(k, 6)
         dist[key] = dist.get(key, 0.0) + v / n
@@ -1103,7 +1103,7 @@ def _run(n: int, rules: Rules, seed, max_extra_units, comp16_requires_45,
     return acc
 
 
-def _seed_sequence(seed) -> 'np.random.SeedSequence':
+def _seed_sequence(seed) -> np.random.SeedSequence:
     """A SeedSequence from whatever the caller passed, including one of these.
 
     Both places in this module that subdivide a stream go through here, and
@@ -1131,9 +1131,9 @@ def _seed_sequence(seed) -> 'np.random.SeedSequence':
 
 
 def simulate(n: int, rules: Rules = STANDARD, *, seed=0,
-             max_extra_units: Optional[int] = None,
+             max_extra_units: int | None = None,
              comp16_requires_45: bool = False,
-             strategy: Optional[Callable[..., str]] = None) -> Stats:
+             strategy: Callable[..., str] | None = None) -> Stats:
     """Play n rounds on one core and summarise them.
 
     ``seed`` is anything numpy's ``default_rng`` accepts.  The same seed always
@@ -1189,10 +1189,10 @@ def simulate_parallel(n: int, workers: int = 8, **kw) -> Stats:
 
 
 def outcome_distributions(n: int, rules: Rules = STANDARD, *, seed=0,
-                          extras: Sequence[Optional[int]] = (0, 1, 2, 3),
+                          extras: Sequence[int | None] = (0, 1, 2, 3),
                           workers: int = 1,
                           comp16_requires_45: bool = False
-                          ) -> Dict[Optional[int], Dict[float, float]]:
+                          ) -> dict[int | None, dict[float, float]]:
     """Net-return distribution per unit of BASE bet, one per extras budget.
 
     This is what the bet module needs and the reason ``max_extra_units``
@@ -1215,7 +1215,7 @@ def outcome_distributions(n: int, rules: Rules = STANDARD, *, seed=0,
     shipped when this file re-seeded instead.
     """
     children = _seed_sequence(seed).spawn(len(extras))
-    out: Dict[Optional[int], Dict[float, float]] = {}
+    out: dict[int | None, dict[float, float]] = {}
     for child, e in zip(children, extras):
         if workers > 1:
             st = simulate_parallel(n, workers, rules=rules, seed=child,
@@ -1336,7 +1336,7 @@ class Check:
 @dataclass
 class Verification:
     stats: Stats
-    checks: List[Check]
+    checks: list[Check]
     rounds_per_second: float
 
     @property
@@ -1344,12 +1344,12 @@ class Verification:
         return all(c.ok for c in self.checks)
 
     @property
-    def unexplained(self) -> List[Check]:
+    def unexplained(self) -> list[Check]:
         """Checks that miss AND have no investigated explanation on file."""
         return [c for c in self.checks if not c.ok and not c.known_gap]
 
     @property
-    def underpowered(self) -> List[Check]:
+    def underpowered(self) -> list[Check]:
         return [c for c in self.checks if not c.powered]
 
     def report(self) -> str:
@@ -1378,7 +1378,7 @@ class Verification:
         return '\n'.join(lines)
 
 
-def _checks_for(st: Stats) -> List[Check]:
+def _checks_for(st: Stats) -> list[Check]:
     #: which rates are measured per resolved HAND rather than per round
     per_hand = {'win_rate': 'hand_win_rate',
                 'loss_rate': 'hand_loss_rate',
@@ -1406,7 +1406,7 @@ def _checks_for(st: Stats) -> List[Check]:
     return out
 
 
-def verification_run(n: int = 35_000_000, *, workers: Optional[int] = None,
+def verification_run(n: int = 35_000_000, *, workers: int | None = None,
                      seed=20260902, rules: Rules = STANDARD) -> Verification:
     """Full-size run against the published numbers.  Script-callable.
 
@@ -1444,7 +1444,7 @@ def verification_run(n: int = 35_000_000, *, workers: Optional[int] = None,
                         rounds_per_second=n / dt if dt > 0 else float('inf'))
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     import argparse
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('-n', '--rounds', type=int, default=35_000_000,

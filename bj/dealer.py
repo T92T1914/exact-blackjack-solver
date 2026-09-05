@@ -70,7 +70,6 @@ APPROXIMATIONS
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Tuple
 
 from .core import (
     STANDARD,
@@ -87,7 +86,7 @@ from .core import (
 #: Index order of the returned probability vector.  'BUST' and 'BJ' are strings
 #: rather than sentinel ints so that a caller who prints OUTCOMES gets something
 #: readable, and so that no arithmetic accidentally treats them as totals.
-OUTCOMES: Tuple[object, ...] = (17, 18, 19, 20, 21, 'BUST', 'BJ')
+OUTCOMES: tuple[object, ...] = (17, 18, 19, 20, 21, 'BUST', 'BJ')
 
 #: Index constants, so downstream code never hard-codes a magic 5.
 I17, I18, I19, I20, I21, IBUST, IBJ = range(7)
@@ -98,7 +97,7 @@ _TEN = RANK_INDEX['T']
 _BUST_VECTOR = (0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
 
 
-def _stand_vector(total: int) -> Tuple[float, ...]:
+def _stand_vector(total: int) -> tuple[float, ...]:
     """Point mass on a final standing total of 17..21."""
     v = [0.0] * 6
     v[total - 17] = 1.0
@@ -116,7 +115,7 @@ def _stand_vector(total: int) -> Tuple[float, ...]:
 # the key rather than closed over so that S17 and H17 results can coexist
 # without one poisoning the other.
 @lru_cache(maxsize=None)
-def _resolve(total: int, soft: bool, shoe: Shoe, s17: bool) -> Tuple[float, ...]:
+def _resolve(total: int, soft: bool, shoe: Shoe, s17: bool) -> tuple[float, ...]:
     """Probabilities of (17, 18, 19, 20, 21, BUST) from a dealer hand in progress.
 
     Six entries, not seven: a natural is decided by the first two cards and is
@@ -168,7 +167,7 @@ def _resolve(total: int, soft: bool, shoe: Shoe, s17: bool) -> Tuple[float, ...]
 
 
 @lru_cache(maxsize=None)
-def _distribution(up: str, shoe: Shoe, s17: bool, peek_resolved: bool) -> Tuple[float, ...]:
+def _distribution(up: str, shoe: Shoe, s17: bool, peek_resolved: bool) -> tuple[float, ...]:
     """Cached core of dealer_distribution.
 
     Keyed on s17 alone rather than on the whole Rules object: s17 is the only
@@ -227,7 +226,7 @@ def _distribution(up: str, shoe: Shoe, s17: bool, peek_resolved: bool) -> Tuple[
 
 
 def dealer_distribution(up, shoe: Shoe, rules: Rules = STANDARD, *,
-                        peek_resolved: bool = True) -> Tuple[float, ...]:
+                        peek_resolved: bool = True) -> tuple[float, ...]:
     """Exact distribution of the dealer's final hand, indexed by OUTCOMES.
 
     Args:

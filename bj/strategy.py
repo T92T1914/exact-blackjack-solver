@@ -135,7 +135,6 @@ HONESTY
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
 
 from .core import (
     ACTION_NAMES,
@@ -178,13 +177,13 @@ SOURCE_FALLBACK = 'fallback'
 SOURCE_SPLIT_ACES = 'split-aces'
 
 #: dealer upcard columns, left to right as printed in the handoff
-DEALER_UPS: Tuple[str, ...] = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'A')
+DEALER_UPS: tuple[str, ...] = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'A')
 
 #: dealer bust probability by upcard, 6 decks S17 after the peek.
 #: Handoff section 4 ("Dealer bust probability by upcard"), which is the
 #: Wizard of Odds "Dealer Odds, US Rules" bust column.  Used only to explain a
 #: decision in words; no decision is derived from it.
-DEALER_BUST_PCT: Dict[str, float] = {
+DEALER_BUST_PCT: dict[str, float] = {
     '2': 35.4, '3': 37.4, '4': 39.6, '5': 41.8, '6': 42.3,
     '7': 26.2, '8': 24.4, '9': 22.9, 'T': 23.0, 'A': 16.7,
 }
@@ -227,7 +226,7 @@ def _soft18_vs_ace_stands(cards, total: int, soft: bool, up: str) -> bool:
             and all(c in _SOFT18_ACE_SMALL_RANKS for c in cards))
 
 
-def _expand(rows) -> Dict[Tuple[object, str], str]:
+def _expand(rows) -> dict[tuple[object, str], str]:
     """Turn printed table rows into a {(player_key, dealer_up): code} dict.
 
     Rows are given as (player_keys, "ten codes separated by spaces") so the
@@ -235,7 +234,7 @@ def _expand(rows) -> Dict[Tuple[object, str], str]:
     eyeballed against the markdown.  A printed row that covers several totals
     ("5 to 8", "17+") lists them all in player_keys.
     """
-    table: Dict[Tuple[object, str], str] = {}
+    table: dict[tuple[object, str], str] = {}
     for keys, cells in rows:
         codes = cells.split()
         if len(codes) != len(DEALER_UPS):
@@ -255,7 +254,7 @@ def _expand(rows) -> Dict[Tuple[object, str], str]:
 #: hard totals, keyed (int total, dealer up rank).  The printed rows "5 to 8"
 #: and "17+" are expanded to one key per total so callers never have to know
 #: which rows were collapsed on paper.
-HARD_TABLE: Dict[Tuple[object, str], str] = _expand((
+HARD_TABLE: dict[tuple[object, str], str] = _expand((
     ((5, 6, 7, 8),          'H  H  H  H  H  H  H  H  H  H'),   # printed "5 to 8"
     ((9,),                  'H  D  D  D  D  H  H  H  H  H'),
     ((10,),                 'D  D  D  D  D  D  D  D  H  H'),
@@ -270,7 +269,7 @@ HARD_TABLE: Dict[Tuple[object, str], str] = _expand((
 
 #: soft totals, keyed by the printed row label ('A,2' .. 'A,9').  A hand is
 #: looked up by its soft TOTAL, so A,2,3 vs 5 (soft 16) uses the 'A,5' row.
-SOFT_TABLE: Dict[Tuple[object, str], str] = _expand((
+SOFT_TABLE: dict[tuple[object, str], str] = _expand((
     (('A,2',), 'H   H   H   D   D   H  H  H  H  H'),
     (('A,3',), 'H   H   H   D   D   H  H  H  H  H'),
     (('A,4',), 'H   H   D   D   D   H  H  H  H  H'),
@@ -283,7 +282,7 @@ SOFT_TABLE: Dict[Tuple[object, str], str] = _expand((
 
 #: pairs (DAS allowed).  'T,T' is the row printed as "10,10"; bj.core collapses
 #: 10/J/Q/K to 'T', and the app treats any two ten-values as a splittable pair.
-PAIR_TABLE: Dict[Tuple[object, str], str] = _expand((
+PAIR_TABLE: dict[tuple[object, str], str] = _expand((
     (('A,A',), 'P   P   P   P   P   P  P  P  P  P'),
     (('T,T',), 'S   S   S   S   S   S  S  S  S  S'),
     (('9,9',), 'P   P   P   P   P   S  P  P  S  S'),
@@ -306,7 +305,7 @@ PAIR_TABLE: Dict[Tuple[object, str], str] = _expand((
 #: Applied only when rules.s17 is False.  Keys are (player_key, dealer_up) and
 #: cannot collide across tables because hard keys are ints and soft keys are
 #: strings.  See APPROXIMATIONS note 5 for why this list is short.
-H17_DIFFERENCES: Dict[Tuple[object, str], str] = {
+H17_DIFFERENCES: dict[tuple[object, str], str] = {
     (11, 'A'): CODE_DOUBLE,          # S17 hits, H17 doubles
     ('A,7', '2'): CODE_DOUBLE_STAND,  # soft 18 vs 2
     ('A,8', '6'): CODE_DOUBLE_STAND,  # soft 19 vs 6
@@ -338,14 +337,14 @@ class Advice:
     reason: str
     source: str
     raw_code: str
-    fallback_of: Optional[str] = None
+    fallback_of: str | None = None
 
     def __str__(self) -> str:  # what the phone page prints
         return f'{self.action_word} - {self.reason}'
 
 
 def resolve_code(code: str, *, can_double: bool, can_split: bool,
-                 das: bool) -> Optional[str]:
+                 das: bool) -> str | None:
     """Turn a raw table code into an action, given what this table allows.
 
     Returns None when the code is a split code that cannot be honoured (no
@@ -584,8 +583,8 @@ def _totals_advice(cards, up: str, rules: Rules, can_double: bool,
 
 
 def basic_action(player_cards, dealer_up, rules: Rules = STANDARD, *,
-                 can_double: Optional[bool] = None,
-                 can_split: Optional[bool] = None,
+                 can_double: bool | None = None,
+                 can_split: bool | None = None,
                  is_split_hand: bool = False,
                  hand_count: int = 1,
                  comp16_requires_45: bool = False) -> Advice:
@@ -697,7 +696,7 @@ def basic_action(player_cards, dealer_up, rules: Rules = STANDARD, *,
 
 # --- insurance -------------------------------------------------------------
 
-def take_insurance(rules: Rules = STANDARD, **kw) -> Tuple[bool, str]:
+def take_insurance(rules: Rules = STANDARD, **kw) -> tuple[bool, str]:
     """Always (False, reason).  Insurance is a side bet on the hole card.
 
     **kw absorbs whatever context a caller wants to pass (player_cards,

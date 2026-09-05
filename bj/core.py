@@ -9,12 +9,12 @@ so that it can be used as a memoisation key in the exact EV solver.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, Tuple
 
 # --- ranks -----------------------------------------------------------------
 
-RANKS: Tuple[str, ...] = ('A', '2', '3', '4', '5', '6', '7', '8', '9', 'T')
+RANKS: tuple[str, ...] = ('A', '2', '3', '4', '5', '6', '7', '8', '9', 'T')
 RANK_INDEX = {r: i for i, r in enumerate(RANKS)}
 RANK_VALUE = {'A': 11, '2': 2, '3': 3, '4': 4, '5': 5,
               '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10}
@@ -42,7 +42,7 @@ def normalize(rank) -> str:
     return r
 
 
-def normalize_hand(cards) -> Tuple[str, ...]:
+def normalize_hand(cards) -> tuple[str, ...]:
     """Accepts 'A,7' / 'A7' / ['A','7'] / ('a', 10) -> ('A', '7')."""
     if isinstance(cards, str):
         s = cards.replace(',', ' ').replace('-', ' ').strip()
@@ -63,7 +63,7 @@ def normalize_hand(cards) -> Tuple[str, ...]:
 
 # --- hands -----------------------------------------------------------------
 
-def hand_total(cards) -> Tuple[int, bool]:
+def hand_total(cards) -> tuple[int, bool]:
     """Return (best total <= 21 if possible, is_soft).
 
     is_soft is True when an ace is still being counted as 11.
@@ -140,7 +140,7 @@ STANDARD = Rules()
 
 # --- shoe ------------------------------------------------------------------
 
-Shoe = Tuple[int, ...]
+Shoe = tuple[int, ...]
 
 
 def fresh_shoe(decks: int = 6) -> Shoe:

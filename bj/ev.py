@@ -178,9 +178,9 @@ APPROXIMATIONS
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace as _dc_replace
 from functools import lru_cache
-from typing import Callable, Dict, Optional, Tuple
 
 from .core import (
     STANDARD,
@@ -217,12 +217,12 @@ __all__ = [
 _ACE = RANK_INDEX['A']
 _TEN = RANK_INDEX['T']
 #: rank values by shoe index, so the hot loop never touches a dict
-_VALUES: Tuple[int, ...] = tuple(RANK_VALUE[r] for r in RANKS)
+_VALUES: tuple[int, ...] = tuple(RANK_VALUE[r] for r in RANKS)
 
 
 # --- hand arithmetic -------------------------------------------------------
 
-def _draw(total: int, soft: bool, i: int) -> Tuple[int, bool]:
+def _draw(total: int, soft: bool, i: int) -> tuple[int, bool]:
     """Add the card at shoe index `i` to a (total, soft) hand state.
 
     (total, soft) is a complete description of a blackjack hand for every
@@ -253,7 +253,7 @@ def _draw(total: int, soft: bool, i: int) -> Tuple[int, bool]:
     return t, soft
 
 
-def _two_card_state(i: int, j: int) -> Tuple[int, bool]:
+def _two_card_state(i: int, j: int) -> tuple[int, bool]:
     """(total, soft) for a two-card hand of shoe indices i and j."""
     t, s = _draw(0, False, i)
     return _draw(t, s, j)
@@ -275,7 +275,7 @@ def _peek_out(up: str) -> int:
 
 
 @lru_cache(maxsize=None)
-def _draw_probs(shoe: Shoe, up: str) -> Tuple[float, ...]:
+def _draw_probs(shoe: Shoe, up: str) -> tuple[float, ...]:
     """Probability of each rank being the player's NEXT card, post-peek.
 
     `shoe` is everything the player cannot see, WHICH INCLUDES THE DEALER'S HOLE
@@ -430,15 +430,15 @@ def _double_ev(total: int, soft: bool, up: str, shoe: Shoe, s17: bool) -> float:
 
 #: One row of a split-hand outcome distribution: (extra hands this subtree
 #: consumed, probability of that, mean subtree EV given it).
-Outcomes = Tuple[Tuple[int, float, float], ...]
+Outcomes = tuple[tuple[int, float, float], ...]
 
 
-def _as_outcomes(acc: Dict[int, list]) -> Outcomes:
+def _as_outcomes(acc: dict[int, list]) -> Outcomes:
     """Turn a {slots_used: [probability, probability*ev]} accumulator into rows."""
     return tuple((used, p, w / p) for used, (p, w) in sorted(acc.items()))
 
 
-def _add_outcome(acc: Dict[int, list], used: int, p: float, value: float) -> None:
+def _add_outcome(acc: dict[int, list], used: int, p: float, value: float) -> None:
     row = acc.get(used)
     if row is None:
         acc[used] = [p, p * value]
@@ -474,7 +474,7 @@ def _split_hand_outcomes(rank_i: int, up: str, shoe: Shoe, slots: int,
         raise ValueError('cannot deal to a split hand: the shoe is empty')
 
     is_ace = (rank_i == _ACE)
-    acc: Dict[int, list] = {}
+    acc: dict[int, list] = {}
     for i, p in enumerate(_draw_probs(shoe, up)):
         if p <= 0.0:
             continue
@@ -505,7 +505,7 @@ def _split_hand_outcomes(rank_i: int, up: str, shoe: Shoe, slots: int,
         # slot immediately; the two children then share what is left, the first
         # one playing out completely before the second is dealt to, which is the
         # order a real table deals them in.
-        branch: Dict[int, list] = {}
+        branch: dict[int, list] = {}
         resplit_value = 0.0
         first = _split_hand_outcomes(rank_i, up, sub, slots - 1, s17, das,
                                      hit_split_aces, resplit_aces)
@@ -560,7 +560,7 @@ def _split_total_ev(rank_i: int, up: str, shoe: Shoe, rules: Rules,
 
 # --- public per-hand EV ----------------------------------------------------
 
-def ev_stand(player_cards, dealer_up, shoe: Optional[Shoe] = None,
+def ev_stand(player_cards, dealer_up, shoe: Shoe | None = None,
              rules: Rules = STANDARD, *, is_split_hand: bool = False) -> float:
     """EV of standing, in units of the original bet.
 
@@ -581,7 +581,7 @@ def ev_stand(player_cards, dealer_up, shoe: Optional[Shoe] = None,
     return _stand_ev(total, up, tuple(shoe), rules.s17)
 
 
-def ev_hit(player_cards, dealer_up, shoe: Optional[Shoe] = None,
+def ev_hit(player_cards, dealer_up, shoe: Shoe | None = None,
            rules: Rules = STANDARD) -> float:
     """EV of hitting once and then playing the rest of the hand optimally."""
     cards = normalize_hand(player_cards)
@@ -594,7 +594,7 @@ def ev_hit(player_cards, dealer_up, shoe: Optional[Shoe] = None,
     return _hit_ev(total, soft, up, tuple(shoe), rules.s17)
 
 
-def ev_double(player_cards, dealer_up, shoe: Optional[Shoe] = None,
+def ev_double(player_cards, dealer_up, shoe: Shoe | None = None,
               rules: Rules = STANDARD) -> float:
     """EV of doubling: one card, then stand, two units at risk.
 
@@ -613,7 +613,7 @@ def ev_double(player_cards, dealer_up, shoe: Optional[Shoe] = None,
     return _double_ev(total, soft, up, tuple(shoe), rules.s17)
 
 
-def ev_split(pair_rank, dealer_up, shoe: Optional[Shoe] = None,
+def ev_split(pair_rank, dealer_up, shoe: Shoe | None = None,
              rules: Rules = STANDARD, *, hand_count: int = 1) -> float:
     """EV of splitting a pair, summed over every resulting hand.
 
@@ -645,10 +645,10 @@ def ev_split(pair_rank, dealer_up, shoe: Optional[Shoe] = None,
 
 # --- the recommendation ----------------------------------------------------
 
-def best_action(player_cards, dealer_up, shoe: Optional[Shoe] = None,
+def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
                 rules: Rules = STANDARD, *, can_double: bool = True,
                 can_split: bool = True, is_split_hand: bool = False,
-                hand_count: int = 1) -> Tuple[str, Dict[str, float], float]:
+                hand_count: int = 1) -> tuple[str, dict[str, float], float]:
     """The exact optimum for one hand, with the EV of every legal alternative.
 
     Returns (action, evs, margin):
@@ -708,7 +708,7 @@ def best_action(player_cards, dealer_up, shoe: Optional[Shoe] = None,
     frozen_split_ace = (is_split_hand and two_cards and cards[0] == 'A'
                         and not rules.hit_split_aces)
 
-    evs: Dict[str, float] = {STAND: _stand_ev(total, up, shoe, rules.s17)}
+    evs: dict[str, float] = {STAND: _stand_ev(total, up, shoe, rules.s17)}
     if not frozen_split_ace:
         evs[HIT] = _hit_ev(total, soft, up, shoe, rules.s17)
         if can_double:
@@ -749,7 +749,7 @@ def _strategy_action(strategy, cards, up, rules, can_double, can_split,
 
 
 @lru_cache(maxsize=None)
-def _strategy_play_ev(cards: Tuple[str, ...], up: str, shoe: Shoe,
+def _strategy_play_ev(cards: tuple[str, ...], up: str, shoe: Shoe,
                       rules: Rules, strategy: Callable, is_split_hand: bool,
                       can_double: bool) -> float:
     """EV of a hand played to the end by `strategy`.  No split decisions here.
@@ -802,7 +802,7 @@ def _strategy_split_hand_outcomes(rank_i: int, up: str, shoe: Shoe, slots: int,
         raise ValueError('cannot deal to a split hand: the shoe is empty')
     is_ace = (rank_i == _ACE)
     rank = RANKS[rank_i]
-    acc: Dict[int, list] = {}
+    acc: dict[int, list] = {}
     for i, p in enumerate(_draw_probs(shoe, up)):
         if p <= 0.0:
             continue
@@ -852,7 +852,7 @@ def _strategy_split_total_ev(rank_i: int, up: str, shoe: Shoe, rules: Rules,
 
 @lru_cache(maxsize=None)
 def _cell_ev(i: int, j: int, k: int, shoe: Shoe, rules: Rules,
-             strategy: Optional[Callable]) -> float:
+             strategy: Callable | None) -> float:
     """EV of one initial deal: player holds RANKS[i], RANKS[j] vs upcard RANKS[k].
 
     `shoe` already has all three cards removed.  The dealer-natural branch is
@@ -895,7 +895,7 @@ def _cell_ev(i: int, j: int, k: int, shoe: Shoe, rules: Rules,
     return p_natural * (-1.0) + (1.0 - p_natural) * played
 
 
-def house_edge(rules: Rules = STANDARD, strategy: Optional[Callable] = None) -> float:
+def house_edge(rules: Rules = STANDARD, strategy: Callable | None = None) -> float:
     """Expected result per unit wagered, averaged over every possible deal.
 
     Returns a NEGATIVE number.  It is the player's expectation, not the
@@ -958,7 +958,7 @@ def house_edge(rules: Rules = STANDARD, strategy: Optional[Callable] = None) -> 
 _SOFT_KEYS = tuple(f'A,{d}' for d in range(2, 10))
 
 
-def _code_for(evs: Dict[str, float], das_evs: Optional[Dict[str, float]] = None) -> str:
+def _code_for(evs: dict[str, float], das_evs: dict[str, float] | None = None) -> str:
     """Turn a set of action EVs into one of the chart's printed codes.
 
     The vocabulary has to match bj.strategy exactly or the diff is useless:
@@ -986,7 +986,7 @@ def _code_for(evs: Dict[str, float], das_evs: Optional[Dict[str, float]] = None)
     raise ValueError(f'cannot name an action for {evs!r}')
 
 
-def derive_table(rules: Rules = STANDARD) -> Dict[str, Dict[Tuple[object, str], str]]:
+def derive_table(rules: Rules = STANDARD) -> dict[str, dict[tuple[object, str], str]]:
     """Recompute the whole basic-strategy chart from the solver.
 
     Returns {'hard': ..., 'soft': ..., 'pairs': ...}, each keyed exactly like
@@ -1003,9 +1003,9 @@ def derive_table(rules: Rules = STANDARD) -> Dict[str, Dict[Tuple[object, str], 
     excluded from hard rows: they are soft, and have their own chart.
     """
     ups = tuple(RANKS[i] for i in range(1, 10)) + ('A',)  # 2..9, T, A
-    hard: Dict[Tuple[object, str], str] = {}
-    soft: Dict[Tuple[object, str], str] = {}
-    pairs: Dict[Tuple[object, str], str] = {}
+    hard: dict[tuple[object, str], str] = {}
+    soft: dict[tuple[object, str], str] = {}
+    pairs: dict[tuple[object, str], str] = {}
 
     base = fresh_shoe(rules.decks)
 
@@ -1013,7 +1013,7 @@ def derive_table(rules: Rules = STANDARD) -> Dict[str, Dict[Tuple[object, str], 
         u = RANK_INDEX[up]
 
         # --- hard totals: bucket the two-card non-ace compositions by total
-        buckets: Dict[int, list] = {}
+        buckets: dict[int, list] = {}
         for a in range(1, 10):          # skip the ace: those hands are soft
             for b in range(a, 10):
                 shoe = remove_cards(base, (RANKS[a], RANKS[b], up))
