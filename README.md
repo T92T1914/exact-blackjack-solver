@@ -1,7 +1,7 @@
 # exact-blackjack-solver
 
 [![CI](https://github.com/T92T1914/exact-blackjack-solver/actions/workflows/ci.yml/badge.svg)](https://github.com/T92T1914/exact-blackjack-solver/actions/workflows/ci.yml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+[![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](.github/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 An exact, composition-dependent blackjack solver: for any hand against any
@@ -9,6 +9,13 @@ dealer upcard, it computes the true expected value of hit, stand, double, and
 split by enumerating every reachable continuation, weighted by the exact
 composition of the remaining shoe. No lookup tables, no simulation, no
 training — re-running gives bit-identical results.
+
+**Hard 16 vs 10: hit, by a margin of +0.0063 — a coin flip the solver refuses
+to dress up as a rule. Soft 18 vs 3: double, at an EV of +0.1793. The exact
+enumeration is cross-checked by an independent Monte Carlo harness, inside a
+suite of 866 tests.**
+
+[Run it](#run-it) | [A worked decision](#a-worked-decision) | [How it works](#how-it-works) | [The derived chart](#the-chart-the-solver-derives) | [What this does not prove](#what-this-does-not-prove)
 
 Extracted and generalized from a larger private project: a read-only advisory
 overlay I built for a friends' fake-currency blackjack game, which advised one
