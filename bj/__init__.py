@@ -20,6 +20,13 @@ gives bit-identical numbers.
 
 Every entry point starts from a fresh shoe minus the visible cards, or from a
 shoe the caller supplies.  Nothing carries state between hands.
+
+Vocabulary.  Comments and tests refer to "the spec": the design notes of the
+private project this was extracted from, which transcribed the Wizard of Odds
+figures for the original table's ruleset (6 decks, S17, DAS, peek) and logged
+a 37-hand session of real play.  The notes are not in this repository; every
+number they supplied is reproduced in tests/, so nothing here depends on
+having them.  "The original table" and "the original game" are that table.
 """
 
 __version__ = '0.1.0'

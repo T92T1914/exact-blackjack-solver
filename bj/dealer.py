@@ -5,8 +5,8 @@ tool ever makes) rests on this module, so it is exact combinatorics rather than
 simulation.  A Monte Carlo dealer would have been ~20 lines shorter and would
 have introduced a sampling error of order 1/sqrt(N) into every EV comparison we
 make.  Several of the decisions this tool has to get right are separated by less
-than 0.001 units (the handoff's appendix section 4 lists 12 vs 4 at a margin of
-0.00075).  You cannot resolve a 0.00075 margin with a simulated dealer without
+than 0.001 units (12 vs 4 is decided by a margin of 0.00075, pinned in
+tests/test_ev.py).  You cannot resolve a 0.00075 margin with a simulated dealer without
 burning millions of trials per query, and the recursion below answers in
 microseconds once warm.  So: enumeration, not sampling.
 
@@ -24,15 +24,15 @@ WHAT THIS MODULE DELIBERATELY DOES NOT MODEL
 --------------------------------------------
 The dealer never makes a decision.  There is no strategy here, only the fixed
 house drawing rule: hit below 17, stand at hard 17 and above, and hit or stand
-soft 17 according to rules.s17.  the example table is S17 (rules panel, confirmed in
-play), but H17 is implemented because the handoff asks for the rule flags to be
-live in case the app changes.
+soft 17 according to rules.s17.  The original table is S17 (its rules panel,
+confirmed in play), but H17 is implemented because the rule flags are meant to
+be live, not decorative: a different table is a config change here.
 
 PEEK CONDITIONING
 -----------------
-the example table peeks: a dealer natural resolves the hand before the player acts
-(observed directly, handoff hand 1, where a Jack up produced an instant loss
-with no insurance prompt).  That means that by the time the player is choosing
+The original table peeks: a dealer natural resolves the hand before the player
+acts (observed directly - a Jack up produced an instant loss with no insurance
+prompt).  That means that by the time the player is choosing
 an action, the hole card is *known not to* complete a natural.  With
 peek_resolved=True we drop that one hole-card rank from the enumeration and
 renormalise over the rest, which is Bayes' rule for conditioning on
@@ -53,11 +53,10 @@ APPROXIMATIONS
 2.  Suits are not modelled and ten-value ranks are collapsed to 'T' (see
     core.py).  This is not an approximation for probability purposes - the four
     ten-value ranks are mathematically interchangeable - but it does mean this
-    module cannot support the "seventh copy of one specific card" shoe-
-    persistence test described in the handoff.  That test needs its own
-    suit-aware tracker.
+    module cannot support a "seventh copy of one specific card" shoe-
+    persistence check, which would need its own suit-aware tracker.
 3.  The published Wizard of Odds table this module is checked against
-    (handoff appendix section 5) is itself computed under conventions we cannot
+    (transcribed in tests/test_dealer.py) is itself computed under conventions we cannot
     inspect - most such tables burn only the upcard, as our test does, but some
     average over player compositions.  Agreement is therefore expected to a few
     ten-thousandths, not to machine precision.  Where the computed number and
@@ -174,6 +173,10 @@ def _distribution(up: str, shoe: Shoe, s17: bool, peek_resolved: bool) -> tuple[
     field that touches the dealer's drawing rule, and keying on the dataclass
     would split the cache every time an unrelated flag (das, max_hands, payout)
     differed, for identical arithmetic.
+
+    bj.ev imports this directly, bypassing the public wrapper's per-call
+    normalisation inside a loop that runs tens of millions of times.  Treat the
+    signature as stable for that reason.
     """
     n = shoe_size(shoe)
     if n == 0:
@@ -234,7 +237,7 @@ def dealer_distribution(up, shoe: Shoe, rules: Rules = STANDARD, *,
         shoe: immutable Shoe tuple with the player's cards AND the dealer upcard
             already removed.  This module trusts the caller on that.
         rules: only rules.s17 is consulted; the dealer has no other choices.
-        peek_resolved: True models the example table as played - the dealer has already
+        peek_resolved: True models the original table as played - the dealer has already
             peeked and does not have a natural, so the distribution is
             conditioned on that and index 6 (BJ) is exactly 0.0.  False returns
             the unconditional distribution with the natural at index 6, which is
@@ -251,8 +254,8 @@ def dealer_bust_prob(up, shoe: Shoe, rules: Rules = STANDARD) -> float:
 
     Post-peek is the right default because it is the number that matters at the
     moment the player is deciding: the natural, if there was one, already ended
-    the hand.  It is also the convention of the published bust row in the
-    handoff (section 4).
+    the hand.  It is also the convention of the published per-upcard bust row
+    (PUBLISHED_BUST in tests/test_dealer.py).
     """
     return dealer_distribution(up, shoe, rules, peek_resolved=True)[IBUST]
 

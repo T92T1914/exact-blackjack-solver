@@ -6,6 +6,20 @@ bj.strategy instead of trusting it.  bj.strategy is a transcription of a
 published table; this file is an independent derivation.  If they disagree,
 the disagreement is a finding, not a bug to be papered over.
 
+WHAT KIND OF PROBLEM THIS IS
+----------------------------
+A finite-horizon Markov decision process with a single agent.  The state is
+the player's (total, soft), the dealer's upcard and the shoe composition; the
+actions are stand, hit, double and split; a transition is one card drawn
+without replacement from that composition; the reward is the settlement.
+The dealer is part of the environment, not a second player: it follows a
+fixed drawing rule and responds to nothing, so there is no opponent model and
+no equilibrium to find.  What is left is dynamic programming.  Each _*_ev
+function below is one Bellman backup - the value of a state is the best
+available action's expectation over the next card - and memoising the backups
+on the immutable shoe tuple is what makes the whole thing tractable: 8,5,3 and
+3,8,5 and 5,3,8 are one state, not three.
+
 WHY EXACT ENUMERATION AND NOT SIMULATION
 ----------------------------------------
 The alternative was a Monte Carlo player to sit alongside a Monte Carlo
@@ -31,8 +45,8 @@ WHAT "OPTIMAL" MEANS IN THIS FILE
 ----------------------------------
 ev_hit plays the rest of the hand optimally: after each draw the player again
 takes the better of stand and hit.  Double is deliberately NOT offered after a
-hit, because no blackjack table anywhere allows it and the example table is no
-exception (handoff, "Notes for the coder": Double only on exactly two cards).
+hit, because no blackjack table anywhere allows it and the original table is no
+exception (its rules: double only on exactly two cards).
 That restriction makes the recursion cheaper AND correct; allowing it would
 inflate every hit EV and quietly break the comparison against the published
 numbers.
@@ -40,7 +54,7 @@ numbers.
 PEEK
 ----
 Every number in this module is a *post-peek* number, and the peek is applied
-in the order the table applies it.  the example table deals the hole card and peeks
+in the order the table applies it.  The original table deals the hole card and peeks
 under a ten or an ace BEFORE the player is allowed to touch a button, so "the
 dealer has no natural" is information the player already holds while the draw
 pile is still full.  That has two consequences, and this module implements
@@ -76,11 +90,12 @@ see - the hole card is one of them - and `out` the ruled-out rank,
         w_r = shoe[r] / (n - shoe[out])   for r != out,   w_out = 0.
 
 That is _draw_probs in one line, and it agrees to 2e-16 with an explicit
-belief-propagating solver written independently (out/scratch/v_beliefhit.py) on
-every published marginal hand.
+belief-propagating solver written independently (a scratch script in the
+original project, not included here) on every published marginal hand.
 
 What the claim at the top of this section is worth, measured: all 45 stand,
-hit and double cells of handoff appendix section 4 now land within 0.00005 of
+hit and double cells of the published marginal-hand table (PUBLISHED in
+tests/test_ev.py) now land within 0.00005 of
 the published table, which is that table's own display precision, against a
 target of 0.002.  No cell is exempt and no residual is being carried.  The two
 split cells that still miss are not peek residuals; they are APPROXIMATIONS 1
@@ -93,7 +108,7 @@ is no support for a European no-hole-card game here.  rules.peek is not
 consulted by the per-hand functions at all - they always answer the peek game,
 which is the only game this module models - and house_edge refuses a no-peek
 ruleset rather than silently returning a number that is wrong by the ~0.11%
-the handoff quotes for that rule.
+the published rule tables quote for no-peek.
 
 APPROXIMATIONS
 --------------
@@ -167,10 +182,11 @@ APPROXIMATIONS
     a rigged deal or support the seventh-copy shoe-persistence test.
 
 5.  initial_shoe_for() assumes a FULL fresh shoe minus the visible cards.  The
-    handoff concludes the example table reshuffles every hand (~85% confidence,
-    "Observed vs inferred"), so that is the right default, but it is an
-    assumption inherited from that section rather than anything this module
-    proves.  Pass your own depleted shoe if you ever prove otherwise.
+    original game reshuffles every hand (inferred at ~85% confidence when this
+    was written, later verified from its provably-fair nonce; see bj.simulate),
+    so that is the right default, but it is an assumption inherited from that
+    evidence rather than anything this module proves.  Pass your own depleted
+    shoe if you ever have one.
 
 6.  Floating point.  Everything is float64.  The deepest recursion accumulates
     on the order of 1e-15 of rounding, which is six orders of magnitude below
@@ -205,8 +221,8 @@ from .core import (
 # _distribution is bj.dealer's private cached core.  The public wrapper
 # re-normalises the upcard and re-tuples the shoe on every call, which is
 # free at the UI but not inside a loop that runs tens of millions of times.
-# The handoff for that module explicitly marks _distribution as stable for a
-# sibling to lean on, so this is a sanctioned shortcut, not a raid.
+# bj.dealer documents _distribution as stable for exactly this use, so this
+# is a sanctioned shortcut, not a raid.
 from .dealer import IBUST, _distribution
 
 __all__ = [
@@ -923,8 +939,8 @@ def house_edge(rules: Rules = STANDARD, strategy: Callable | None = None) -> flo
     if not rules.peek:
         # A no-hole-card game is a materially different game: doubles and
         # splits made against a ten or an ace can be lost to a natural that
-        # was never peeked for, worth about -0.11% per the handoff's rule
-        # table.  None of that is modelled here.  Returning the peek number
+        # was never peeked for, worth about -0.11% per the published rule
+        # tables.  None of that is modelled here.  Returning the peek number
         # under a no-peek ruleset would be a quiet lie.
         raise NotImplementedError(
             'house_edge models the dealer-peek game only; rules.peek is False'

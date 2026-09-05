@@ -5,17 +5,16 @@ rounds - deal, peek, split, double, dealer draw, settle - and reports the
 distribution of what comes back.
 
 WHY A FRESH SHOE EVERY ROUND
-    Settled, not inferred.  The site's own state endpoint exposes a
-    provably-fair triple - server seed hash, client seed, and a nonce that
-    increments once per bet - and every row of the transaction log carries its
-    own fair_nonce, so each round is dealt from a shoe shuffled for that round.
-    The client script says the same thing in a comment in its blackjack start
-    routine.  Both are recorded in docs/verified-live-2026-09-02.md, which
-    moved this from the handoff's original 85 percent inference to about 99
-    percent verified and deleted counting from the project's scope entirely.
-    Nothing here carries state between rounds, which is the model, made
-    visible.  The residual doubt is only that every piece of that evidence is
-    client-side: it is the server's own account of what the server does.
+    Settled, not inferred.  The original game publishes a provably-fair
+    commitment - a server seed hash, a client seed, and a nonce that
+    increments once per bet - and its own client code shuffles a new shoe at
+    the start of every blackjack round.  That evidence, recorded in the
+    original project's notes, moved this from the spec's initial 85 percent
+    inference to about 99 percent verified and deleted card counting from the
+    project's scope entirely.  Nothing here carries state between rounds,
+    which is the model, made visible.  The residual doubt is only that every
+    piece of that evidence is client-side: it is the server's own account of
+    what the server does.
 
 WHY THE STRATEGY IS COMPILED RATHER THAN RE-IMPLEMENTED
     Calling ``bj.strategy.basic_action`` inside the round loop costs roughly
@@ -24,8 +23,8 @@ WHY THE STRATEGY IS COMPILED RATHER THAN RE-IMPLEMENTED
     everyone reaches for - re-typing the charts as ``if`` statements inside the
     simulator - creates a second copy of the strategy that can silently drift
     from the first, which is the single most expensive bug this project could
-    have: the simulator would then be verifying a strategy the phone tool does
-    not play.
+    have: the simulator would then be verifying a strategy the advisory tool
+    does not play.
 
     So the tables here are GENERATED.  At first use, every reachable hand state
     is handed to ``basic_action`` as a real list of cards and the answer is
@@ -45,7 +44,7 @@ WHY THE STRATEGY IS COMPILED RATHER THAN RE-IMPLEMENTED
     prevent.
 
 APPROXIMATIONS
-    1.  Fresh shoe per round, as above.  Verified from the site's own
+    1.  Fresh shoe per round, as above.  Verified from the game's own
         provably-fair nonce rather than assumed; it is listed here only
         because the evidence for it is the server's word.
     2.  The dealer's hand is ALWAYS played to completion, including when every
@@ -54,7 +53,7 @@ APPROXIMATIONS
         are drawn after every player decision has been made and cannot change
         one, and it buys a ``dealer_bust_rate`` that is an UNCONDITIONAL
         figure, the same quantity as the 0.28192 that this project's own exact
-        dealer solver computes (out/dealer_check.json).  Measuring bust only on
+        dealer solver computes (tests/test_simulate.py recomputes it).  Measuring bust only on
         rounds where the dealer actually had to draw would condition on the
         player having stood, which is correlated with a weak upcard, and would
         print a number that looks like the published one but is not the same
@@ -68,8 +67,8 @@ APPROXIMATIONS
         the approximation is under 0.0002, and it is reported rather than
         tuned away.
 
-        It is NOT the reason this engine disagrees with the handoff's 28.3
-        percent headline.  That headline contradicts the handoff's own
+        It is NOT the reason this engine disagrees with the spec's 28.3
+        percent headline.  That headline contradicts the spec's own
         per-upcard dealer bust table printed a few lines above it: weight those
         ten rows by upcard frequency and apply the peek and they come to
         0.281899, not 0.283.  The exact solver puts the same quantity at
@@ -107,7 +106,7 @@ KNOWN DISAGREEMENT WITH THE PUBLISHED REFERENCE
     Measured over 35,000,000 rounds, seed 20260902, 16 workers - the worker
     count is part of the seed here, because a parallel run subdivides the
     stream and is reproducible against itself rather than against a serial run.
-    Six of the eight sanity numbers in the handoff's "Simulator sanity checks"
+    Six of the eight sanity numbers in the spec's "Simulator sanity checks"
     land inside their stated tolerance:
 
         EV per hand      -0.00389 +/- 0.00020   published -0.0041   (+1.1 sd)
@@ -137,7 +136,7 @@ KNOWN DISAGREEMENT WITH THE PUBLISHED REFERENCE
     strategy reproduces ``bj.strategy.basic_action`` card for card over 60,000
     replayed rounds across six rule sets and four budget caps.  (3) The
     dealer's own final-total distribution matches the exactly-computed one to
-    5e-5 in every one of the sixty cells (out/dealer_check.json).  (4) Best of
+    5e-5 in every one of the sixty cells (measured in the original project).  (4) Best of
     all, the EV agrees with bj.ev, which enumerates all 1,000 ordered opening
     deals and recurses through every draw exactly: that solver puts the printed
     chart at -0.004044 with no sampling error at all, and this engine's
@@ -444,8 +443,8 @@ def compiled_action(cards, dealer_up, rules: Rules = STANDARD, *,
                     comp16_requires_45: bool = False) -> str:
     """The compiled table's answer, in the same vocabulary as basic_action.
 
-    Readable equivalent of what the round loop does inline.  Exposed so the
-    integrator (and the tests) can compare the compiled strategy against
+    Readable equivalent of what the round loop does inline.  Exposed so a
+    caller (and the tests) can compare the compiled strategy against
     ``bj.strategy.basic_action`` directly instead of inferring it from
     simulated results.  This is the slow, obvious version; the round loop
     inlines it for speed and the test suite proves the two agree by replaying
@@ -584,7 +583,8 @@ class Stats:
     double_rate/split_rate
                           rounds in which the player doubled / split at least
                           once.
-    net_distribution      net -> probability.  Feeds the bet module's DP.
+    net_distribution      net -> probability.  Fed the original project's
+                          bet-sizing DP, which is not part of this repository.
     """
     n: int
     ev_per_hand: float
@@ -609,7 +609,7 @@ class Stats:
     def report(self) -> str:
         """Plain-text block, computed numbers beside the published reference.
 
-        The reference column is what the handoff appendix quotes.  Any line
+        The reference column is what the spec's appendix quotes.  Any line
         that disagrees is meant to stay disagreeing until someone works out
         why, not until someone edits the code.
         """
@@ -1117,9 +1117,9 @@ def _seed_sequence(seed) -> np.random.SeedSequence:
                    not SeedSequence(...)
 
     Nothing caught it because no test in the suite passed ``workers`` to
-    ``outcome_distributions`` at all.  Two shipped callers did:
-    scripts/run_simulation.py and bj.advisor both default it to the core count,
-    so this was the ordinary path, not a corner.
+    ``outcome_distributions`` at all.  Two callers in the original project
+    did, both defaulting it to the core count, so this was the ordinary path,
+    not a corner.
 
     Spawning from an existing sequence is the documented way to subdivide a
     stream, so the answer is to spawn from whatever we were given rather than
@@ -1195,8 +1195,9 @@ def outcome_distributions(n: int, rules: Rules = STANDARD, *, seed=0,
                           ) -> dict[int | None, dict[float, float]]:
     """Net-return distribution per unit of BASE bet, one per extras budget.
 
-    This is what the bet module needs and the reason ``max_extra_units``
-    exists.  A player betting his whole balance cannot double or split, so his
+    This is what the original project's bet-sizing module needed and the
+    reason ``max_extra_units`` exists.  A player betting his whole balance
+    cannot double or split, so his
     round is not the 0.41 percent game; enumerating the distribution for each
     budget is the only way the reach-a-target maths can be honest about that.
 
@@ -1230,8 +1231,8 @@ def outcome_distributions(n: int, rules: Rules = STANDARD, *, seed=0,
 
 # --- verification ----------------------------------------------------------
 # The published numbers this engine is checked against, with the tolerance the
-# handoff's "Notes for the coder" section allows.  They live in one dict so a
-# reader can see every claim the code is making about itself in one place.
+# spec allows.  They live in one dict so a reader can see every claim the code
+# is making about itself in one place.
 
 #: name -> (reference, low, high, source, known_gap_note).  A non-empty note
 #: means this module has already investigated the gap and believes the
@@ -1240,29 +1241,29 @@ def outcome_distributions(n: int, rules: Rules = STANDARD, *, seed=0,
 #: check still prints MISS.
 REFERENCE = {
     'ev_per_hand': (-0.0041, -0.0048, -0.0035,
-                    'handoff appendix s3/s5: WoO 6ds17r4, house edge ~0.41%', ''),
+                    'spec appendix: WoO 6ds17r4, house edge ~0.41%', ''),
     'win_rate': (0.422, 0.418, 0.426,
-                 'handoff appendix s5: player win ~42.2%',
+                 'spec appendix: player win ~42.2%',
                  'known disagreement, and it is the reference that is wrong: '
                  'the published win/loss pair implies a ~3% house edge, not '
                  'the 0.41% printed beside it, and a second from-scratch '
                  'engine lands within 2 standard errors of this one. See the '
                  'module docstring.'),
     'loss_rate': (0.491, 0.487, 0.495,
-                  'handoff appendix s5: player loss ~49.1%',
+                  'spec appendix: player loss ~49.1%',
                   'known disagreement: see win_rate.'),
     'push_rate': (0.085, 0.081, 0.089,
-                  'handoff appendix s5: push ~8.5%', ''),
+                  'spec appendix: push ~8.5%', ''),
     'player_bj_rate': (0.0475, 0.0455, 0.0495,
-                       'handoff appendix s5: a natural occurs ~4.7% of hands', ''),
-    # The 28.3% is the handoff's headline. Its own per-upcard bust table,
+                       'spec appendix: a natural occurs ~4.7% of hands', ''),
+    # The 28.3% is the spec's headline. Its own per-upcard bust table,
     # weighted by upcard and peeked, comes to 0.281899, and this project's
     # exact dealer solver to 0.28192. The band is wide enough that the check
     # passes against either; APPROXIMATIONS note 3 says which one to believe.
     'dealer_bust_rate': (0.283, 0.273, 0.293,
-                         'handoff appendix s5: overall dealer bust ~28.3%', ''),
+                         'spec appendix: overall dealer bust ~28.3%', ''),
     'sd_per_hand': (1.15, 1.12, 1.18,
-                    'handoff appendix s5/s7: SD ~1.15 units per hand', ''),
+                    'spec appendix: SD ~1.15 units per hand', ''),
 }
 
 
@@ -1277,7 +1278,7 @@ class Check:
     ``powered`` says whether the band is worth at least three standard errors
     at this sample size.
 
-    The handoff's band on EV per hand is [-0.0048, -0.0035] around -0.0041, so
+    The spec's band on EV per hand is [-0.0048, -0.0035] around -0.0041, so
     it is not symmetric and ``band_sigma`` takes the TIGHTER half, 0.0006.  At
     the 2,000,000 rounds the same sentence asks for, the standard error of the
     mean is 1.1547/sqrt(2e6) = 0.000817, which makes that band +/-0.73 sigma:
@@ -1410,7 +1411,7 @@ def verification_run(n: int = 35_000_000, *, workers: int | None = None,
                      seed=20260902, rules: Rules = STANDARD) -> Verification:
     """Full-size run against the published numbers.  Script-callable.
 
-    The default is 35 million rounds and not the 2 million the handoff's
+    The default is 35 million rounds and not the 2 million the spec's
     "Simulator sanity checks" asks for, because 2 million cannot decide the
     question that section poses.  Its acceptance band on EV per hand is
     -0.0035 to -0.0048 around a reference of -0.0041, so the tighter half is
@@ -1449,7 +1450,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('-n', '--rounds', type=int, default=35_000_000,
                     help='default 35,000,000: the point at which the '
-                         "handoff's own EV tolerance becomes a three-sigma "
+                         "spec's own EV tolerance becomes a three-sigma "
                          'test. See verification_run.')
     ap.add_argument('-w', '--workers', type=int, default=None)
     ap.add_argument('-s', '--seed', type=int, default=20260902)

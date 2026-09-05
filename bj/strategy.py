@@ -1,36 +1,36 @@
-"""Total-dependent basic strategy for the the example table blackjack table.
+"""Total-dependent basic strategy: the printed chart, transcribed, and its fallbacks.
 
-This is the module the owner actually reads on his phone: one word first
-(HIT / STAND / DOUBLE / SPLIT), one line of reason second.
+This is the module the original advisory tool put in front of the player: one
+word first (HIT / STAND / DOUBLE / SPLIT), one line of reason second.  bj.ev
+exists to grade it; this module never consults the solver.
 
-DESIGN DECISION: the three tables below store the *raw* strategy codes from the
-handoff (H, S, D, Ds, P, Ph) rather than finished actions.  The alternative was
-to bake "double else hit" down to a single action at write time, which would
-have needed one table per rule combination (DAS on/off, double button lit or
-not, two-card or five-card hand).  Keeping the raw code and resolving it at
-lookup time means the printed tables can be diffed line by line against section
-4 of the handoff, and flipping ``rules.das`` or passing ``can_double=False``
-changes the answer without anyone editing a table.
+DESIGN DECISION: the three tables below store the *raw* strategy codes as the
+spec prints them (H, S, D, Ds, P, Ph) rather than finished actions.  The
+alternative was to bake "double else hit" down to a single action at write
+time, which would have needed one table per rule combination (DAS on/off,
+double button lit or not, two-card or five-card hand).  Keeping the raw code
+and resolving it at lookup time means the printed tables can be diffed line by
+line against the spec's chart, and flipping ``rules.das`` or passing
+``can_double=False`` changes the answer without anyone editing a table.
 
-Table provenance: section 4 of the table's rules panel, which is the
-Wizard of Odds 6-deck / S17 / DAS / no-surrender / dealer-peeks chart.  The
-codes are transcribed exactly as printed, with two departures: the pair row
-printed "10,10" is keyed 'T,T' here because bj.core collapses every ten-value
-rank to 'T', and the 4,4 row follows the owner's corrected version rather than
-the printed one (see SPEC CORRECTION below, which also records that the
-markdown itself has not been edited yet).
+Table provenance: the spec's basic-strategy chart, which is the Wizard of Odds
+6-deck / S17 / DAS / no-surrender / dealer-peeks chart.  The codes are
+transcribed exactly as printed, with two departures: the pair row printed
+"10,10" is keyed 'T,T' here because bj.core collapses every ten-value rank to
+'T', and the 4,4 row follows the corrected version rather than the printed one
+(see SPEC CORRECTION below).
 
 APPROXIMATIONS
     1.  These are TOTAL-dependent tables.  Two composition-dependent
         exceptions are implemented on top of them:
           * hard 16 vs a ten-value upcard with three or more cards (worth
-            ~0.4 cents per dollar, handoff appendix section 2), and
+            ~0.4 cents per dollar per the spec's appendix), and
           * soft 18 vs an ace with four or more cards, all of them small
             (note 8 below).
         The other published exception, 12 vs 4 hitting only when composed
         10-2, is deliberately NOT implemented: its margin is 0.00075 units,
-        which is smaller than the chance of the owner mis-tapping a card on a
-        phone.  Saying so out loud is cheaper than pretending to that
+        which is smaller than the chance of mis-entering a card into the
+        advisory tool.  Saying so out loud is cheaper than pretending to that
         precision.
     2.  NEITHER FORM OF THE 16 VS 10 EXCEPTION IS EXACT, and the docstring
         used to imply the sharper one was.  Enumerating all 167 hard-16-vs-ten
@@ -47,17 +47,20 @@ APPROXIMATIONS
         16 never happens - so this is a statement about the rule being
         inexact, not about money; the money at stake either way is a fraction
         of a cent per hand.  Default is the loose "three or more cards" rule
-        because that is the rule the owner already played and the 37-hand log
-        has to reproduce; ``comp16_requires_45=True`` selects the other form.
-        It lives on the function and not on Rules only because bj/core.py is
-        frozen for this build.  Both forms agree on the two multi-card 16s in
-        the log (9,5,2 and 3,6,4,3 both contain a 4 or a 5), so the log cannot
-        tell them apart.
+        because that is the rule the player already followed and the 37-hand
+        log in tests/test_strategy.py has to reproduce;
+        ``comp16_requires_45=True`` selects the other form.  It lives on the
+        function rather than on Rules for a historical reason (bj/core.py was
+        frozen when it was added) and has stayed there because it describes
+        the chart being played, not the table.  Both forms agree on the two
+        multi-card 16s in the log (9,5,2 and 3,6,4,3 both contain a 4 or a
+        5), so the log cannot tell them apart.
     3.  Split aces are detected by card ORDER: on a split hand the split card
         is dealt first, so ('A', '7') with is_split_hand=True is read as a
         split ace, while ('8', 'A') is read as a split eight that drew an ace.
         The alternative was an extra ``split_card`` argument; rejected because
-        every extra field on a phone form is another mis-tap.
+        every extra input field in the advisory tool was another chance to
+        mis-enter a hand.
 
         THE OLD JUSTIFICATION FOR THIS WAS WRONG.  It claimed the only hands
         that could be confused were the soft 18/19 from split eights, which
@@ -76,15 +79,15 @@ APPROXIMATIONS
         the flag here would produce a chart that exists nowhere.
     5.  The H17 overlay (three cells) is complete ONLY because this table has
         no surrender.  With surrender available, H17 also changes 15 vs A and
-        17 vs A.  If surrender ever appears in the app, this overlay is wrong.
+        17 vs A.  If surrender is ever added to the rules, this overlay is wrong.
     6.  ``take_insurance`` computes P(dealer blackjack) from a full shoe minus
         the dealer's ace, ignoring the player's own cards.  That is the same
         convention as the published 30.87% figure.  A player holding two tens
         faces a slightly lower probability; it is never enough to matter,
         because insurance would need 33.3%.
-    7.  No card counting, no index deviations, no bet advice.  Section 2 of the
-        handoff concludes the shoe is almost certainly reshuffled every hand,
-        which makes every index number in the appendix worthless here.
+    7.  No card counting, no index deviations, no bet advice.  The original
+        game reshuffles every hand (see bj.simulate), which makes every
+        published index number worthless here.
     8.  The soft-18-vs-ace exception (see ``_SOFT18_ACE_*`` below) was found by
         this project's own exact solver, not copied from a chart.  It is a
         CORRECTNESS item, not a money item: the qualifying hands are a 4+ card
@@ -95,7 +98,7 @@ APPROXIMATIONS
 SPEC CORRECTION: 4,4 vs 4 (resolved)
     This module used to carry a note flagging 4,4 vs 4 as an unresolved
     disagreement between the printed pair table and every recomputation of it.
-    The owner has since corrected the spec, and the table below now matches the
+    The spec has since been corrected, and the table below now matches the
     corrected row.  Recording why, so nobody re-opens it:
 
         4,4 vs 4     split +0.00870     hit +0.04803    -> HIT  by 0.03932
@@ -105,11 +108,11 @@ SPEC CORRECTION: 4,4 vs 4 (resolved)
     Those figures come from two independent exact solvers that agree to the
     digit, and bj.ev reproduces them here.  Hitting 4,4 vs 4 is better by about
     0.04 units, roughly 60 times the margin of the closest real decision in the
-    game, so this was never a borderline cell.  The handoff's own cheat sheet
+    game, so this was never a borderline cell.  The spec's own cheat sheet
     already said "4,4 split vs 5 to 6", and the published Wizard of Odds 4-8
     deck S17 DAS chart hits it too; the printed row was a transcription slip.
 
-    The owner has ruled the corrected row to be
+    The corrected row is
 
         4,4   H  H  H  Ph  Ph  H  H  H  H  H
 
@@ -118,14 +121,10 @@ SPEC CORRECTION: 4,4 vs 4 (resolved)
     code follows it.  Tuning a table until it matches a recomputation is how a
     spec and its code quietly stop being the same document.
 
-    STILL OUTSTANDING at the time of writing: the handoff markdown in
-    ~/Downloads has not been edited to match.  Every copy of it still prints
-    "| 4,4 | H | H | Ph | Ph | Ph | H | H | H | H | H |" on line 100 and
-    "4,4 vs 4, 5, 6" in the DAS-sensitive list on line 212, and none of them
-    carries the errata section the ruling refers to.  Until those two lines are
-    edited, this table does NOT diff clean against the printed spec, and the
-    difference is this cell.  That is a documentation task, not a code one; it
-    is recorded here rather than silently assumed done.
+    One loose end, recorded rather than hidden: the spec document itself
+    (private, not in this repository) still printed the old row when this was
+    written, so this table does not diff clean against that printout at this
+    one cell.  tests/test_strategy.py pins the corrected row instead.
 
 HONESTY
     There is no player edge in this game and this module never implies one.
@@ -159,7 +158,7 @@ __all__ = [
 ]
 
 # --- raw codes -------------------------------------------------------------
-# Exactly the vocabulary the handoff prints, no more.
+# Exactly the vocabulary the printed chart uses, no more.
 CODE_HIT = 'H'
 CODE_STAND = 'S'
 CODE_DOUBLE = 'D'          # double, else hit
@@ -176,19 +175,20 @@ SOURCE_COMPOSITION = 'composition'
 SOURCE_FALLBACK = 'fallback'
 SOURCE_SPLIT_ACES = 'split-aces'
 
-#: dealer upcard columns, left to right as printed in the handoff
+#: dealer upcard columns, left to right as printed in the chart
 DEALER_UPS: tuple[str, ...] = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'A')
 
-#: dealer bust probability by upcard, 6 decks S17 after the peek.
-#: Handoff section 4 ("Dealer bust probability by upcard"), which is the
-#: Wizard of Odds "Dealer Odds, US Rules" bust column.  Used only to explain a
-#: decision in words; no decision is derived from it.
+#: dealer bust probability by upcard, 6 decks S17 after the peek.  The spec's
+#: "Dealer bust probability by upcard" row, which is the Wizard of Odds
+#: "Dealer Odds, US Rules" bust column; bj.dealer reproduces it to display
+#: precision (tests/test_dealer.py).  Used only to explain a decision in
+#: words; no decision is derived from it.
 DEALER_BUST_PCT: dict[str, float] = {
     '2': 35.4, '3': 37.4, '4': 39.6, '5': 41.8, '6': 42.3,
     '7': 26.2, '8': 24.4, '9': 22.9, 'T': 23.0, 'A': 16.7,
 }
 
-#: average dealer total when the dealer does not bust (handoff appendix s5)
+#: average dealer total when the dealer does not bust (spec appendix)
 DEALER_AVG_MADE_TOTAL = 18.84
 
 # --- the soft-18-vs-ace composition exception ------------------------------
@@ -281,7 +281,8 @@ SOFT_TABLE: dict[tuple[object, str], str] = _expand((
 ))
 
 #: pairs (DAS allowed).  'T,T' is the row printed as "10,10"; bj.core collapses
-#: 10/J/Q/K to 'T', and the app treats any two ten-values as a splittable pair.
+#: 10/J/Q/K to 'T', and the original game treats any two ten-value cards as a
+#: splittable pair.
 PAIR_TABLE: dict[tuple[object, str], str] = _expand((
     (('A,A',), 'P   P   P   P   P   P  P  P  P  P'),
     (('T,T',), 'S   S   S   S   S   S  S  S  S  S'),
@@ -291,7 +292,7 @@ PAIR_TABLE: dict[tuple[object, str], str] = _expand((
     (('6,6',), 'Ph  P   P   P   P   H  H  H  H  H'),
     (('5,5',), 'D   D   D   D   D   D  D  D  H  H'),
     # 4,4 vs 4 used to read Ph here, transcribed from a spec row that was a
-    # slip.  The owner corrected the spec; this row is the corrected one.
+    # slip.  The spec was corrected; this row is the corrected one.
     # Split +0.00870 vs hit +0.04803 against a dealer 4, so hitting is better
     # by 0.039 units.  vs 5 and vs 6 are unchanged and still split under DAS.
     # See "SPEC CORRECTION" in the module docstring.
@@ -300,8 +301,9 @@ PAIR_TABLE: dict[tuple[object, str], str] = _expand((
     (('2,2',), 'Ph  Ph  P   P   P   P  H  H  H  H'),
 ))
 
-#: The complete set of cells that change if the dealer hits soft 17.
-#: Handoff section 4 ("S17 vs H17 sensitive cells") and appendix section 1.
+#: The complete set of cells that change if the dealer hits soft 17.  The
+#: spec's "S17 vs H17 sensitive cells" list, confirmed by re-deriving the whole
+#: chart under H17 with the exact solver (tests/test_ev.py).
 #: Applied only when rules.s17 is False.  Keys are (player_key, dealer_up) and
 #: cannot collide across tables because hard keys are ints and soft keys are
 #: strings.  See APPROXIMATIONS note 5 for why this list is short.
@@ -339,7 +341,7 @@ class Advice:
     raw_code: str
     fallback_of: str | None = None
 
-    def __str__(self) -> str:  # what the phone page prints
+    def __str__(self) -> str:  # what the advisory tool printed
         return f'{self.action_word} - {self.reason}'
 
 
@@ -385,7 +387,7 @@ def _cell(table, key, up: str, rules: Rules) -> str:
 
 
 def _up_name(up: str) -> str:
-    """'T' prints as 10.  The owner is looking at a Queen, not a rank code."""
+    """'T' prints as 10.  The player is looking at a Queen, not a rank code."""
     return '10' if up == 'T' else up
 
 
@@ -425,7 +427,8 @@ def _hard_reason(total: int, code: str, act: str, up: str) -> str:
             # reason.  Bust threshold: hard 17 busts on 5+, hard 18 on 4+.
             # Kept short on purpose: 9,9 that cannot be split reaches this line
             # behind a 25-character "Cannot split this hand - " prefix, and the
-            # whole reason still has to fit the phone's 110-character budget.
+            # whole reason still has to fit the 110-character budget that
+            # tests/test_strategy.py enforces for every reason line.
             return (f'Hard {total} is short of the dealer average {DEALER_AVG_MADE_TOTAL}, '
                     f'but any card over a {21 - total} busts it.')
         return f'Stiff {total}, but {u} busts {b} of the time - make the dealer take the risk.'
@@ -463,7 +466,7 @@ def _pair_reason(pkey: str, code: str, act: str, up: str) -> str:
     if pkey == 'A,A':
         return 'Always split aces: two hands starting on 11 beat one soft 12.'
     if pkey == 'T,T':
-        # Honesty rule: the app offers SPLIT on Q,J.  Never take it.
+        # Honesty rule: the original game offers SPLIT on Q,J.  Never take it.
         return 'Never split tens - 20 loses only to a dealer 21, and splitting throws that away.'
     if pkey == '8,8':
         return 'Always split eights: 16 is the worst hand in the game, two 8s are not.'
@@ -595,7 +598,7 @@ def basic_action(player_cards, dealer_up, rules: Rules = STANDARD, *,
     dealer_up      the dealer's upcard rank
     can_double     None means "work it out from the rules": exactly two cards,
                    and either this is not a split hand or DAS is allowed.
-                   Pass False when the app is not showing the DOUBLE button.
+                   Pass False when the game is not showing the DOUBLE button.
                    Passing True can never create a double on a hand of three or
                    more cards - doubling after a hit is not a table rule
                    anywhere, so the UI can only ever be more restrictive than
@@ -703,7 +706,7 @@ def take_insurance(rules: Rules = STANDARD, **kw) -> tuple[bool, str]:
     dealer_up, running count).  None of it changes the answer, and the
     signature says so by ignoring it.  The only condition that would flip this
     is a Hi-Lo true count at or above +3, which needs a shoe that persists
-    between hands; handoff section 2 concludes this one does not.
+    between hands, and this game reshuffles every round (see bj.simulate).
 
     The percentages in the reason are computed from rules.decks, not pasted, so
     they stay true if the deck count ever changes.

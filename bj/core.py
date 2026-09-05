@@ -4,12 +4,15 @@ Ten-value cards (10, J, Q, K) collapse to the single rank 'T' because they are
 mathematically identical in blackjack.  The only place the distinction matters
 is cosmetic display, which this engine does not do.
 
-A shoe is an immutable tuple of 10 integers, indexed by RANK_INDEX.  Immutable
-so that it can be used as a memoisation key in the exact EV solver.
+A shoe is an immutable tuple of 10 integers, indexed by RANK_INDEX: how many
+cards of each rank remain unseen.  Immutable so that it can be a memoisation
+key in the exact solvers - every cached result in bj.dealer and bj.ev is keyed
+on a Shoe, and a key nobody can mutate is a cache nobody can poison.  Removing
+a card returns a new tuple; nothing here is ever modified in place.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 # --- ranks -----------------------------------------------------------------
@@ -21,6 +24,9 @@ RANK_VALUE = {'A': 11, '2': 2, '3': 3, '4': 4, '5': 5,
 #: cards of each rank in one 52-card deck, same order as RANKS
 CARDS_PER_DECK = (4, 4, 4, 4, 4, 4, 4, 4, 4, 16)
 
+#: a card rank in any spelling normalize() accepts: 'K', 'k', 10, '10', 'a', ...
+CardLike = str | int
+
 _ALIASES = {
     'A': 'A', 'a': 'A', '1': 'A', 'ACE': 'A',
     '10': 'T', 'T': 'T', 't': 'T',
@@ -28,7 +34,7 @@ _ALIASES = {
 }
 
 
-def normalize(rank) -> str:
+def normalize(rank: CardLike) -> str:
     """'K' -> 'T', 10 -> 'T', 'a' -> 'A'.  Raises ValueError on junk."""
     if isinstance(rank, int):
         rank = str(rank)
@@ -42,7 +48,7 @@ def normalize(rank) -> str:
     return r
 
 
-def normalize_hand(cards) -> tuple[str, ...]:
+def normalize_hand(cards: str | Iterable[CardLike]) -> tuple[str, ...]:
     """Accepts 'A,7' / 'A7' / ['A','7'] / ('a', 10) -> ('A', '7')."""
     if isinstance(cards, str):
         s = cards.replace(',', ' ').replace('-', ' ').strip()
@@ -63,7 +69,7 @@ def normalize_hand(cards) -> tuple[str, ...]:
 
 # --- hands -----------------------------------------------------------------
 
-def hand_total(cards) -> tuple[int, bool]:
+def hand_total(cards: Iterable[CardLike]) -> tuple[int, bool]:
     """Return (best total <= 21 if possible, is_soft).
 
     is_soft is True when an ace is still being counted as 11.
@@ -86,48 +92,53 @@ def hand_total(cards) -> tuple[int, bool]:
     return total, soft
 
 
-def hard_total(cards) -> int:
+def hard_total(cards: Iterable[CardLike]) -> int:
     """Total with every ace counted as 1."""
     return sum(1 if normalize(c) == 'A' else RANK_VALUE[normalize(c)] for c in cards)
 
 
-def is_busted(cards) -> bool:
+def is_busted(cards: Iterable[CardLike]) -> bool:
+    """True once even the hard total is over 21."""
     return hand_total(cards)[0] > 21
 
 
-def is_blackjack(cards, is_split_hand: bool = False) -> bool:
+def is_blackjack(cards: Sequence[CardLike], is_split_hand: bool = False) -> bool:
     """Natural: exactly two cards totalling 21, and not a hand born of a split."""
     if is_split_hand or len(cards) != 2:
         return False
     return hand_total(cards)[0] == 21
 
 
-def is_pair(cards, tens_are_pairs: bool = True) -> bool:
-    """Two cards the table will let you split.
+def is_pair(cards: Sequence[CardLike], tens_are_pairs: bool = True) -> bool:
+    """Two cards of the same rank, i.e. a hand the table will let you split.
 
-    the example table offers SPLIT on any two ten-value cards (Q+J counts), so the
-    default folds all ten-value ranks together.
+    The original table offers SPLIT on any two ten-value cards (Q+J counts),
+    and because every ten-value card is already the single rank 'T' here that
+    is the only behaviour this module can express.  ``tens_are_pairs`` mirrors
+    the Rules field so call sites read naturally; it cannot change the answer,
+    since the rank distinction it would need is not modelled.
     """
-    if len(cards) != 2:
-        return False
-    a, b = normalize(cards[0]), normalize(cards[1])
-    if tens_are_pairs:
-        return a == b
-    return a == b  # ranks are already collapsed to 'T'; kept for signature clarity
+    return len(cards) == 2 and normalize(cards[0]) == normalize(cards[1])
 
 
 # --- rules -----------------------------------------------------------------
 
 @dataclass(frozen=True)
 class Rules:
-    """the example table defaults, taken from the in-app rules panel."""
+    """The table the solver prices.  Every solver function takes one.
+
+    The defaults are the original table's, read off its rules panel: six
+    decks, dealer stands on soft 17, double after split, dealer peeks for a
+    natural, no surrender, up to four hands, 3:2 on a natural.  Frozen so a
+    Rules object can sit inside a memo key.
+    """
     decks: int = 6
     s17: bool = True                # dealer stands on all 17s
     das: bool = True                # double after split
     peek: bool = True               # dealer peeks for blackjack
     surrender: bool = False
-    resplit_aces: bool = False      # unknown at the table; conservative default
-    hit_split_aces: bool = False    # unknown at the table; conservative default
+    resplit_aces: bool = False      # unconfirmed at the original table; conservative default
+    hit_split_aces: bool = False    # unconfirmed at the original table; conservative default
     max_hands: int = 4              # split up to 4 hands
     blackjack_payout: float = 1.5   # 3:2
     double_any_two: bool = True
@@ -140,19 +151,33 @@ STANDARD = Rules()
 
 # --- shoe ------------------------------------------------------------------
 
+#: count of unseen cards per rank, in RANKS order.  Immutable on purpose:
+#: see the module docstring.
 Shoe = tuple[int, ...]
 
 
 def fresh_shoe(decks: int = 6) -> Shoe:
+    """A full shoe of `decks` decks with nothing removed."""
     return tuple(c * decks for c in CARDS_PER_DECK)
 
 
 def shoe_size(shoe: Shoe) -> int:
+    """How many cards are left."""
     return sum(shoe)
 
 
-def remove_card(shoe: Shoe, rank) -> Shoe:
-    i = rank if isinstance(rank, int) else RANK_INDEX[normalize(rank)]
+def _index(rank: int | CardLike) -> int:
+    """A shoe index from either an index (the hot loops pass ints) or a rank."""
+    return rank if isinstance(rank, int) else RANK_INDEX[normalize(rank)]
+
+
+def remove_card(shoe: Shoe, rank: int | CardLike) -> Shoe:
+    """A new shoe with one card of `rank` taken out.  Raises if none is left.
+
+    `rank` is a shoe INDEX when it is an int - that is what every inner loop
+    in bj.dealer and bj.ev passes - and otherwise any spelling of a rank.
+    """
+    i = _index(rank)
     if shoe[i] <= 0:
         raise ValueError(f'no {RANKS[i]} left in shoe')
     lst = list(shoe)
@@ -160,29 +185,31 @@ def remove_card(shoe: Shoe, rank) -> Shoe:
     return tuple(lst)
 
 
-def remove_cards(shoe: Shoe, cards: Iterable) -> Shoe:
+def remove_cards(shoe: Shoe, cards: Iterable[int | CardLike]) -> Shoe:
+    """A new shoe with each of `cards` taken out; same index-or-rank rule."""
     lst = list(shoe)
     for c in cards:
-        i = c if isinstance(c, int) else RANK_INDEX[normalize(c)]
+        i = _index(c)
         if lst[i] <= 0:
             raise ValueError(f'no {RANKS[i]} left in shoe')
         lst[i] -= 1
     return tuple(lst)
 
 
-def add_card(shoe: Shoe, rank) -> Shoe:
-    i = rank if isinstance(rank, int) else RANK_INDEX[normalize(rank)]
+def add_card(shoe: Shoe, rank: int | CardLike) -> Shoe:
+    """A new shoe with one card of `rank` put back."""
+    i = _index(rank)
     lst = list(shoe)
     lst[i] += 1
     return tuple(lst)
 
 
-def draw_prob(shoe: Shoe, rank) -> float:
+def draw_prob(shoe: Shoe, rank: int | CardLike) -> float:
+    """Probability that the next card drawn is `rank`; 0.0 from an empty shoe."""
     n = shoe_size(shoe)
     if n == 0:
         return 0.0
-    i = rank if isinstance(rank, int) else RANK_INDEX[normalize(rank)]
-    return shoe[i] / n
+    return shoe[_index(rank)] / n
 
 
 # --- actions ---------------------------------------------------------------
