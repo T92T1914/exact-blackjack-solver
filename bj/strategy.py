@@ -416,7 +416,8 @@ def _hard_reason(total: int, code: str, act: str, up: str) -> str:
         if total == 20:
             return '20 loses only to a dealer 21 - stand.'
         if total >= 19:
-            return f'Hard {total} already beats the dealer average of {DEALER_AVG_MADE_TOTAL}; drawing mostly busts.'
+            return (f'Hard {total} already beats the dealer average of '
+                    f'{DEALER_AVG_MADE_TOTAL}; drawing mostly busts.')
         if total >= 17:
             # 17 and 18 are BELOW the 18.84 average, so the old line here -
             # "already beats the dealer average" - was simply false.  The
@@ -439,15 +440,18 @@ def _soft_reason(total: int, code: str, act: str, up: str) -> str:
     u, b = _up_name(up), _bust(up)
     if act == DOUBLE:
         if total == 18:
-            return f'Soft 18 rarely wins on its own; {u} busts {b}, so double for the money, not the total.'
+            return (f'Soft 18 rarely wins on its own; {u} busts {b}, '
+                    f'so double for the money, not the total.')
         return f'Soft {total} cannot bust on one card and {u} busts {b} - double for value.'
     if code == CODE_DOUBLE and act == HIT:
-        return f'Soft {total} wants to double vs {u} but the button is gone - hit; the ace protects you.'
+        return (f'Soft {total} wants to double vs {u} but the button is gone - hit; '
+                f'the ace protects you.')
     if code == CODE_DOUBLE_STAND and act == STAND:
         return f'Cannot double, so stand - never break a soft 18 against a weak {u}.'
     if act == STAND:
         if total >= 19:
-            return f'Soft {total} is already better than the dealer average of {DEALER_AVG_MADE_TOTAL} - stand.'
+            return (f'Soft {total} is already better than the dealer average of '
+                    f'{DEALER_AVG_MADE_TOTAL} - stand.')
         return f'Soft 18 is good enough against {u}; hitting turns 18 into 15 too often.'
     # HIT
     if total == 18:
@@ -466,7 +470,8 @@ def _pair_reason(pkey: str, code: str, act: str, up: str) -> str:
         return 'Always split eights: 16 is the worst hand in the game, two 8s are not.'
     if pkey == '5,5':
         if act == DOUBLE:
-            return f'Never split fives - a pair of fives is hard 10, and hard 10 doubles against {u}.'
+            return (f'Never split fives - a pair of fives is hard 10, '
+                    f'and hard 10 doubles against {u}.')
         if code == CODE_DOUBLE:
             # The chart says double here; the button is gone.  Saying "hard 10 only
             # hits against {u}" would contradict this module's own cell.
@@ -477,7 +482,8 @@ def _pair_reason(pkey: str, code: str, act: str, up: str) -> str:
         if act == SPLIT:
             return f'Split nines: two hands of 9 are worth more than one 18 against {u} ({b} bust).'
         if up == '7':
-            return 'Stand on 18: against a 7 the dealer most often makes 17, so 18 is already a winner.'
+            return ('Stand on 18: against a 7 the dealer most often makes 17, '
+                    'so 18 is already a winner.')
         return f'Stand on 18 - splitting into {u} turns one mediocre hand into two bad ones.'
     if act == SPLIT:
         if code == CODE_SPLIT_DAS:
@@ -709,6 +715,6 @@ def take_insurance(rules: Rules = STANDARD, **kw) -> Tuple[bool, str]:
     break_even = 1.0 / (rules.insurance_payout + 1.0)   # 2:1 pays for itself at 1/3
     edge = 1.0 - (rules.insurance_payout + 1.0) * p_ten  # 1 - 3 x 0.3087 = 7.40%
     reason = (f'No. The dealer has blackjack {p_ten * 100:.2f}% of the time with an ace up, '
-              f'and a {rules.insurance_payout:.0f}:1 bet needs {break_even * 100:.1f}% to break even - '
-              f'a {edge * 100:.2f}% house edge on the side bet.')
+              f'and a {rules.insurance_payout:.0f}:1 bet needs {break_even * 100:.1f}% '
+              f'to break even - a {edge * 100:.2f}% house edge on the side bet.')
     return False, reason

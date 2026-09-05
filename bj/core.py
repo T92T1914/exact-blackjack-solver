@@ -10,7 +10,7 @@ so that it can be used as a memoisation key in the exact EV solver.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Sequence, Tuple
+from typing import Iterable, Tuple
 
 # --- ranks -----------------------------------------------------------------
 

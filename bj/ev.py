@@ -207,7 +207,7 @@ from .core import (
 # free at the UI but not inside a loop that runs tens of millions of times.
 # The handoff for that module explicitly marks _distribution as stable for a
 # sibling to lean on, so this is a sanctioned shortcut, not a raid.
-from .dealer import IBUST, _distribution, dealer_distribution
+from .dealer import IBUST, _distribution
 
 __all__ = [
     'initial_shoe_for', 'ev_stand', 'ev_hit', 'ev_double', 'ev_split',

@@ -665,7 +665,6 @@ def test_nine_nine_vs_seven_is_a_resplit_convention_difference():
 
     # The same tree, resplitting on every pair the table would allow.
     pool = ev._split_pool(STANDARD, 1)
-    flags = (STANDARD.s17, STANDARD.das, STANDARD.hit_split_aces, STANDARD.resplit_aces)
 
     def forced(shoe_, slots):
         acc = {}
