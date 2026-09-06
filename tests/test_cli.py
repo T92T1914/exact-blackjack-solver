@@ -29,7 +29,7 @@ Hand: 8 8  (16)  vs dealer T
 
 Recommended: SPLIT  (margin +0.0605 over the next-best action)
 
-Player EV per hand at this table under exact basic strategy: -0.4044%"""
+Player EV per hand under basic strategy (split approximations apply): -0.4044%"""
 
 
 def _run(capsys, argv):
@@ -96,7 +96,7 @@ def test_h17_flag_flips_eleven_versus_ace_to_a_double(capsys):
 def test_deck_count_changes_the_bottom_line(capsys):
     six = _run(capsys, ['T,6', 'T']).splitlines()[-1]
     one = _run(capsys, ['T,6', 'T', '--decks', '1']).splitlines()[-1]
-    prefix = 'Player EV per hand at this table under exact basic strategy: '
+    prefix = 'Player EV per hand under basic strategy (split approximations apply): '
     assert six.startswith(prefix) and one.startswith(prefix)
     assert six != one
     float(one[len(prefix):-1])                  # a number, followed by the % sign
@@ -119,7 +119,8 @@ def test_bad_input_is_a_usage_error(capsys, argv):
 
 def test_table_prints_the_chart_the_solver_derives(capsys, derived):
     out = _run(capsys, ['--table'])
-    assert out.startswith('Basic strategy derived by the exact solver: 6 decks, ')
+    assert out.startswith(
+        'Basic strategy derived by the solver (split approximations apply): 6 decks, ')
     assert parse_chart(out) == derived
 
 

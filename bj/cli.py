@@ -13,9 +13,9 @@ Arguments are the CARDS you hold, not a total: 'T,6' is a ten and a six (hard
 are accepted and mean the same thing.  'A,7' and 'A7' both parse.
 
 No table state is needed: the shoe defaults to a fresh shoe of --decks decks
-with the cards you can see removed.  Every number printed is exact
-enumeration, not simulation or a lookup table - re-running gives bit-identical
-results.
+with the cards you can see removed. Hit, stand and double use exact
+enumeration. Split values use independent-hand and greedy resplit-budget
+approximations, which also affect whole-game estimates. Re-running is deterministic.
 """
 from __future__ import annotations
 
@@ -35,11 +35,11 @@ def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
            rules: Rules = STANDARD) -> str:
     """The report for one hand: the text `bj-advise CARDS UP` prints.
 
-    Every action the table allows, ranked by exact EV; the margin between the
+    Every action the table allows, ranked by modeled EV; the margin between the
     best and the next-best, which is the honest measure of how much the
     decision is worth; and the bottom line - the player's expectation per hand
     at this table under the printed chart, which bj.ev.house_edge follows all
-    the way down and which is always negative.
+    the way down under the stated rules and split approximations.
     """
     hand = normalize_hand(cards)
     up = normalize(dealer_up)
@@ -56,7 +56,7 @@ def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
               f'(margin {margin:+.4f} over the next-best action)',
               '']
     edge = house_edge(rules, strategy=basic_action)
-    lines.append('Player EV per hand at this table under exact basic strategy: '
+    lines.append('Player EV per hand under basic strategy (split approximations apply): '
                  f'{100 * edge:+.4f}%')
     return '\n'.join(lines)
 
@@ -65,22 +65,23 @@ def table(rules: Rules = STANDARD) -> str:
     """The whole chart, derived cell by cell by the solver, as Markdown.
 
     Slow on purpose - about a minute cold - because every cell is priced by
-    exact enumeration and the hard rows average over every two-card
+    enumeration (split approximations apply); hard rows average every two-card
     composition of each total (bj.ev.derive_table).  This is the text the
     README's chart section holds; tests/test_chart.py parses that section
     back and checks it against derive_table, so the README cannot drift.
     """
     return render_chart(
         derive_table(rules),
-        title=f'Basic strategy derived by the exact solver: {describe_rules(rules)}.',
+        title=('Basic strategy derived by the solver (split approximations apply): '
+               f'{describe_rules(rules)}.'),
     )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog='bj-advise',
-        description='Exact EV of hit, stand, double and split for one blackjack hand, '
-                    'or the whole basic-strategy chart, by enumeration over the shoe.',
+        description='Enumerated EVs for one blackjack hand or a strategy chart. '
+                    'Hit/stand/double are exact; split uses documented approximations.',
         epilog=__doc__.split('\n\n', 1)[1],
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

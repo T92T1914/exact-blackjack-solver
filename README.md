@@ -4,16 +4,17 @@
 [![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](.github/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-An exact, composition-dependent blackjack solver: for any hand against any
-dealer upcard, it computes the true expected value of hit, stand, double, and
-split by enumerating every reachable continuation, weighted by the exact
-composition of the remaining shoe. No lookup tables, no simulation, no
-training — re-running gives bit-identical results.
+A composition-dependent blackjack solver with exact enumeration for hit,
+stand, and double against the remaining shoe. **Split valuation is approximate:**
+it values the split hands independently and uses a greedy shared resplit budget.
+Those limits apply to derived strategy and whole-game estimates too; see
+[the model details](#how-it-works). The answer is deterministic enumeration,
+not a Monte Carlo sample or a trained model.
 
 **Hard 16 vs 10: hit, by a margin of +0.0063 — a coin flip the solver refuses
 to dress up as a rule. Soft 18 vs 3: double, at an EV of +0.1793. The exact
 enumeration is cross-checked by an independent Monte Carlo harness, inside a
-suite of 866 tests.**
+suite with 865 passing checks on the verified local run.**
 
 [Run it](#run-it) | [A worked decision](#a-worked-decision) | [How it works](#how-it-works) | [The derived chart](#the-chart-the-solver-derives) | [What this does not prove](#what-this-does-not-prove)
 
@@ -36,7 +37,7 @@ assume and both are wrong:
 - **It is not game theory.** The dealer does not respond to anything; it follows
   a published rule. There is no opponent model, no equilibrium, nothing
   adversarial. It is a single-agent finite-horizon **Markov decision process
-  solved exactly by dynamic programming.**
+  solved by dynamic programming, with the split approximations described below.**
 
 ## Run it
 
@@ -70,16 +71,16 @@ Hand: 8 8  (16)  vs dealer T
 
 Recommended: SPLIT  (margin +0.0605 over the next-best action)
 
-Player EV per hand at this table under exact basic strategy: -0.4044%
+Player EV per hand under basic strategy (split approximations apply): -0.4044%
 ```
 
 Every EV is negative — 16 versus a ten is a losing spot no matter what — and the
 solver's job is to lose the *least*. Splitting into two hands of 8 is worth
 +0.0605 over just hitting, because two hands each starting on 8 face the ten
 better than one stuck on 16. Nothing told it that; it is the enumeration. And
-the bottom line is the honest one: played perfectly, every hand at this table is
-worth **−0.4044%** to the player. Perfect play makes the loss small; it does not
-make it positive.
+the whole-game estimate under the derived basic strategy is **−0.4044%**
+to the player for this table. This estimate inherits the split approximations;
+it is not an exact joint-split optimum or a guarantee about play outcomes.
 
 ## Why composition-dependent, and why it is not a table
 
@@ -184,7 +185,7 @@ are checked against the solver by the tests.
 ## The chart the solver derives
 
 `python demo.py --table` prices all 350 cells of a printed basic-strategy chart
-with the exact solver — every hard total averaged over its two-card
+with the solver (including split approximations) — every hard total averaged over its two-card
 compositions, every soft total, every pair with and without double-after-split
 — and prints the result as Markdown. What follows is that output, pasted
 verbatim. `tests/test_chart.py` parses this section back out of the README and
@@ -192,7 +193,7 @@ compares it cell by cell with `derive_table()`, so it cannot silently drift from
 the code.
 
 <!-- chart:begin -->
-Basic strategy derived by the exact solver: 6 decks, dealer stands on soft 17, double after split, dealer peeks, no surrender, up to 4 hands, split aces get one card, blackjack pays 3:2.
+Basic strategy derived by the solver (split approximations apply): 6 decks, dealer stands on soft 17, double after split, dealer peeks, no surrender, up to 4 hands, split aces get one card, blackjack pays 3:2.
 
 ### Hard totals
 
@@ -256,7 +257,7 @@ itself:
   (the heavy runs are multi-million-hand simulations, gated behind `BJ_SLOW=1`).
 - **Exact vs. published.** All 45 stand/hit/double cells of the published
   marginal-hand table are held to 0.0001 — the tables print four decimals — and
-  the composition-dependent optimum is pinned at −0.4029%, 3e-06 from the
+  the composition-dependent whole-game estimate is pinned at −0.4029%, 3e-06 from the
   published −0.4026%.
 - **Two decision paths agree.** A compiled fast-path action function is checked
   against the solver's `basic_action` across every hand shape and dealer upcard.
@@ -274,7 +275,9 @@ itself:
   (`tests/test_chart.py`, `tests/test_cli.py`).
 
 ```
-866 passed, 6 skipped   (the 6 are the BJ_SLOW statistical runs)
+865 passed, 1 skipped, 6 deselected
+# Python 3.11 local run: python -m pytest -q -m "not slow"
+# Optional SciPy statistical check skipped; six slow checks excluded.
 ```
 
 ## What this does not prove
@@ -293,8 +296,8 @@ itself:
   here exists because it is restricted to legitimate information.
 - **Two of the split rules were conservative defaults** in the original table
   (resplit aces, hit split aces), and the solver's defaults follow them. The EV
-  of a table that allows them is computed correctly on request; it just is not
-  the default.
+  of a table that allows them can be requested, subject to the independent-hand
+  and shared resplit-budget approximations; it is not the default.
 
 ## Where the reference numbers come from
 

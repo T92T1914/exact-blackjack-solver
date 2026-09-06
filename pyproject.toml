@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "exact-blackjack-solver"
 dynamic = ["version"]
-description = "Exact, composition-dependent blackjack solver: the true EV of hit, stand, double and split by enumeration over the remaining shoe."
+description = "Composition-dependent blackjack solver: exact hit, stand and double enumeration, with documented split-hand approximations."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
