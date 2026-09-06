@@ -316,16 +316,17 @@ def _draw_probs(shoe: Shoe, up: str) -> tuple[float, ...]:
     n = shoe_size(shoe)
     if n == 0:
         raise ValueError('no cards left to draw')
+    if n < 2:
+        # Every upcard has a reserved hole card. Under 2..9 the marginal
+        # draw probabilities are uniform, but only while a draw pile exists.
+        raise ValueError('the only card left is the dealer hole card; the player cannot draw')
     out = _peek_out(up)
     if out < 0:
-        # Nothing was ruled out, so there is no hole card to condition on and
+        # Nothing was ruled out, so there is no peek information to condition on and
         # the draw is uniform.  This is the path every upcard from 2 to 9 takes,
         # and it is a short-circuit, not an approximation: the general formula
         # below collapses to exactly this when shoe[out] is 0.
         return tuple(c / n for c in shoe)
-    if n < 2:
-        # One card left under a peeked upcard means that card IS the hole card.
-        raise ValueError('the only card left is the dealer hole card; the player cannot draw')
     live = n - shoe[out]
     if live <= 0:
         # Every remaining card would have completed a natural, so "the dealer
