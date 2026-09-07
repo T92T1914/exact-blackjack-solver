@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1152pt" height="604.8pt" viewBox="0 0 1152 604.8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-06T23:00:43.006926</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 604.8
+L 1152 604.8
+L 1152 0
+L 0 0
+z
+" style="fill: #101923"/>
+  </g>
+  <g id="patch_2">
+   <path d="M 67.968 472.3488
+L 542.592 472.3488
+Q 556.416 472.3488 556.416 465.0912
+L 556.416 181.44
+Q 556.416 174.1824 542.592 174.1824
+L 67.968 174.1824
+Q 54.144 174.1824 54.144 181.44
+L 54.144 465.0912
+Q 54.144 472.3488 67.968 472.3488
+z
+" style="fill: #192632; stroke: #334352; stroke-linejoin: miter"/>
+  </g>
+  <g id="patch_3">
+   <path d="M 609.408 472.3488
+L 1084.032 472.3488
+Q 1097.856 472.3488 1097.856 465.0912
+L 1097.856 181.44
+Q 1097.856 174.1824 1084.032 174.1824
+L 609.408 174.1824
+Q 595.584 174.1824 595.584 181.44
+L 595.584 465.0912
+Q 595.584 472.3488 609.408 472.3488
+z
+" style="fill: #192632; stroke: #334352; stroke-linejoin: miter"/>
+  </g>
+  <g id="line2d_1">
+   <path d="M 51.84 543.1104
+L 1100.16 543.1104
+" style="fill: none; stroke: #334352; stroke-linecap: square"/>
+  </g>
+  <g id="text_1">
+   <text style="font-weight: 700; font-size: 15px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #62dbcd" x="51.84" y="44.055684" transform="rotate(-0 51.84 44.055684)">EXACT BLACKJACK SOLVER</text>
+  </g>
+  <g id="text_2">
+   <text style="font-weight: 700; font-size: 31px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #edf4fa" x="51.84" y="94.316756" transform="rotate(-0 51.84 94.316756)">Same total. Different decision.</text>
+  </g>
+  <g id="text_3">
+   <text style="font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b5c6d3" x="51.84" y="132.5127" transform="rotate(-0 51.84 132.5127)">Both hands total 16 against a dealer ten. The remaining cards change the choice.</text>
+  </g>
+  <g id="text_4">
+   <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b5c6d3" x="51.84" y="569.317969" transform="rotate(-0 51.84 569.317969)">Six decks; dealer stands on soft 17; no dealer blackjack after peek. Visible cards are removed.</text>
+  </g>
+  <g id="text_5">
+   <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #b5c6d3" x="1100.16" y="591.229656" transform="rotate(-0 1100.16 591.229656)">T92T1914  /  PUBLIC PROJECT EXAMPLE</text>
+  </g>
+  <g id="text_6">
+   <text style="font-weight: 700; font-size: 32px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #edf4fa" x="88.704" y="223.2917" transform="rotate(-0 88.704 223.2917)">10 + 6</text>
+  </g>
+  <g id="text_7">
+   <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #b5c6d3" x="514.944" y="217.323353" transform="rotate(-0 514.944 217.323353)">HARD 16</text>
+  </g>
+  <g id="text_8">
+   <text style="font-weight: 700; font-size: 23px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #62dbcd" x="88.704" y="275.119409" transform="rotate(-0 88.704 275.119409)">HIT</text>
+  </g>
+  <g id="text_9">
+   <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b5c6d3" x="88.704" y="308.044369" transform="rotate(-0 88.704 308.044369)">Expected net return per original wager</text>
+  </g>
+  <g id="text_10">
+   <text style="font-size: 19px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #edf4fa" x="88.704" y="345.867431" transform="rotate(-0 88.704 345.867431)">Hit</text>
+  </g>
+  <g id="text_11">
+   <text style="font-size: 19px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #62dbcd" x="506.88" y="345.865947" transform="rotate(-0 506.88 345.865947)">-0.534676</text>
+  </g>
+  <g id="text_12">
+   <text style="font-size: 19px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #edf4fa" x="88.704" y="384.574631" transform="rotate(-0 88.704 384.574631)">Stand</text>
+  </g>
+  <g id="text_13">
+   <text style="font-size: 19px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #edf4fa" x="506.88" y="384.573147" transform="rotate(-0 506.88 384.573147)">-0.540954</text>
+  </g>
+  <g id="text_14">
+   <text style="font-size: 14px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b5c6d3" x="88.704" y="432.788213" transform="rotate(-0 88.704 432.788213)">Decision margin: 0.006279 wager units</text>
+  </g>
+  <g id="text_15">
+   <text style="font-weight: 700; font-size: 32px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #edf4fa" x="630.144" y="223.2917" transform="rotate(-0 630.144 223.2917)">8 + 5 + 3</text>
+  </g>
+  <g id="text_16">
+   <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #b5c6d3" x="1056.384" y="217.323353" transform="rotate(-0 1056.384 217.323353)">HARD 16</text>
+  </g>
+  <g id="text_17">
+   <text style="font-weight: 700; font-size: 23px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #62dbcd" x="630.144" y="275.119409" transform="rotate(-0 630.144 275.119409)">STAND</text>
+  </g>
+  <g id="text_18">
+   <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b5c6d3" x="630.144" y="308.044369" transform="rotate(-0 630.144 308.044369)">Expected net return per original wager</text>
+  </g>
+  <g id="text_19">
+   <text style="font-size: 19px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #edf4fa" x="630.144" y="345.867431" transform="rotate(-0 630.144 345.867431)">Hit</text>
+  </g>
+  <g id="text_20">
+   <text style="font-size: 19px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #edf4fa" x="1048.32" y="345.865947" transform="rotate(-0 1048.32 345.865947)">-0.544004</text>
+  </g>
+  <g id="text_21">
+   <text style="font-size: 19px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #edf4fa" x="630.144" y="384.574631" transform="rotate(-0 630.144 384.574631)">Stand</text>
+  </g>
+  <g id="text_22">
+   <text style="font-size: 19px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #62dbcd" x="1048.32" y="384.573147" transform="rotate(-0 1048.32 384.573147)">-0.539887</text>
+  </g>
+  <g id="text_23">
+   <text style="font-size: 14px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b5c6d3" x="630.144" y="432.788213" transform="rotate(-0 630.144 432.788213)">Decision margin: 0.004117 wager units</text>
+  </g>
+  <g id="text_24">
+   <text style="font-size: 16px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #edf4fa" x="63.36" y="509.9079" transform="rotate(-0 63.36 509.9079)">Both choices still have negative expected returns. Values are exact within the supported model.</text>
+  </g>
+  <g id="text_25">
+   <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #b5c6d3" x="63.36" y="531.820369" transform="rotate(-0 63.36 531.820369)">Hit and stand shown. Doubling 10 + 6 is worse; doubling is unavailable after drawing a third card.</text>
+  </g>
+ </g>
+</svg>

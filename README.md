@@ -101,6 +101,11 @@ the tool prints it next to every recommendation.
 
 ## How it works
 
+[![Two hard 16 hands against a dealer ten have different exact hit and stand values.](docs/blackjack-composition-example.png)](docs/visual-example.md)
+
+Both hands total 16, but the cards remaining in the shoe differ. Under the same six deck rules, the solver recommends hitting 10 + 6 and standing on 8 + 5 + 3. Both decisions still have negative expected returns.
+[Reproduce and inspect the values](docs/visual-example.md).
+
 One hand is a single-agent, finite-horizon Markov decision process, and the
 solver is the dynamic program that values it. The state is the player's
 (total, softness), the dealer's upcard and the exact composition of the cards

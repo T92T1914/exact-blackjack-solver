@@ -1,0 +1,36 @@
+{
+  "source_commit": "23a42e6",
+  "source": "bj.ev.best_action",
+  "rules": "Six decks; visible cards removed; dealer stands on soft 17; peek completed without blackjack; no surrender",
+  "units": "Expected net return per original wager; not win probabilities",
+  "hands": [
+    {
+      "cards": [
+        "T",
+        "6"
+      ],
+      "dealer": "T",
+      "action": "H",
+      "values": {
+        "S": -0.5409544390190252,
+        "H": -0.5346755624525633,
+        "D": -1.0693511249051266
+      },
+      "margin": 0.006278876566461866
+    },
+    {
+      "cards": [
+        "8",
+        "5",
+        "3"
+      ],
+      "dealer": "T",
+      "action": "S",
+      "values": {
+        "S": -0.539886705281481,
+        "H": -0.5440039696389283
+      },
+      "margin": 0.004117264357447303
+    }
+  ]
+}
