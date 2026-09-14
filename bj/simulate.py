@@ -5,16 +5,11 @@ rounds - deal, peek, split, double, dealer draw, settle - and reports the
 distribution of what comes back.
 
 WHY A FRESH SHOE EVERY ROUND
-    Settled, not inferred.  The original game publishes a provably-fair
-    commitment - a server seed hash, a client seed, and a nonce that
-    increments once per bet - and its own client code shuffles a new shoe at
-    the start of every blackjack round.  That evidence, recorded in the
-    original project's notes, moved this from the spec's initial 85 percent
-    inference to about 99 percent verified and deleted card counting from the
-    project's scope entirely.  Nothing here carries state between rounds,
-    which is the model, made visible.  The residual doubt is only that every
-    piece of that evidence is client-side: it is the server's own account of
-    what the server does.
+    Each round is an independent draw from the configured full shoe. This
+    makes repeated rounds a direct Monte Carlo check of the solver under the
+    same starting composition. Cards are removed within a round, but no shoe
+    state carries into the next one. This is an explicit simulation assumption,
+    not evidence about the shuffle or fairness of any external service.
 
 WHY THE STRATEGY IS COMPILED RATHER THAN RE-IMPLEMENTED
     Calling ``bj.strategy.basic_action`` inside the round loop costs roughly
@@ -44,9 +39,8 @@ WHY THE STRATEGY IS COMPILED RATHER THAN RE-IMPLEMENTED
     prevent.
 
 APPROXIMATIONS
-    1.  Fresh shoe per round, as above.  Verified from the game's own
-        provably-fair nonce rather than assumed; it is listed here only
-        because the evidence for it is the server's word.
+    1.  Fresh shoe per round, as above. Results do not describe a persistent
+        shoe or a strategy that counts cards across successive rounds.
     2.  The dealer's hand is ALWAYS played to completion, including when every
         player hand has already busted and when the player held a natural.  A
         real dealer stops there.  This costs nothing in EV, because those cards
@@ -220,6 +214,7 @@ import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from functools import lru_cache
+from numbers import Integral
 
 import numpy as np
 
@@ -1130,6 +1125,12 @@ def _seed_sequence(seed) -> np.random.SeedSequence:
     return np.random.SeedSequence(seed)
 
 
+def _positive_count(value: int, name: str) -> int:
+    if not isinstance(value, Integral) or isinstance(value, bool) or value < 1:
+        raise ValueError(f'{name} must be a positive integer')
+    return int(value)
+
+
 def simulate(n: int, rules: Rules = STANDARD, *, seed=0,
              max_extra_units: int | None = None,
              comp16_requires_45: bool = False,
@@ -1138,7 +1139,10 @@ def simulate(n: int, rules: Rules = STANDARD, *, seed=0,
 
     ``seed`` is anything numpy's ``default_rng`` accepts.  The same seed always
     replays the same rounds, which is what makes a regression test possible.
+    ``n`` must be a positive integer, excluding booleans. Invalid sizes fail
+    before strategy tables are built or random state is consumed.
     """
+    n = _positive_count(n, 'n')
     return _stats(_run(n, rules, seed, max_extra_units, comp16_requires_45,
                        strategy))
 
@@ -1156,7 +1160,11 @@ def simulate_parallel(n: int, workers: int = 8, **kw) -> Stats:
     A parallel run is NOT reproducible against a serial run of the same seed -
     the round order differs.  It is reproducible against itself: same seed,
     same worker count, same answer.
+    ``n`` and ``workers`` must be positive integers, excluding booleans;
+    counts are never rounded or coerced from strings.
     """
+    n = _positive_count(n, 'n')
+    workers = _positive_count(workers, 'workers')
     if kw.get('strategy') is not None:
         raise ValueError('simulate_parallel cannot ship a custom strategy to '
                          'a worker process; a callable is not reliably '
@@ -1170,7 +1178,6 @@ def simulate_parallel(n: int, workers: int = 8, **kw) -> Stats:
         raise TypeError(f'unexpected keyword arguments: {sorted(kw)}')
     _check_rules(rules)
 
-    workers = max(1, int(workers))
     if workers == 1 or n < 20000:
         # Process startup on Windows costs about a second per worker; below
         # this it is pure loss.
@@ -1215,6 +1222,10 @@ def outcome_distributions(n: int, rules: Rules = STANDARD, *, seed=0,
     tree of independent streams; see ``_seed_sequence`` for the bug that
     shipped when this file re-seeded instead.
     """
+    # Reject unusable sizes before spawning children: SeedSequence.spawn
+    # advances caller-owned state even when the requested run then fails.
+    n = _positive_count(n, 'n')
+    workers = _positive_count(workers, 'workers')
     children = _seed_sequence(seed).spawn(len(extras))
     out: dict[int | None, dict[float, float]] = {}
     for child, e in zip(children, extras):
