@@ -13,18 +13,15 @@ not a Monte Carlo sample or a trained model.
 
 **Hard 16 vs 10: hit, by a margin of +0.0063 — a coin flip the solver refuses
 to dress up as a rule. Soft 18 vs 3: double, at an EV of +0.1793. The exact
-enumeration is cross-checked by an independent Monte Carlo harness, inside a
-suite with 865 passing checks on the verified local run.**
+enumeration is cross checked by an independent Monte Carlo harness and tests
+covering dealer outcomes, action values, strategy and simulation behavior.**
 
 [Run it](#run-it) | [A worked decision](#a-worked-decision) | [How it works](#how-it-works) | [The derived chart](#the-chart-the-solver-derives) | [What this does not prove](#what-this-does-not-prove)
 
-Extracted and generalized from a larger private project: a read-only advisory
-overlay I built for a friends' fake-currency blackjack game, which advised one
-decision per hand and scored how closely the player followed it. This repo is
-the algorithmic core of that system — the solver, its dealer model, and its
-verification harness — with a self-contained CLI and test suite, no network and
-no game attached, so every number here is runnable on any machine with Python
-3.11+.
+I extracted and generalized this from a larger private project. This repository
+contains the solver, dealer model and verification harness, with a standalone
+CLI and test suite. It runs locally on Python 3.11+ and needs no account or
+network connection to calculate a decision.
 
 Two things this is **not**, stated up front because both would be easy to
 assume and both are wrong:
