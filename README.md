@@ -28,6 +28,8 @@ of a hand, weights them by the remaining cards and caches repeated states.
 The dealer follows a fixed drawing rule. There are no learned weights or
 opponent predictions, and the split approximations still apply.
 
+[Explore the browser demo](https://t92t1914.github.io/exact-blackjack-solver/) · [Open in Codespaces](https://codespaces.new/T92T1914/exact-blackjack-solver)
+
 ## Run it
 
 ```
