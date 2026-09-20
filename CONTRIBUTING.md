@@ -1,6 +1,6 @@
-# Contributing to Exact Blackjack Solver
+# Working on Exact Blackjack Solver
 
-I welcome focused fixes, clearer examples and results that challenge an assumption in the project. If something looks wrong, I would rather have a small case I can run than a broad claim that it is broken.
+I want to be able to follow a numerical disagreement back to a hand, a rule and a calculation. Include those details before trying to explain a difference with a whole game percentage.
 
 ## Start locally
 
@@ -27,9 +27,9 @@ Start with [the solver](bj/ev.py), [dealer outcomes](bj/dealer.py) and [the simu
 
 ## Report a bug or propose a change
 
-Check the existing issues first. Include the revision, Python version, operating system, command, expected behavior and actual output. For a numerical issue, include the smallest input that demonstrates it. Remove credentials and private data from logs before posting.
+Include the rules, visible cards, remaining shoe and available actions. State whether a hand is already split and what resplit budget remains. A result from different rules is a different calculation, even if the displayed hand looks the same.
 
-Keep a pull request focused on one problem. Explain what changes for someone using the project, why the approach fits and which checks you ran. Add a regression test when it captures a real failure. Documentation changes should be checked against the current code and examples.
+Keep the independent check alongside the change. A small hand calculation, separate simulation or reference with matching rules can explain a disagreement. Include sampling uncertainty for simulations, and do not change README chart cells just to make a changed result appear consistent.
 
 ## Evidence and scope
 
@@ -37,11 +37,15 @@ State the rules, the visible cards and the remaining shoe when reporting a numer
 
 Useful next work includes comparing split approximations with a small exact reference model and widening independent checks across rule variations. Report the tested configurations instead of treating a measured difference as a universal error bound.
 
-## Writing
+## Longer statistical runs
 
-Use plain language and concrete examples. Avoid em dashes and unnecessary hyphens in authored prose. Preserve the exact spelling of code, commands, paths, package names, links and quoted evidence. Claims about performance should link to measurements and say what was actually tested.
+These can take substantially longer than the ordinary suite. In PowerShell,
+set `$env:BJ_SLOW = '1'` before running `python -m pytest -q`, then clear it
+with `$env:BJ_SLOW = ''` when finished. In a Unix shell, use:
 
-Be respectful when discussing a change. Questions and disagreements are welcome; keep them about the work.
+```sh
+BJ_SLOW=1 python -m pytest -q
+```
 
 ## Development container and public site
 

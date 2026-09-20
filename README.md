@@ -32,20 +32,23 @@ opponent predictions, and the split approximations still apply.
 
 ## Run it
 
+```sh
+python -m pip install -e ".[dev]"
+python demo.py 8,8 T
+python demo.py --table
+python -m pytest -q -m "not slow"
 ```
-pip install -e .                     # use: installs the `bj-advise` command; numpy is the one dependency
-pip install -e ".[dev]"              # tests: the same plus pytest and ruff
-python demo.py 8,8 T                 # one decision, ranked, with EVs (`bj-advise 8,8 T` once installed)
-python demo.py --table               # the chart below, derived by the solver (about a minute)
-python -m pytest -q                  # the suite, ~3 minutes
-```
+
+Use `python -m pip install -e .` if you only want the solver. Both installs
+provide the `bj-advise` command. Runtime and table generation time depend on
+the machine; the ordinary test command excludes the long statistical runs.
 
 Python 3.11+ and `numpy` (used only by the Monte Carlo harness). CI lints and
 runs the suite on Python 3.11, 3.12 and 3.13. Two more examples are `bj-advise T,6 T` and `bj-advise A,7 3`; `--decks`, `--h17` and
 `--no-das` change the table (`bj-advise 6,5 A --h17` is a dealer hits soft 17
-table); `BJ_SLOW=1 python -m pytest -q` adds the multi million hand
-statistical runs; `ruff check .` is what CI lints with, installing from
-`requirements.txt` and `requirements-dev.txt`.
+table). The [contribution guide](CONTRIBUTING.md) includes the longer statistical
+checks and the environment commands for PowerShell and other shells.
+`ruff check .` runs the same lint check as CI.
 
 ## A worked decision
 
@@ -74,12 +77,12 @@ it is not an exact joint split optimum or a guarantee about play outcomes.
 
 ## Why composition dependent, and why it is not a table
 
-Most blackjack "basic strategy" is a fixed chart: 16 vs 10 → hit, always. That
-chart is an average over a full shoe. It is very nearly right and slightly
-wrong, because the right move depends on the exact cards left. This solver never
-consults a chart, it prices each action against the actual remaining shoe, so
-its advice shifts, correctly, as cards are removed. The chart is what you get if
-you ask it about a fresh shoe; the point is that it does not have to.
+A total based strategy chart combines hands that can leave different cards
+in the shoe. Under the default rules, two unsplit hands totaling 16 against a
+dealer ten can therefore have different best actions. I wanted the calculation
+to show that difference instead of hiding it behind the total. The solver
+values the available actions from the remaining card counts; the generated
+chart is a summary of those calculations under the selected rules.
 
 For 10 + 6 against a dealer ten, hitting leads the next available action by
 **0.0063 units** under the default rules. For ace + 7 against a three, doubling
@@ -283,13 +286,13 @@ separate from this command. Current results are available in the linked CI run.
 
 * **The headline numbers are one table.** The solver is parameterized by a
   `Rules` object, and the tests exercise rule variations, but the worked example
-  and the −0.4044% are a single six deck, S17, 3:2 table. A different table is a
-  config change, not a recalculation, and its numbers are its own, `--decks`,
-  `--h17` and `--no-das` on the command line are that config change.
-* **It models one hand, not a session.** Every entry point starts from a fresh
-  shoe minus the visible cards. There is no cross hand shoe tracking, so **card
-  counting is out of scope by construction**, this prices the decision in front
-  of you, not an edge built up over a shoe.
+  and the −0.4044% are a single six deck, S17, 3:2 table. Changing the rules
+  requires recalculating the values. `--decks`, `--h17` and `--no-das` select
+  those changes on the command line.
+* **It models one hand, not a session.** The CLI starts with a fresh shoe minus
+  the visible cards. The Python API also accepts an explicit remaining shoe;
+  callers are responsible for its card counts. There is no automatic tracking
+  across hands, account connection or live table integration.
 * **It sees only what a player sees.** The dealer's hole card is never an input;
   a solver allowed to read it would be trivial and useless. Every hard problem
   here exists because it is restricted to legitimate information.
