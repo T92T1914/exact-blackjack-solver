@@ -157,7 +157,9 @@ Shoe = tuple[int, ...]
 
 
 def fresh_shoe(decks: int = 6) -> Shoe:
-    """A full shoe of `decks` decks with nothing removed."""
+    """A full shoe of a positive integer number of decks, with nothing removed."""
+    if not isinstance(decks, int) or isinstance(decks, bool) or decks < 1:
+        raise ValueError('decks must be a positive integer')
     return tuple(c * decks for c in CARDS_PER_DECK)
 
 
