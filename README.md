@@ -323,3 +323,13 @@ MIT
 ## Questions and contributions
 
 Found a problem or have a useful comparison? [Open an issue](https://github.com/T92T1914/exact-blackjack-solver/issues) with a small example I can run. The [contribution guide](CONTRIBUTING.md) covers setup, checks and the evidence to include with a change.
+
+## Engineering skills in this project
+
+This project gives me a concrete way to work on dynamic programming, state representation and independent verification. I want someone to be able to inspect a result, reproduce it and see where the supported model stops.
+
+- **State and caching.** Follow the composition-dependent calculation and memoized states. [Inspect the work](README.md#how-it-works).
+- **Independent checks.** Read how exact calculations and simulation are compared. [Inspect the work](README.md#what-is-verified-and-how).
+- **Model boundaries.** Inspect the split approximation and the assumptions behind an action value. [Inspect the work](README.md#what-this-does-not-prove).
+
+The transferable work is numerical software and verification. A correct result inside this rule model does not establish a model for financial risk or another real-world decision.
