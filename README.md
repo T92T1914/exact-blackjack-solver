@@ -30,6 +30,10 @@ opponent predictions, and the split approximations still apply.
 
 [Explore the browser demo](https://t92t1914.github.io/exact-blackjack-solver/) · [Open in Codespaces](https://codespaces.new/T92T1914/exact-blackjack-solver)
 
+Use **Link to this example** in the browser demo to share the selected result.
+The URL keeps the example's visible label, and Back and Forward restore earlier
+selections. These links inspect saved evidence; they do not run a new calculation.
+
 ## Run it
 
 ```sh
