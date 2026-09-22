@@ -154,6 +154,14 @@ the shared resplit budget uses a greedy decision rule. The notes in `bj/ev.py`
 describe comparisons for the studied rules and hands. Those measured
 differences are not a proven error bound for every possible configuration.
 
+Custom shoes passed to the Python API include the dealer's hidden hole card.
+When only that card remains, `best_action` offers standing; a direct request
+to hit or double raises `ValueError`. After the last drawable card, hit
+valuation settles the hand instead of trying to take the hole card. A split
+needs at least two drawable cards. If the dealer still needs a card that is
+unavailable, the solver raises rather than inventing a settlement or reshuffle.
+The split approximation above still applies to these small shoes.
+
 ## What's in the box
 
 ```

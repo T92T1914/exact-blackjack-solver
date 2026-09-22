@@ -386,7 +386,8 @@ def _hit_ev(total: int, soft: bool, up: str, shoe: Shoe, s17: bool) -> float:
 
     "Optimally" here is max(stand, hit) at every later node - no double, which
     is the table rule, and no split, which is impossible once a third card has
-    landed.  The recursion bottoms out on a bust or on a total of 21.
+    landed. The recursion bottoms out on a bust, on 21, or after the last
+    drawable card, when only standing remains available.
 
     Standing on 21 is treated as forced rather than compared.  That is a real
     theorem, not a shortcut: 21 is the highest total a hand can hold, drawing
@@ -394,7 +395,8 @@ def _hit_ev(total: int, soft: bool, up: str, shoe: Shoe, s17: bool) -> float:
     a hard 12), and _stand_ev is monotone in the total.  Skipping the
     comparison prunes a large, entirely pointless subtree.
     """
-    if shoe_size(shoe) == 0:
+    n = shoe_size(shoe)
+    if n == 0:
         # A real 312-card shoe cannot run out under a hand that draws at most
         # a dozen cards, but a caller can hand us a toy shoe.  Raising beats
         # inventing an outcome for "the player wants a card and there are none".
@@ -410,7 +412,10 @@ def _hit_ev(total: int, soft: bool, up: str, shoe: Shoe, s17: bool) -> float:
             continue
         sub = remove_card(shoe, i)
         stand_here = _stand_ev(nt, up, sub, s17)
-        if nt == 21:
+        if nt == 21 or n == 2:
+            # The shoe includes the reserved hole card. After the last legal
+            # player draw, standing is the only continuation. _stand_ev above
+            # still rejects a dealer who needs another unavailable card.
             ev += p * stand_here
             continue
         hit_here = _hit_ev(nt, ns, up, sub, s17)
@@ -514,7 +519,8 @@ def _split_hand_outcomes(rank_i: int, up: str, shoe: Shoe, slots: int,
                 if double_value > play_value:
                     play_value = double_value
 
-        if not (i == rank_i and slots >= 1 and (resplit_aces or not is_ace)):
+        if not (i == rank_i and slots >= 1 and shoe_size(sub) >= 3
+                and (resplit_aces or not is_ace)):
             _add_outcome(acc, 0, p, play_value)
             continue
 
@@ -567,6 +573,8 @@ def _split_total_ev(rank_i: int, up: str, shoe: Shoe, rules: Rules,
                     hand_count: int = 1) -> float:
     """EV of the whole split, both hands, in units of the original bet."""
     pool = _split_pool(rules, hand_count)
+    if shoe_size(shoe) < 3:
+        raise ValueError('splitting requires two drawable cards plus the dealer hole card')
     flags = (rules.s17, rules.das, rules.hit_split_aces, rules.resplit_aces)
     total = 0.0
     for used, p, ev_first in _split_hand_outcomes(rank_i, up, shoe, pool, *flags):
@@ -600,7 +608,12 @@ def ev_stand(player_cards, dealer_up, shoe: Shoe | None = None,
 
 def ev_hit(player_cards, dealer_up, shoe: Shoe | None = None,
            rules: Rules = STANDARD) -> float:
-    """EV of hitting once and then playing the rest of the hand optimally."""
+    """EV of hitting once and then playing the rest of the hand optimally.
+
+    The shoe includes the reserved dealer hole card. A request with no
+    drawable card raises ValueError. After the last available draw, the hand
+    stands; a dealer who still needs an unavailable card also raises.
+    """
     cards = normalize_hand(player_cards)
     up = normalize(dealer_up)
     if shoe is None:
@@ -682,7 +695,10 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
 
     can_double / can_split describe the BUTTONS, and are intersected with the
     rules: passing can_double=True on a three-card hand does not conjure a
-    double, because no table allows doubling after a hit.
+    double, because no table allows doubling after a hit. Actions also need
+    enough drawable cards: one for hit/double, two for the initial split deal,
+    in addition to the dealer's reserved hole card. Dealer exhaustion remains
+    an error, rather than an invented terminal outcome.
 
     hand_count is how many hands are already in play, and it does two things,
     not one.  It removes the SPLIT button at the cap, and it also SHRINKS the
@@ -712,7 +728,8 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
     can_double = bool(can_double) and two_cards and (not is_split_hand or rules.das)
     blocked_resplit_aces = (is_split_hand and pair and cards[0] == 'A'
                             and not rules.resplit_aces)
-    can_split = (bool(can_split) and two_cards and pair
+    unseen = shoe_size(shoe)
+    can_split = (bool(can_split) and two_cards and pair and unseen >= 3
                  and hand_count < rules.max_hands and not blocked_resplit_aces)
 
     # A split ace is frozen: the table deals it exactly one card and the hand is
@@ -726,7 +743,10 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
                         and not rules.hit_split_aces)
 
     evs: dict[str, float] = {STAND: _stand_ev(total, up, shoe, rules.s17)}
-    if not frozen_split_ace:
+    # Keep explicit ev_hit/ev_double requests strict, but do not evaluate
+    # unavailable actions while choosing among legal alternatives. Splitting
+    # requires two drawable cards in addition to the reserved hole card.
+    if not frozen_split_ace and unseen >= 2:
         evs[HIT] = _hit_ev(total, soft, up, shoe, rules.s17)
         if can_double:
             evs[DOUBLE] = _double_ev(total, soft, up, shoe, rules.s17)
