@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "evidence": {
     "retained_values": {
       "source_commit": "23a42e6",
@@ -73,6 +73,20 @@
       "minimum_font_points": 11.8
     }
   },
+  "wide_layout": {
+    "clair": {
+      "width": 1800,
+      "height": 1280,
+      "labels_within_canvas": 23,
+      "minimum_font_points": 12.0
+    },
+    "obscur": {
+      "width": 1800,
+      "height": 1280,
+      "labels_within_canvas": 23,
+      "minimum_font_points": 12.0
+    }
+  },
   "typography": {
     "files": {
       "Regular": {
@@ -127,11 +141,15 @@
     "docs/visual-example-data.json": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c",
     "presentation/tokens.json": "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7",
     "tools/presentation.py": "1055ef87d159d87c05b96817cab172d6b41d23f8f723d660d094f8e0d3589109",
-    "tools/render_composition_figure.py": "86bb8d40dec3aaeffacb401dd669185e54f06868f1ac3405a3ba2b1f5d586278"
+    "tools/render_composition_figure.py": "bc996c1e3104ffdc4fdbbef3fa490ebf5c4c382fed41f91d6812021983ae2ecf"
   },
   "outputs_sha256": {
+    "docs/blackjack-composition-clair-wide.png": "fb230986e70ae0b8d51a1e5b17ff96a8990e1e5b04c19e2d204b48234dda50e9",
+    "docs/blackjack-composition-clair-wide.svg": "fecf22ef7f6b8547e459825fa8a858b0d35c6472bc84448a52a5162ae90bc82d",
     "docs/blackjack-composition-clair.png": "f16b427c298450e25e40d3d9b0d0cf5974f046b9b173c01d941266017dcc7ad1",
     "docs/blackjack-composition-clair.svg": "4009283dc781774b8f9431969e4a2c140797d783ff6637253ed20d2623c9680e",
+    "docs/blackjack-composition-obscur-wide.png": "07d83b42de96a443c4a5295547049357d7071e51a2bbe327662c76d553235816",
+    "docs/blackjack-composition-obscur-wide.svg": "d54cafe20de02bf2080c58301f4279d4fce079cdff6191f3abfe27f4d91666cb",
     "docs/blackjack-composition-obscur.png": "6a9b427fd0e57509a1089e3523bf0a100ce501545a7f6a7e999015ab479c973c",
     "docs/blackjack-composition-obscur.svg": "a4101b7b273e93d05f6c6714c8192962a84b2e55f1fe5820407bee28f9aeb338"
   }

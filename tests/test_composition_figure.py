@@ -42,17 +42,19 @@ def test_originals_are_preserved_with_normalized_text_checkouts():
         assert figure.digest(figure.ROOT / name, text=text) == checksum
 
 
-def svg_root(mode):
+def svg_root(mode, suffix=""):
     parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
-    return ET.parse(figure.ROOT / f'docs/blackjack-composition-{mode}.svg', parser).getroot()
+    path = figure.ROOT / f'docs/blackjack-composition-{mode}{suffix}.svg'
+    return ET.parse(path, parser).getroot()
 
 
 def comment_text(node):
     return ''.join(child.text.strip() for child in node.iter() if child.tag == ET.Comment)
 
 
-def test_painted_numeric_labels_retain_values_and_geometry_in_both_editions():
-    roots = [svg_root(mode) for mode in ('clair', 'obscur')]
+@pytest.mark.parametrize("suffix", ["", "-wide"])
+def test_painted_numeric_labels_retain_values_and_geometry_in_both_editions(suffix):
+    roots = [svg_root(mode, suffix) for mode in ('clair', 'obscur')]
     tokens = figure.load_tokens()
     for index, hand in enumerate(figure.load_data()['hands']):
         for mode, root in zip(('clair', 'obscur'), roots, strict=True):
@@ -70,11 +72,12 @@ def test_painted_numeric_labels_retain_values_and_geometry_in_both_editions():
     assert paths[0] == paths[1]
 
 
-def test_png_dimensions_and_metadata_match_the_vector_evidence():
+@pytest.mark.parametrize("suffix", ["", "-wide"])
+def test_png_dimensions_and_metadata_match_the_vector_evidence(suffix):
     for mode in ('clair', 'obscur'):
-        raw = (figure.ROOT / f'docs/blackjack-composition-{mode}.png').read_bytes()
+        raw = (figure.ROOT / f'docs/blackjack-composition-{mode}{suffix}.png').read_bytes()
         assert raw[:8] == b'\x89PNG\r\n\x1a\n'
-        assert struct.unpack('>II', raw[16:24]) == (960, 2080)
+        assert struct.unpack('>II', raw[16:24]) == ((1800, 1280) if suffix else (960, 2080))
         offset, description = 8, None
         while offset < len(raw):
             length = struct.unpack('>I', raw[offset:offset + 4])[0]
@@ -83,13 +86,14 @@ def test_png_dimensions_and_metadata_match_the_vector_evidence():
                 description = json.loads(content.split(b'\0', 1)[1])
             offset += length + 12
         assert description == figure.semantic_record(figure.load_data())
-        vector_description = json.loads(svg_root(mode).find('.//dc:description', NS).text)
+        vector_description = json.loads(svg_root(mode, suffix).find('.//dc:description', NS).text)
         assert vector_description == description
 
 
-def test_every_inter_face_supplies_outlines_without_an_external_font_dependency():
+@pytest.mark.parametrize("suffix", ["", "-wide"])
+def test_every_inter_face_supplies_outlines_without_an_external_font_dependency(suffix):
     for mode in ('clair', 'obscur'):
-        path = figure.ROOT / f'docs/blackjack-composition-{mode}.svg'
+        path = figure.ROOT / f'docs/blackjack-composition-{mode}{suffix}.svg'
         raw = path.read_text(encoding='utf-8')
         references = [value for node in ET.fromstring(raw).iter()
                       for key, value in node.attrib.items() if key.endswith('href')]

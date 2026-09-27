@@ -2,9 +2,11 @@
 
 <a href="visual-example-data.json">
   <picture>
+    <source media="(min-width: 768px) and (prefers-color-scheme: dark)" srcset="blackjack-composition-obscur-wide.png">
+    <source media="(min-width: 768px) and (prefers-color-scheme: light)" srcset="blackjack-composition-clair-wide.png">
     <source media="(prefers-color-scheme: dark)" srcset="blackjack-composition-obscur.png">
     <source media="(prefers-color-scheme: light)" srcset="blackjack-composition-clair.png">
-    <img src="blackjack-composition-clair.png" alt="Two hard 16 hands against a dealer ten. Hit 10 + 6 at negative 0.534676, or stand on 8 + 5 + 3 at negative 0.539887. Both expected returns are negative. Margins are 0.006279 and 0.004117 original wager units." width="480">
+    <img src="blackjack-composition-clair.png" alt="Two hard 16 hands against a dealer ten. Hit 10 + 6 at negative 0.534676, or stand on 8 + 5 + 3 at negative 0.539887. Both expected returns are negative. Margins are 0.006279 and 0.004117 original wager units." width="900">
   </picture>
 </a>
 
@@ -77,3 +79,15 @@ committed input and output identities without fonts or a silent rebuild.
 Source `23a42e6` belongs to this retained example, not the later
 [joint split reference](joint-split.md). The original image, data and numerical
 meaning are preserved.
+
+## Wide and narrow columns
+
+The same renderer also makes a wide composition from the same retained values.
+The website chooses its layout from the figure container at 560 pixels and keeps
+its existing Auto, Clair and Obscur appearance setting. The README uses a 1024
+pixel viewport breakpoint, while these notes use 768 pixels to account for their
+wider reading column. These choices follow measurements of the actual GitHub
+columns, not an assumption that viewport width equals image width. Signed-out
+system appearance is covered. Signed-in appearance overrides remain unverified.
+
+Wide [Clair SVG](blackjack-composition-clair-wide.svg) and [Obscur SVG](blackjack-composition-obscur-wide.svg) preserve the original units, qualifications and Inter outlines. Narrow editions remain available above.

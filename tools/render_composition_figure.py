@@ -78,7 +78,7 @@ def semantic_record(data):
                 split_reference='The later joint split study is separate evidence.')
 
 
-def draw(data, tokens, mode, files, output):
+def draw(data, tokens, mode, files, output, wide=False):
     import matplotlib
     matplotlib.use('Agg')
     from matplotlib import rc_context
@@ -90,7 +90,7 @@ def draw(data, tokens, mode, files, output):
     roles = tokens['themes'][mode.capitalize()]
     fonts = {name: FontProperties(fname=str(path)) for name, path in files.items()}
     with rc_context({'svg.fonttype': 'path', 'svg.hashsalt': 'solver-composition-v1'}):
-        fig = Figure(figsize=(4.8, 10.4), dpi=200, facecolor=roles['canvas'])
+        fig = Figure(figsize=(9, 6.4) if wide else (4.8, 10.4), dpi=200, facecolor=roles['canvas'])
         labels = []
 
         def label(x, y, text, size=13, face='Regular', color=None, gid=None, **kwargs):
@@ -100,41 +100,61 @@ def draw(data, tokens, mode, files, output):
             labels.append(item)
             return item
 
-        label(.075, .96, 'EXACT BLACKJACK SOLVER', 12, 'SemiBold', roles['accent'])
-        label(.075, .918, 'Same total.\nDifferent decision.', 26, 'Bold')
-        label(.075, .815, 'Both hands total 16 against a dealer ten.', 12.5)
+        label(.055 if wide else .075, .96, 'EXACT BLACKJACK SOLVER',
+              12, 'SemiBold', roles['accent'])
+        label(.055 if wide else .075, .90 if wide else .918,
+              'Same total. Different decision.' if wide else 'Same total.\nDifferent decision.',
+              26, 'Bold')
+        label(.055 if wide else .075, .815, 'Both hands total 16 against a dealer ten.', 12.5)
         for index, hand in enumerate(data['hands']):
-            top = .762 - index * .235
-            panel = FancyBboxPatch((.055, top - .214), .89, .212,
+            top = .72 if wide else .762 - index * .235
+            left = .055 + index * .48 if wide else .055
+            text_x = left + .02 if wide else .085
+            right = left + (.385 if wide else .86)
+            scale = 1.55 if wide else 1
+            panel = FancyBboxPatch((left, top - .214 * scale), .41 if wide else .89, .212 * scale,
                                    boxstyle='round,pad=0.006,rounding_size=0.012',
                                    transform=fig.transFigure, facecolor=roles['panel'],
                                    edgecolor=roles['divider'], linewidth=.8)
             fig.add_artist(panel)
             title = '10 + 6' if index == 0 else '8 + 5 + 3'
-            label(.085, top - .018, title, 22, 'Bold')
+            label(text_x, top - .018 * scale, title, 22, 'Bold')
             recommended = 'Hit' if hand['action'] == 'H' else 'Stand'
-            label(.915, top - .025, recommended, 15, 'SemiBold',
+            label(right, top - .025 * scale, recommended, 15, 'SemiBold',
                   roles[ACTIONS[hand['action']]], ha='right', gid=f'recommendation-{index}')
             for j, action in enumerate(('H', 'S')):
-                y = top - .077 - j * .046
+                y = top - (.077 + j * .046) * scale
                 color = roles[ACTIONS[action]]
-                label(.085, y, 'Hit' if action == 'H' else 'Stand', 14, 'SemiBold', color,
+                label(text_x, y, 'Hit' if action == 'H' else 'Stand', 14, 'SemiBold', color,
                       gid=f'action-{index}-{action}')
-                label(.915, y, f"{hand['values'][action]:.6f}", 14,
+                label(right, y, f"{hand['values'][action]:.6f}", 14,
                       'Bold' if action == hand['action'] else 'Regular',
                       ha='right', gid=f'value-{index}-{action}')
-            label(.085, top - .172, f"Margin: {hand['margin']:.6f} wager units", 12.5,
+            label(text_x, top - .172 * scale, f"Margin: {hand['margin']:.6f} wager units", 12.5,
                   'SemiBoldItalic', roles['muted'], gid=f'margin-{index}')
-        label(.075, .283, 'Both expected returns are negative.', 13.5, 'BoldItalic')
-        label(.075, .246, 'Expected net return per original wager.\nNot a win probability.',
-              12.5, 'Italic', roles['muted'])
-        label(.075, .191, 'Only hit and stand shown. Doubling 10 + 6\n'
-              'is worse. No double on 8 + 5 + 3.', 12.2)
-        label(.075, .135, 'Six decks. Dealer stands on soft 17.\n'
-              'Peek found no blackjack. Visible cards removed.', 11.8, color=roles['muted'])
-        label(.075, .080, 'Exact hit and stand values in this model.\n'
-              'Split values elsewhere are approximate.', 12.2)
-        label(.075, .027, 'Recorded source: 23a42e6.', 12, 'SemiBold', roles['muted'])
+        if wide:
+            label(.055, .35, 'Both expected returns are negative.', 14, 'BoldItalic')
+            label(.055, .30, 'Expected net return per original wager. Not a win probability.',
+                  13, 'Italic', roles['muted'])
+            label(.055, .24, 'Only hit and stand shown. Doubling 10 + 6 is worse. '
+                  'No double on 8 + 5 + 3.', 12.5)
+            label(.055, .185, 'Six decks. Dealer stands on soft 17. '
+                  'Peek found no blackjack. Visible cards removed.',
+                  12.5, color=roles['muted'])
+            label(.055, .13, 'Exact hit and stand values in this model. '
+                  'Split values elsewhere are approximate.', 12.5)
+            label(.055, .07, 'Recorded source: 23a42e6.', 12, 'SemiBold', roles['muted'])
+        else:
+            label(.075, .283, 'Both expected returns are negative.', 13.5, 'BoldItalic')
+            label(.075, .246, 'Expected net return per original wager.\nNot a win probability.',
+                  12.5, 'Italic', roles['muted'])
+            label(.075, .191, 'Only hit and stand shown. Doubling 10 + 6\n'
+                  'is worse. No double on 8 + 5 + 3.', 12.2)
+            label(.075, .135, 'Six decks. Dealer stands on soft 17.\n'
+                  'Peek found no blackjack. Visible cards removed.', 11.8, color=roles['muted'])
+            label(.075, .080, 'Exact hit and stand values in this model.\n'
+                  'Split values elsewhere are approximate.', 12.2)
+            label(.075, .027, 'Recorded source: 23a42e6.', 12, 'SemiBold', roles['muted'])
         canvas = FigureCanvasAgg(fig)
         canvas.draw()
         bounds = [item.get_window_extent(canvas.get_renderer()) for item in labels]
@@ -148,7 +168,8 @@ def draw(data, tokens, mode, files, output):
             metadata = {'Description': json.dumps(semantic_record(data), sort_keys=True)}
             if ext == 'svg':
                 metadata['Date'] = None
-            path = output / f'blackjack-composition-{mode}.{ext}'
+            suffix = '-wide' if wide else ''
+            path = output / f'blackjack-composition-{mode}{suffix}.{ext}'
             fig.savefig(path, metadata=metadata)
             if ext == 'svg':
                 path.write_text('\n'.join(line.rstrip() for line in path.read_text(
@@ -164,8 +185,9 @@ def check_outputs():
     for name in INPUTS:
         if record['inputs_sha256_lf'][name] != digest(ROOT / name, text=True):
             raise ValueError(f'Figure input changed: {name}')
-    expected = {f'docs/blackjack-composition-{mode}.{ext}'
-                for mode in ('clair', 'obscur') for ext in ('png', 'svg')}
+    expected = {f'docs/blackjack-composition-{mode}{suffix}.{ext}'
+                for mode in ('clair', 'obscur') for suffix in ('', '-wide')
+                for ext in ('png', 'svg')}
     if set(record['outputs_sha256']) != expected:
         raise ValueError('Both PNG and SVG editions are required')
     for name, checksum in record['outputs_sha256'].items():
@@ -192,10 +214,12 @@ def main():
         output = Path(temp)
         layouts = {mode: draw(data, load_tokens(), mode, files, output)
                    for mode in ('clair', 'obscur')}
+        wide_layouts = {mode: draw(data, load_tokens(), mode, files, output, wide=True)
+                        for mode in ('clair', 'obscur')}
         import matplotlib
-        record = dict(schema_version=1, evidence=semantic_record(data),
+        record = dict(schema_version=2, evidence=semantic_record(data),
                       renderer=dict(matplotlib=matplotlib.__version__, backend='Agg'),
-                      layout=layouts,
+                      layout=layouts, wide_layout=wide_layouts,
                       typography=dict(files=font_evidence, painted_faces=list(FACES),
                                       png='Glyphs rasterized from explicit Inter files',
                                       svg='Labels outlined from the same Inter files. '

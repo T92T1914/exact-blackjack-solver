@@ -16,6 +16,10 @@ except ImportError:
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "_site"
 FILES = {
+    "docs/blackjack-composition-clair-wide.png": "composition-clair-wide.png",
+    "docs/blackjack-composition-clair-wide.svg": "composition-clair-wide.svg",
+    "docs/blackjack-composition-obscur-wide.png": "composition-obscur-wide.png",
+    "docs/blackjack-composition-obscur-wide.svg": "composition-obscur-wide.svg",
     "site/index.html": "index.html",
     "site/style.css": "style.css",
     "site/app.js": "app.js",
