@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL('../../_site/', import.meta.url));
 const evidence = JSON.parse(await readFile(new URL('../../docs/visual-example-data.json', import.meta.url)));
 const originalSVG = await readFile(new URL('../../docs/blackjack-composition-example.svg', import.meta.url));
 const mime = {'.html':'text/html', '.css':'text/css', '.js':'text/javascript',
-  '.mjs':'text/javascript', '.json':'application/json', '.svg':'image/svg+xml'};
+  '.mjs':'text/javascript', '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png'};
 let browser, server, base;
 before(async () => {
   server = createServer(async (request, response) => {
@@ -114,7 +114,9 @@ test('no JavaScript keeps Auto, original evidence and model boundaries available
   assert.equal(await page.locator('#appearance').isDisabled(), true);
   assert.equal(await page.locator('#interactive').isHidden(), true);
   assert.equal(await background(page), 'rgb(9, 9, 9)');
-  assert.equal(await page.locator('img').evaluate(e => e.complete && e.naturalWidth > 0), true);
+  await page.locator('#composition-figure img:visible').scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => [...document.querySelectorAll('#composition-figure img')]
+    .filter(e => getComputedStyle(e).display !== 'none').every(e => e.complete && e.naturalWidth > 0));
   assert.match(await page.locator('body').textContent(), /Split valuation elsewhere in the project is approximate/);
   assert.equal(await page.locator('a[href="data.json"]').first().isVisible(), true);
   await page.emulateMedia({colorScheme:'light'});
@@ -136,9 +138,9 @@ for (const mode of ['clair','obscur']) test(`${mode} preserves loss values and e
     assert.match(await page.locator('#context').textContent(), /Six decks; visible cards removed/);
   }
   assert.match(await page.locator('body').textContent(), /per original wager, not win probabilities/);
-  assert.equal(await page.locator('img').evaluate(e => getComputedStyle(e).filter), 'none');
+  assert.equal(await page.locator('#composition-figure img:visible').evaluate(e => getComputedStyle(e).filter), 'none');
   const downloadPromise = page.waitForEvent('download');
-  await page.locator('a[download]').click();
+  await page.locator('a[href="example.svg"][download]').click();
   const download = await downloadPromise;
   assert.deepEqual(await readFile(await download.path()), originalSVG);
   await capture(page, mode+'-wide');
@@ -336,4 +338,77 @@ test('six real Inter faces and ordinary text use the intended local providers',
     }
   }
   assert.match(await page.locator('code').evaluate(e => getComputedStyle(e).fontFamily), /Consolas/);
+});
+
+test('composition editions follow Auto and overrides without changing saved evidence', async t => {
+  const page = await fixture(t,{colorScheme:'dark'});
+  await ready(page);
+  const visible = page.locator('#composition-figure img:visible');
+  assert.equal(await visible.getAttribute('src'),'composition-obscur.png');
+  await page.locator('#choice').selectOption('1');
+  const url = page.url(), values = await page.locator('#interactive').textContent();
+  const receipt = await (await page.request.get(base+'/composition-figure.json')).json();
+  assert.deepEqual(receipt.evidence.retained_values,evidence);
+  assert.equal(receipt.evidence.solver_rerun,false);
+  assert.equal(receipt.typography.painted_faces.length,6);
+  for (const mode of ['clair','obscur']) {
+    await page.locator('#appearance').selectOption(mode);
+    assert.equal(await visible.getAttribute('src'),`composition-${mode}.png`);
+    await visible.scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => [...document.querySelectorAll('#composition-figure img')]
+      .filter(e => getComputedStyle(e).display !== 'none').every(e => e.complete && e.naturalWidth===960));
+    assert.equal(await visible.evaluate(e => getComputedStyle(e).filter),'none');
+    assert.equal(await page.locator('#interactive').textContent(),values);
+    assert.equal(page.url(),url);
+    for (const ext of ['svg','png']) {
+      const name=`composition-${mode}.${ext}`;
+      const pending=page.waitForEvent('download');
+      await page.locator(`#composition-figure a[href="${name}"][download]`).click();
+      const download=await pending;
+      assert.deepEqual(await readFile(await download.path()),await readFile(path.join(root,name)));
+    }
+    for (const width of [1280,390]) {
+      await page.setViewportSize({width,height:844});
+      await visible.scrollIntoViewIfNeeded();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth<=innerWidth),true);
+      if (process.env.SOLVER_SCREENSHOT_DIR) await visible.screenshot({path:path.join(
+        process.env.SOLVER_SCREENSHOT_DIR,`composition-${mode}-${width}.png`)});
+    }
+    await page.reload();
+    await page.locator('#interactive:visible').waitFor();
+    assert.equal(await page.locator('#appearance').inputValue(),mode);
+    assert.equal(await page.locator('#interactive').textContent(),values);
+  }
+  await page.emulateMedia({media:'print'});
+  assert.equal(await visible.getAttribute('src'),'composition-clair.png');
+  assert.equal(await page.locator('#appearance').inputValue(),'obscur');
+  await page.emulateMedia({media:'screen',colorScheme:'light'});
+  await page.locator('#appearance').selectOption('auto');
+  assert.equal(await visible.getAttribute('src'),'composition-clair.png');
+  await page.emulateMedia({colorScheme:'dark'});
+  assert.equal(await visible.getAttribute('src'),'composition-obscur.png');
+  const noScript=await fixture(t,{javaScriptEnabled:false,colorScheme:'dark'});
+  await noScript.goto(base+'/');
+  assert.equal(await noScript.locator('#composition-figure img:visible').getAttribute('src'),'composition-obscur.png');
+  await noScript.emulateMedia({colorScheme:'light'});
+  assert.equal(await noScript.locator('#composition-figure img:visible').getAttribute('src'),'composition-clair.png');
+});
+
+test('maintained Markdown pictures select the portable editions at narrow size', async t => {
+  const page=await fixture(t,{viewport:{width:390,height:844},colorScheme:'light'});
+  for (const name of ['README.md','docs/visual-example.md']) {
+    const raw=await readFile(new URL('../../'+name,import.meta.url),'utf8');
+    let picture=raw.match(/<picture>[\s\S]*?<\/picture>/)[0];
+    picture=picture.replace(/(?:docs\/)?blackjack-composition-(clair|obscur)\.png/g,
+      (_,mode)=>base+`/composition-${mode}.png`);
+    await page.setContent('<!doctype html><html lang="en"><head><title>Authored picture check</title>'+
+      '<style>body{margin:20px}img{max-width:100%;height:auto}</style></head><body>'+picture+'</body></html>');
+    for (const [scheme,mode] of [['light','clair'],['dark','obscur']]) {
+      await page.emulateMedia({colorScheme:scheme});
+      await page.waitForFunction(mode => document.querySelector('img').currentSrc.endsWith(
+        `composition-${mode}.png`) && document.querySelector('img').complete,mode);
+      assert.equal(await page.locator('img').evaluate(e=>e.naturalWidth),960);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    }
+  }
 });

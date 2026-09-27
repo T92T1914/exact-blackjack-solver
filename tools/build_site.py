@@ -7,9 +7,11 @@ import shutil
 try:
     from .presentation import appearance_css
     from .render_joint_report import render_outputs
+    from .render_composition_figure import check_outputs
 except ImportError:
     from presentation import appearance_css
     from render_joint_report import render_outputs
+    from render_composition_figure import check_outputs
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "_site"
@@ -21,6 +23,11 @@ FILES = {
     "site/appearance.js": "appearance.js",
     "docs/visual-example-data.json": "data.json",
     "docs/blackjack-composition-example.svg": "example.svg",
+    "docs/blackjack-composition-clair.png": "composition-clair.png",
+    "docs/blackjack-composition-obscur.png": "composition-obscur.png",
+    "docs/blackjack-composition-clair.svg": "composition-clair.svg",
+    "docs/blackjack-composition-obscur.svg": "composition-obscur.svg",
+    "docs/blackjack-composition-figure.json": "composition-figure.json",
 }
 
 
@@ -28,6 +35,7 @@ def main():
     data = json.loads((ROOT / "docs/visual-example-data.json").read_text())
     if not data.get("source_commit"):
         raise ValueError("Example data must retain its source revision.")
+    check_outputs()
     OUT.mkdir(exist_ok=True)
     css = appearance_css()
     report = render_outputs()

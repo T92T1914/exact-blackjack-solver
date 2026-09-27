@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "evidence": {
+    "retained_values": {
+      "source_commit": "23a42e6",
+      "source": "bj.ev.best_action",
+      "rules": "Six decks; visible cards removed; dealer stands on soft 17; peek completed without blackjack; no surrender",
+      "units": "Expected net return per original wager; not win probabilities",
+      "hands": [
+        {
+          "cards": [
+            "T",
+            "6"
+          ],
+          "dealer": "T",
+          "action": "H",
+          "values": {
+            "S": -0.5409544390190252,
+            "H": -0.5346755624525633,
+            "D": -1.0693511249051266
+          },
+          "margin": 0.006278876566461866
+        },
+        {
+          "cards": [
+            "8",
+            "5",
+            "3"
+          ],
+          "dealer": "T",
+          "action": "S",
+          "values": {
+            "S": -0.539886705281481,
+            "H": -0.5440039696389283
+          },
+          "margin": 0.004117264357447303
+        }
+      ]
+    },
+    "solver_rerun": false,
+    "token_revision": "7a57fe750ff50205a17e1d342106a0d3f2777159",
+    "series_roles": {
+      "H": "accent",
+      "S": "warning"
+    },
+    "displayed_actions": [
+      "H",
+      "S"
+    ],
+    "decimal_places": 6,
+    "recommendation": [
+      "Hit",
+      "Stand"
+    ],
+    "scope": "Exact hit and stand enumeration within the stated model. No split approximation is involved in these two examples.",
+    "split_reference": "The later joint split study is separate evidence."
+  },
+  "renderer": {
+    "matplotlib": "3.11.1",
+    "backend": "Agg"
+  },
+  "layout": {
+    "clair": {
+      "width": 960,
+      "height": 2080,
+      "labels_within_canvas": 23,
+      "minimum_font_points": 11.8
+    },
+    "obscur": {
+      "width": 960,
+      "height": 2080,
+      "labels_within_canvas": 23,
+      "minimum_font_points": 11.8
+    }
+  },
+  "typography": {
+    "files": {
+      "Regular": {
+        "sha256": "40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82",
+        "postscript": "Inter-Regular",
+        "weight": 400,
+        "italic": false
+      },
+      "SemiBold": {
+        "sha256": "78a843fade9d4612a5567302fb595b56976eb5fcebf4fea5a5912d638bafcde3",
+        "postscript": "Inter-SemiBold",
+        "weight": 600,
+        "italic": false
+      },
+      "Bold": {
+        "sha256": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f",
+        "postscript": "Inter-Bold",
+        "weight": 700,
+        "italic": false
+      },
+      "Italic": {
+        "sha256": "bbc051dd204b5019a1aa0bc0ae2aa8a05ab13e7a3f979fa357631dc7feb6833a",
+        "postscript": "Inter-Italic",
+        "weight": 400,
+        "italic": true
+      },
+      "SemiBoldItalic": {
+        "sha256": "eff2930c3d3b35d3fcf5f76252b6baef4c3e907d9d2fde1d16cf5d417f8deef4",
+        "postscript": "Inter-SemiBoldItalic",
+        "weight": 600,
+        "italic": true
+      },
+      "BoldItalic": {
+        "sha256": "948405a16cdc62701da5f4005ed068ca5f4d27061d98f7974ccfc37831d9581d",
+        "postscript": "Inter-BoldItalic",
+        "weight": 700,
+        "italic": true
+      }
+    },
+    "painted_faces": [
+      "Regular",
+      "SemiBold",
+      "Bold",
+      "Italic",
+      "SemiBoldItalic",
+      "BoldItalic"
+    ],
+    "png": "Glyphs rasterized from explicit Inter files",
+    "svg": "Labels outlined from the same Inter files. Selectable explanations and data accompany them."
+  },
+  "inputs_sha256_lf": {
+    "docs/visual-example-data.json": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c",
+    "presentation/tokens.json": "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7",
+    "tools/presentation.py": "1055ef87d159d87c05b96817cab172d6b41d23f8f723d660d094f8e0d3589109",
+    "tools/render_composition_figure.py": "86bb8d40dec3aaeffacb401dd669185e54f06868f1ac3405a3ba2b1f5d586278"
+  },
+  "outputs_sha256": {
+    "docs/blackjack-composition-clair.png": "f16b427c298450e25e40d3d9b0d0cf5974f046b9b173c01d941266017dcc7ad1",
+    "docs/blackjack-composition-clair.svg": "4009283dc781774b8f9431969e4a2c140797d783ff6637253ed20d2623c9680e",
+    "docs/blackjack-composition-obscur.png": "6a9b427fd0e57509a1089e3523bf0a100ce501545a7f6a7e999015ab479c973c",
+    "docs/blackjack-composition-obscur.svg": "a4101b7b273e93d05f6c6714c8192962a84b2e55f1fe5820407bee28f9aeb338"
+  }
+}
