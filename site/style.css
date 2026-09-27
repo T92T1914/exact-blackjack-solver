@@ -21,3 +21,14 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 .metric strong{overflow-wrap:anywhere}.fine,footer{overflow-wrap:anywhere}
 @media print{.wrap{max-width:none;padding:0}.appearance-control{display:none}.panel,figure{break-inside:avoid}}
 @media(forced-colors:active){.panel,.button,select,.metric{border-color:CanvasText}a,.button.primary{color:LinkText}.button.primary{background:Canvas}a:focus-visible,select:focus-visible,summary:focus-visible,.table-wrap:focus-visible{outline-color:Highlight}}
+
+/* The report keeps its quantitative scale while narrow screens scroll the figure. */
+.joint-report .chart-wrap{overflow-x:auto;max-width:100%;overscroll-behavior-inline:contain}
+.joint-report .chart-wrap svg{display:block;width:100%;min-width:980px;height:auto}
+.joint-report .chart-wrap:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.joint-report table{font-variant-numeric:tabular-nums}
+.joint-report th,.joint-report td{white-space:nowrap}
+.joint-report th:first-child,.joint-report td:first-child{white-space:normal;min-width:220px}
+.joint-report code,.joint-report .identities{overflow-wrap:anywhere}
+.joint-report dd{margin:4px 0 16px}
+@media print{.joint-report .chart-wrap{overflow:visible}.joint-report .chart-wrap svg{min-width:0}.joint-report .table-wrap{overflow:visible}.joint-report table{font-size:8pt}.joint-report th,.joint-report td{white-space:normal;padding:3px}.joint-report th:first-child,.joint-report td:first-child{min-width:0}.joint-report .panel{break-inside:auto}}

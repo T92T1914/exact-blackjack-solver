@@ -35,7 +35,7 @@ def test_build_preserves_retained_evidence_and_allowlist(tmp_path, monkeypatch):
     build_site.main()
     assert {p.name for p in tmp_path.iterdir()} == set(build_site.FILES.values()) | {
         "appearance.css"
-    }
+    } | set(build_site.render_outputs())
     for source, target in build_site.FILES.items():
         assert (tmp_path / target).read_bytes() == (ROOT / source).read_bytes()
     assert (tmp_path / "appearance.css").read_text() == presentation.appearance_css()

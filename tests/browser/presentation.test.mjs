@@ -191,10 +191,121 @@ test('a missing font supplies readable fallback separately from Inter acceptance
     sample.style.fontFamily='"Solver deliberately missing face", Arial, sans-serif';
     sample.textContent='Readable fallback 123'; document.body.append(sample);
   });
+  await page.locator('#missing-face').evaluate(e => e.getBoundingClientRect());
+  await page.evaluate(() => document.fonts.ready);
   const providers = await fonts(page, '#missing-face');
   assert.ok(providers.length > 0);
   assert.ok(providers.every(f => !f.postScriptName.startsWith('Inter')));
   console.log('Separate missing-font fallback:', JSON.stringify(providers));
+});
+
+const jointEvidence = JSON.parse(await readFile(new URL('../../docs/joint-split-results.json', import.meta.url)));
+for (const mode of ['clair','obscur']) test(`joint report ${mode} preserves every condition, downloads and navigation`, async t => {
+  const page = await fixture(t);
+  await ready(page);
+  await page.locator('#joint-reference a').click();
+  assert.equal(new URL(page.url()).pathname, '/joint-split.html');
+  await page.locator('#appearance').selectOption(mode);
+  assert.equal(await page.locator('#conditions tbody tr').count(), 48);
+  assert.equal(await page.locator('#changes tbody tr').count(), 1);
+  assert.equal(await page.locator('[data-condition]').count(), 48);
+  assert.match(await page.locator('#attempts').textContent(), /first comparison was invalid/);
+  const cells = await page.locator('#conditions tbody tr').evaluateAll(rows => rows.map(row =>
+    [...row.querySelectorAll('td')].map(cell => cell.textContent)));
+  for (let index=0; index<48; index++) {
+    const saved = jointEvidence.rows[index];
+    assert.equal(cells[index][2], saved.production.values.P.toFixed(9));
+    assert.equal(cells[index][3], saved.reference.value.toFixed(9));
+    assert.equal(Number(cells[index][4]), Number(saved.signed_gap.toFixed(9)));
+    assert.equal(cells[index][9], String(saved.reference.states));
+  }
+  const downloads = await page.locator('a[download]').evaluateAll(links => [...new Set(links.map(a => a.getAttribute('href')))]);
+  assert.equal(downloads.length, 7);
+  for (const name of downloads) {
+    const pending = page.waitForEvent('download');
+    await page.locator(`a[download][href="${name}"]`).first().click();
+    const download = await pending;
+    assert.deepEqual(await readFile(await download.path()), await readFile(path.join(root, name)));
+  }
+  await page.evaluate(() => scrollTo(0,0));
+  if (process.env.SOLVER_SCREENSHOT_DIR) {
+    await mkdir(process.env.SOLVER_SCREENSHOT_DIR,{recursive:true});
+    await page.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR,`joint-${mode}-wide.png`)});
+    await page.locator('.chart-wrap').screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR,`joint-${mode}-chart.png`)});
+  }
+  const before = await page.locator('#conditions').textContent();
+  await page.setViewportSize({width:390,height:844});
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.evaluate(() => scrollTo(0,0));
+  if (process.env.SOLVER_SCREENSHOT_DIR) await page.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR,`joint-${mode}-narrow.png`)});
+  await page.locator('.chart-wrap').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(() => document.querySelector('.chart-wrap').scrollLeft > 0);
+  assert.equal(await page.locator('.chart-wrap').evaluate(e => getComputedStyle(e).outlineStyle),'solid');
+  await page.locator('#all-conditions .table-wrap').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(() => document.querySelector('#all-conditions .table-wrap').scrollLeft > 0);
+  await page.addStyleTag({content:'body{font-size:30px !important}'});
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.equal(await page.locator('#conditions').textContent(), before);
+  await page.reload();
+  assert.equal(await page.locator('#appearance').inputValue(), mode);
+  await page.locator('nav a[href="index.html"]').click();
+  await page.locator('#interactive:visible').waitFor();
+  await page.goBack();
+  assert.equal(await page.locator('#conditions tbody tr').count(), 48);
+  assert.equal(await page.locator('#appearance').inputValue(), mode);
+  await page.goForward();
+  await page.locator('#interactive:visible').waitFor();
+});
+
+test('joint report Auto, blocked storage, no script and print retain readable evidence', async t => {
+  const page = await fixture(t,{colorScheme:'dark'},true);
+  await page.goto(base+'/joint-split.html');
+  assert.equal(await background(page),'rgb(9, 9, 9)');
+  await page.locator('#appearance').selectOption('clair');
+  assert.equal(await background(page),'rgb(248, 247, 243)');
+  await page.reload();
+  assert.equal(await page.locator('#appearance').inputValue(),'auto');
+  assert.equal(await background(page),'rgb(9, 9, 9)');
+  await page.emulateMedia({colorScheme:'light'});
+  assert.equal(await background(page),'rgb(248, 247, 243)');
+  await page.locator('#appearance').selectOption('obscur');
+  await page.emulateMedia({media:'print',colorScheme:'dark'});
+  assert.equal(await background(page),'rgb(248, 247, 243)');
+  const marker = page.locator('[data-condition="balanced_high/2/6/das-false"] circle');
+  assert.equal(await marker.evaluate(e => getComputedStyle(e).fill),'rgb(54, 95, 120)');
+  assert.equal(await page.locator('#appearance').inputValue(),'obscur');
+  const noScript = await fixture(t,{javaScriptEnabled:false,colorScheme:'dark'});
+  await noScript.goto(base+'/joint-split.html');
+  assert.equal(await noScript.locator('#appearance').isDisabled(),true);
+  assert.equal(await noScript.locator('#conditions tbody tr').count(),48);
+  assert.equal(await noScript.locator('[data-condition]').count(),48);
+  assert.equal(await background(noScript),'rgb(9, 9, 9)');
+  assert.equal(await noScript.locator('a[href="joint-split.csv"]').isVisible(),true);
+});
+
+test('joint report and standalone figures use real local Inter glyph providers',
+  {skip:process.env.SOLVER_REQUIRE_INTER !== '1'}, async t => {
+  const page = await fixture(t);
+  for (const mode of ['clair','obscur']) {
+    await page.goto(base+'/joint-split.html');
+    await page.locator('#appearance').selectOption(mode);
+    await page.evaluate(() => document.fonts.ready);
+    for (const [selector,expected] of [['h1','Inter-Bold'],['.lead','Inter-Regular'],
+      ['label[for="appearance"]','Inter-SemiBold'],['.chart-wrap svg g text','Inter-SemiBold']]) {
+      await page.locator(selector).first().evaluate(e => e.getBoundingClientRect());
+      const providers = await fonts(page,selector);
+      assert.ok(providers.some(f => f.postScriptName===expected),JSON.stringify({mode,selector,providers}));
+      assert.ok(providers.every(f => f.postScriptName===expected));
+      console.log('Report glyph provider:',JSON.stringify({mode,selector,providers}));
+    }
+    await page.goto(base+`/joint-split-${mode}.svg`);
+    await page.evaluate(() => document.fonts.ready);
+    const providers = await fonts(page,'g text');
+    assert.ok(providers.some(f => f.postScriptName==='Inter-SemiBold'),JSON.stringify({mode,providers}));
+    console.log('Standalone editable SVG glyph provider:',JSON.stringify({mode,providers}));
+  }
 });
 test('six real Inter faces and ordinary text use the intended local providers',
   {skip:process.env.SOLVER_REQUIRE_INTER !== '1'}, async t => {

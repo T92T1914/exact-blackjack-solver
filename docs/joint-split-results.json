@@ -1,0 +1,4994 @@
+{
+  "schema_version": 1,
+  "protocol": {
+    "schema_version": 1,
+    "id": "bounded-joint-split-v1",
+    "declared_date": "2026-09-27",
+    "question": "How does the production independent split approximation differ from a joint two hand numerical reference in a declared toy composition family?",
+    "rank_order": [
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "T",
+      "A"
+    ],
+    "unseen_shoes": {
+      "balanced_high": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "ten_rich": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ]
+    },
+    "pair_ranks": [
+      "2",
+      "5",
+      "8",
+      "A"
+    ],
+    "dealer_upcards": [
+      "6",
+      "T",
+      "A"
+    ],
+    "double_after_split": [
+      false,
+      true
+    ],
+    "conditions": 48,
+    "stand_soft_17": true,
+    "resplits": false,
+    "split_aces": "Exactly one additional card each. No hit, double, resplit or natural premium.",
+    "play_order": "Fully play the first split hand before dealing the second hand its additional card. Finish both before resolving the shared dealer outcome. A player total of 21 ends play.",
+    "information": "Counts exclude both visible pair cards and the dealer upcard. They include one reserved hidden hole, conditioned on the completed peek having found no natural. All maxima use observable information only and optimize combined round settlement.",
+    "actions": "Stand and hit. Double only on the two card split hand when DAS is true. No surrender. Production single hand stand, hit and double values remain the root comparators.",
+    "units": "Net units of the original bet, summed across both hands. A doubled hand has wager two.",
+    "limits": {
+      "max_states": 100000,
+      "reference_seconds": 10.0,
+      "case_wall_seconds": 20.0,
+      "numerical_tolerance": 1e-12,
+      "decision_tie_tolerance": 1e-12
+    },
+    "order": "Listed shoe, then pair, then dealer, then DAS. One attempt per condition, no parameter selection or retuning from comparison outcomes.",
+    "metrics": [
+      "joint value",
+      "production split value",
+      "signed production minus joint gap",
+      "absolute gap",
+      "root action set and margin using unchanged single hand values",
+      "decision change",
+      "runtime",
+      "state count",
+      "maximum probability mass error",
+      "failures and exclusions"
+    ],
+    "exhaustion_policy": "If any admitted action needs an unavailable player or dealer draw, mark the condition unsupported. Do not omit that action, resample a shoe or invent a terminal payoff. Time and state limits remain explicit exclusions.",
+    "scope": "Two constructed eight card unseen shoes with only ranks 7, 8, 9 and T. Visible cards are supplied separately and are not removed again. This high rank toy family was chosen to keep complete enumeration tractable, not to represent full shoe frequencies.",
+    "interpretation": "Retain every condition and any adverse decision tail. No claim about full shoe split error, house edge, resplitting, wagering advantage or general approximation direction. Floating enumeration is not symbolic exactness.",
+    "pilot": "Tests use separate shoes with at most seven unseen cards and independent physical permutation Fraction oracles. They establish arithmetic and execution feasibility, not comparison outcomes for this eight card study."
+  },
+  "evaluated_revision": "9b8f54c85fe7689490503a8874e41f7d48b53127",
+  "implementation_sha256_lf": {
+    "bj/joint_split.py": "0cd746562bb214e9ac3554eedaa58a0f91fcc618caf891f99944f64dd6575b4e",
+    "bj/ev.py": "c2fee848abe69c2496782d434a5088ad01da0a1fc182ae4ae2271daf9c3a539d",
+    "bj/core.py": "c22546eaeaf9c7662f09fec96798aa123ac86856fa1abdfc0ff07006d3df09a8",
+    "bj/dealer.py": "b36875e116b192f4a89a582b38a365941d92db893d4b8584a84c50b377ef36a1",
+    "tools/compare_joint_split.py": "539fff9215866b95a648c4a91d4cecc78e0ed578ef8cac2f6bb43ac61c0fddf6",
+    "docs/joint-split-protocol.json": "f4811904a95127b3729ec635d2e4a1e1011b38717c0fb145402599b235bcfc36"
+  },
+  "started_utc": "2026-09-27T09:23:57.749311+00:00",
+  "python": "3.11.8",
+  "platform": "Windows",
+  "status": "completed",
+  "rows": [
+    {
+      "id": "balanced_high/2/6/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "6",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.3738095238095238,
+        "states": 2384,
+        "elapsed_seconds": 0.00788520000060089,
+        "cache_hits": 1969,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            66
+          ],
+          [
+            "dealer",
+            624
+          ],
+          [
+            "settle",
+            455
+          ],
+          [
+            "play",
+            1239
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0003902000025846064,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.07142857142857162,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.6523809523809523,
+          "D": 1.2857142857142856,
+          "P": 1.3571428571428572
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.08809523809523823,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.6523809523809523,
+          "D": 1.2857142857142856,
+          "P": 1.3738095238095238
+        }
+      },
+      "signed_gap": -0.016666666666666607,
+      "absolute_gap": 0.016666666666666607,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.008371300005819649,
+      "stage": "finished",
+      "case_wall_seconds": 0.15107999998144805,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/2/6/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "6",
+      "double_after_split": true,
+      "reference": {
+        "value": 2.657142857142857,
+        "states": 3260,
+        "elapsed_seconds": 0.013984499993966892,
+        "cache_hits": 3842,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            66
+          ],
+          [
+            "dealer",
+            624
+          ],
+          [
+            "settle",
+            880
+          ],
+          [
+            "play",
+            1690
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0008252999978139997,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 1.3714285714285719,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.6523809523809523,
+          "D": 1.2857142857142856,
+          "P": 2.6571428571428575
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 1.3714285714285714,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.6523809523809523,
+          "D": 1.2857142857142856,
+          "P": 2.657142857142857
+        }
+      },
+      "signed_gap": 4.440892098500626e-16,
+      "absolute_gap": 4.440892098500626e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.015044900006614625,
+      "stage": "finished",
+      "case_wall_seconds": 0.1434509000100661,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/2/T/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "T",
+      "double_after_split": false,
+      "reference": {
+        "value": 0.2142857142857143,
+        "states": 1936,
+        "elapsed_seconds": 0.0066386999969836324,
+        "cache_hits": 1969,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            66
+          ],
+          [
+            "dealer",
+            176
+          ],
+          [
+            "settle",
+            455
+          ],
+          [
+            "play",
+            1239
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00028639999800361693,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.19047619047619052,
+        "values": {
+          "S": -1.0,
+          "H": 0.023809523809523753,
+          "D": -1.9999999999999998,
+          "P": 0.21428571428571427
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.19047619047619055,
+        "values": {
+          "S": -1.0,
+          "H": 0.023809523809523753,
+          "D": -1.9999999999999998,
+          "P": 0.2142857142857143
+        }
+      },
+      "signed_gap": -2.7755575615628914e-17,
+      "absolute_gap": 2.7755575615628914e-17,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0070349999878089875,
+      "stage": "finished",
+      "case_wall_seconds": 0.14720939999097027,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/2/T/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "T",
+      "double_after_split": true,
+      "reference": {
+        "value": 0.619047619047619,
+        "states": 2812,
+        "elapsed_seconds": 0.010263900010613725,
+        "cache_hits": 3842,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            66
+          ],
+          [
+            "dealer",
+            176
+          ],
+          [
+            "settle",
+            880
+          ],
+          [
+            "play",
+            1690
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00023609999334439635,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.5952380952380953,
+        "values": {
+          "S": -1.0,
+          "H": 0.023809523809523753,
+          "D": -1.9999999999999998,
+          "P": 0.6190476190476191
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.5952380952380952,
+        "values": {
+          "S": -1.0,
+          "H": 0.023809523809523753,
+          "D": -1.9999999999999998,
+          "P": 0.619047619047619
+        }
+      },
+      "signed_gap": 1.1102230246251565e-16,
+      "absolute_gap": 1.1102230246251565e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.010615199978929013,
+      "stage": "finished",
+      "case_wall_seconds": 0.14841429999796674,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/2/A/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "A",
+      "double_after_split": false,
+      "reference": {
+        "value": -0.06349206349206349,
+        "states": 1863,
+        "elapsed_seconds": 0.006734100024914369,
+        "cache_hits": 1711,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            66
+          ],
+          [
+            "dealer",
+            132
+          ],
+          [
+            "settle",
+            450
+          ],
+          [
+            "play",
+            1215
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0001967000134754926,
+      "production": {
+        "best": [
+          "H",
+          "P"
+        ],
+        "margin": 6.938893903907228e-17,
+        "values": {
+          "S": -1.0,
+          "H": -0.06349206349206347,
+          "D": -2.0,
+          "P": -0.06349206349206354
+        }
+      },
+      "joint": {
+        "best": [
+          "H",
+          "P"
+        ],
+        "margin": 1.3877787807814457e-17,
+        "values": {
+          "S": -1.0,
+          "H": -0.06349206349206347,
+          "D": -2.0,
+          "P": -0.06349206349206349
+        }
+      },
+      "signed_gap": -5.551115123125783e-17,
+      "absolute_gap": 5.551115123125783e-17,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.007035199989331886,
+      "stage": "finished",
+      "case_wall_seconds": 0.1350139000278432,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/2/A/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "A",
+      "double_after_split": true,
+      "reference": {
+        "value": 0.23915343915343915,
+        "states": 2739,
+        "elapsed_seconds": 0.009381400013808161,
+        "cache_hits": 3294,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            66
+          ],
+          [
+            "dealer",
+            132
+          ],
+          [
+            "settle",
+            875
+          ],
+          [
+            "play",
+            1666
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0003346000157762319,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.28571428571428564,
+        "values": {
+          "S": -1.0,
+          "H": -0.06349206349206347,
+          "D": -2.0,
+          "P": 0.22222222222222215
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.3026455026455026,
+        "values": {
+          "S": -1.0,
+          "H": -0.06349206349206347,
+          "D": -2.0,
+          "P": 0.23915343915343915
+        }
+      },
+      "signed_gap": -0.01693121693121699,
+      "absolute_gap": 0.01693121693121699,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.009824800014030188,
+      "stage": "finished",
+      "case_wall_seconds": 0.14255109999794513,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/5/6/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "6",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.2857142857142856,
+        "states": 1305,
+        "elapsed_seconds": 0.005193799996050075,
+        "cache_hits": 691,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            44
+          ],
+          [
+            "dealer",
+            526
+          ],
+          [
+            "settle",
+            265
+          ],
+          [
+            "play",
+            470
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0004309999931138009,
+      "production": {
+        "best": [
+          "D"
+        ],
+        "margin": 0.023809523809523725,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.6547619047619047,
+          "D": 1.3095238095238093,
+          "P": 1.2857142857142856
+        }
+      },
+      "joint": {
+        "best": [
+          "D"
+        ],
+        "margin": 0.023809523809523725,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.6547619047619047,
+          "D": 1.3095238095238093,
+          "P": 1.2857142857142856
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0057431999885011464,
+      "stage": "finished",
+      "case_wall_seconds": 0.13371640001423657,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/5/6/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "6",
+      "double_after_split": true,
+      "reference": {
+        "value": 1.3095238095238093,
+        "states": 1877,
+        "elapsed_seconds": 0.007636900001671165,
+        "cache_hits": 1776,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            44
+          ],
+          [
+            "dealer",
+            526
+          ],
+          [
+            "settle",
+            608
+          ],
+          [
+            "play",
+            699
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0002795000036712736,
+      "production": {
+        "best": [
+          "D"
+        ],
+        "margin": 0.023809523809523725,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.6547619047619047,
+          "D": 1.3095238095238093,
+          "P": 1.2857142857142856
+        }
+      },
+      "joint": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.6547619047619047,
+          "D": 1.3095238095238093,
+          "P": 1.3095238095238093
+        }
+      },
+      "signed_gap": -0.023809523809523725,
+      "absolute_gap": 0.023809523809523725,
+      "decision_changed": true,
+      "status": "completed",
+      "worker_seconds": 0.008017400017706677,
+      "stage": "finished",
+      "case_wall_seconds": 0.13380820001475513,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/5/T/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "T",
+      "double_after_split": false,
+      "reference": {
+        "value": -0.7380952380952381,
+        "states": 920,
+        "elapsed_seconds": 0.004001599998446181,
+        "cache_hits": 691,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            44
+          ],
+          [
+            "dealer",
+            141
+          ],
+          [
+            "settle",
+            265
+          ],
+          [
+            "play",
+            470
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00016300001880154014,
+      "production": {
+        "best": [
+          "H",
+          "D"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": 0.0,
+          "D": 0.0,
+          "P": -0.7380952380952381
+        }
+      },
+      "joint": {
+        "best": [
+          "H",
+          "D"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": 0.0,
+          "D": 0.0,
+          "P": -0.7380952380952381
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.004279999993741512,
+      "stage": "finished",
+      "case_wall_seconds": 0.13125840001157485,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/5/T/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "T",
+      "double_after_split": true,
+      "reference": {
+        "value": -0.625,
+        "states": 1492,
+        "elapsed_seconds": 0.005448900017654523,
+        "cache_hits": 1776,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            44
+          ],
+          [
+            "dealer",
+            141
+          ],
+          [
+            "settle",
+            608
+          ],
+          [
+            "play",
+            699
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00017869999282993376,
+      "production": {
+        "best": [
+          "H",
+          "D"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": 0.0,
+          "D": 0.0,
+          "P": -0.6428571428571428
+        }
+      },
+      "joint": {
+        "best": [
+          "H",
+          "D"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": 0.0,
+          "D": 0.0,
+          "P": -0.625
+        }
+      },
+      "signed_gap": -0.017857142857142794,
+      "absolute_gap": 0.017857142857142794,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0057443999976385385,
+      "stage": "finished",
+      "case_wall_seconds": 0.1289905000012368,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/5/A/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "A",
+      "double_after_split": false,
+      "reference": {
+        "value": -0.9523809523809523,
+        "states": 879,
+        "elapsed_seconds": 0.003215899982023984,
+        "cache_hits": 566,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            44
+          ],
+          [
+            "dealer",
+            103
+          ],
+          [
+            "settle",
+            264
+          ],
+          [
+            "play",
+            468
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0001613000058569014,
+      "production": {
+        "best": [
+          "H"
+        ],
+        "margin": 0.1428571428571429,
+        "values": {
+          "S": -1.0,
+          "H": -0.1428571428571429,
+          "D": -0.2857142857142858,
+          "P": -0.9523809523809523
+        }
+      },
+      "joint": {
+        "best": [
+          "H"
+        ],
+        "margin": 0.1428571428571429,
+        "values": {
+          "S": -1.0,
+          "H": -0.1428571428571429,
+          "D": -0.2857142857142858,
+          "P": -0.9523809523809523
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0034824999747797847,
+      "stage": "finished",
+      "case_wall_seconds": 0.15070500000729226,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/5/A/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "A",
+      "double_after_split": true,
+      "reference": {
+        "value": -0.9285714285714286,
+        "states": 1451,
+        "elapsed_seconds": 0.005414399987785146,
+        "cache_hits": 1462,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            44
+          ],
+          [
+            "dealer",
+            103
+          ],
+          [
+            "settle",
+            607
+          ],
+          [
+            "play",
+            697
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0001503000094089657,
+      "production": {
+        "best": [
+          "H"
+        ],
+        "margin": 0.1428571428571429,
+        "values": {
+          "S": -1.0,
+          "H": -0.1428571428571429,
+          "D": -0.2857142857142858,
+          "P": -0.9523809523809523
+        }
+      },
+      "joint": {
+        "best": [
+          "H"
+        ],
+        "margin": 0.1428571428571429,
+        "values": {
+          "S": -1.0,
+          "H": -0.1428571428571429,
+          "D": -0.2857142857142858,
+          "P": -0.9285714285714286
+        }
+      },
+      "signed_gap": -0.023809523809523725,
+      "absolute_gap": 0.023809523809523725,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.005669100006343797,
+      "stage": "finished",
+      "case_wall_seconds": 0.14551030000438914,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/8/6/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "6",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.2857142857142856,
+        "states": 811,
+        "elapsed_seconds": 0.0032124000135809183,
+        "cache_hits": 333,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            31
+          ],
+          [
+            "dealer",
+            356
+          ],
+          [
+            "settle",
+            157
+          ],
+          [
+            "play",
+            267
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00017010001465678215,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.6428571428571428,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": -1.0,
+          "D": -2.0,
+          "P": 1.2857142857142856
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.6428571428571428,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": -1.0,
+          "D": -2.0,
+          "P": 1.2857142857142856
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0034850999945774674,
+      "stage": "finished",
+      "case_wall_seconds": 0.14657559999614023,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/8/6/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "6",
+      "double_after_split": true,
+      "reference": {
+        "value": 1.2857142857142856,
+        "states": 1256,
+        "elapsed_seconds": 0.004556200001388788,
+        "cache_hits": 894,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            31
+          ],
+          [
+            "dealer",
+            356
+          ],
+          [
+            "settle",
+            436
+          ],
+          [
+            "play",
+            433
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00018659999477677047,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.6428571428571428,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": -1.0,
+          "D": -2.0,
+          "P": 1.2857142857142856
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.6428571428571428,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": -1.0,
+          "D": -2.0,
+          "P": 1.2857142857142856
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.004840700014028698,
+      "stage": "finished",
+      "case_wall_seconds": 0.13829010000335984,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/8/T/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "T",
+      "double_after_split": false,
+      "reference": {
+        "value": -1.4285714285714284,
+        "states": 543,
+        "elapsed_seconds": 0.001976300001842901,
+        "cache_hits": 333,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            31
+          ],
+          [
+            "dealer",
+            88
+          ],
+          [
+            "settle",
+            157
+          ],
+          [
+            "play",
+            267
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00012360000982880592,
+      "production": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.4285714285714284
+        }
+      },
+      "joint": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.4285714285714284
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0021963999897707254,
+      "stage": "finished",
+      "case_wall_seconds": 0.12856330000795424,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/8/T/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "T",
+      "double_after_split": true,
+      "reference": {
+        "value": -1.4285714285714284,
+        "states": 988,
+        "elapsed_seconds": 0.0037420000007841736,
+        "cache_hits": 894,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            31
+          ],
+          [
+            "dealer",
+            88
+          ],
+          [
+            "settle",
+            436
+          ],
+          [
+            "play",
+            433
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00011660001473501325,
+      "production": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.4285714285714284
+        }
+      },
+      "joint": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.4285714285714284
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.003983000002335757,
+      "stage": "finished",
+      "case_wall_seconds": 0.12363749998621643,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/8/A/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "A",
+      "double_after_split": false,
+      "reference": {
+        "value": -1.8095238095238093,
+        "states": 521,
+        "elapsed_seconds": 0.00202829999034293,
+        "cache_hits": 280,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            31
+          ],
+          [
+            "dealer",
+            66
+          ],
+          [
+            "settle",
+            157
+          ],
+          [
+            "play",
+            267
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 9.630000567995012e-05,
+      "production": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.8095238095238095
+        }
+      },
+      "joint": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.8095238095238093
+        }
+      },
+      "signed_gap": -2.220446049250313e-16,
+      "absolute_gap": 2.220446049250313e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0022228000161703676,
+      "stage": "finished",
+      "case_wall_seconds": 0.1357824000006076,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/8/A/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "A",
+      "double_after_split": true,
+      "reference": {
+        "value": -1.8095238095238093,
+        "states": 966,
+        "elapsed_seconds": 0.003285899991169572,
+        "cache_hits": 781,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            31
+          ],
+          [
+            "dealer",
+            66
+          ],
+          [
+            "settle",
+            436
+          ],
+          [
+            "play",
+            433
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00012469998910091817,
+      "production": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.8095238095238095
+        }
+      },
+      "joint": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.8095238095238093
+        }
+      },
+      "signed_gap": -2.220446049250313e-16,
+      "absolute_gap": 2.220446049250313e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.003517800010740757,
+      "stage": "finished",
+      "case_wall_seconds": 0.16808199998922646,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/A/6/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "6",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.452380952380952,
+        "states": 202,
+        "elapsed_seconds": 0.0016952999867498875,
+        "cache_hits": 24,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            156
+          ],
+          [
+            "settle",
+            16
+          ],
+          [
+            "play",
+            25
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.000533199985511601,
+      "production": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.726190476190476,
+          "D": 1.452380952380952,
+          "P": 1.452380952380952
+        }
+      },
+      "joint": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.726190476190476,
+          "D": 1.452380952380952,
+          "P": 1.452380952380952
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.002360899990890175,
+      "stage": "finished",
+      "case_wall_seconds": 0.1439165000047069,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/A/6/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "6",
+      "double_after_split": true,
+      "reference": {
+        "value": 1.452380952380952,
+        "states": 202,
+        "elapsed_seconds": 0.0012658000050578266,
+        "cache_hits": 24,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            156
+          ],
+          [
+            "settle",
+            16
+          ],
+          [
+            "play",
+            25
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0003437999985180795,
+      "production": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.726190476190476,
+          "D": 1.452380952380952,
+          "P": 1.452380952380952
+        }
+      },
+      "joint": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.6428571428571428,
+          "H": 0.726190476190476,
+          "D": 1.452380952380952,
+          "P": 1.452380952380952
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0017068999877665192,
+      "stage": "finished",
+      "case_wall_seconds": 0.13912609999533743,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/A/T/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "T",
+      "double_after_split": false,
+      "reference": {
+        "value": 0.7142857142857142,
+        "states": 82,
+        "elapsed_seconds": 0.0008416999771725386,
+        "cache_hits": 24,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            36
+          ],
+          [
+            "settle",
+            16
+          ],
+          [
+            "play",
+            25
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00017740001203492284,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.13095238095238093,
+        "values": {
+          "S": -1.0,
+          "H": 0.5833333333333333,
+          "D": 0.4285714285714284,
+          "P": 0.7142857142857142
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.13095238095238093,
+        "values": {
+          "S": -1.0,
+          "H": 0.5833333333333333,
+          "D": 0.4285714285714284,
+          "P": 0.7142857142857142
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0011132000072393566,
+      "stage": "finished",
+      "case_wall_seconds": 0.12848029998713173,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/A/T/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "T",
+      "double_after_split": true,
+      "reference": {
+        "value": 0.7142857142857142,
+        "states": 82,
+        "elapsed_seconds": 0.0006995000003371388,
+        "cache_hits": 24,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            36
+          ],
+          [
+            "settle",
+            16
+          ],
+          [
+            "play",
+            25
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.00017680000746622682,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.13095238095238093,
+        "values": {
+          "S": -1.0,
+          "H": 0.5833333333333333,
+          "D": 0.4285714285714284,
+          "P": 0.7142857142857142
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.13095238095238093,
+        "values": {
+          "S": -1.0,
+          "H": 0.5833333333333333,
+          "D": 0.4285714285714284,
+          "P": 0.7142857142857142
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0009664999961387366,
+      "stage": "finished",
+      "case_wall_seconds": 0.12565229999017902,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/A/A/das-false",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "A",
+      "double_after_split": false,
+      "reference": {
+        "value": 0.5714285714285714,
+        "states": 73,
+        "elapsed_seconds": 0.00027810002211481333,
+        "cache_hits": 18,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            27
+          ],
+          [
+            "settle",
+            16
+          ],
+          [
+            "play",
+            25
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0006345000001601875,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.17460317460317454,
+        "values": {
+          "S": -1.0,
+          "H": 0.39682539682539686,
+          "D": 0.09523809523809534,
+          "P": 0.5714285714285714
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.17460317460317454,
+        "values": {
+          "S": -1.0,
+          "H": 0.39682539682539686,
+          "D": 0.09523809523809534,
+          "P": 0.5714285714285714
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0010033999860752374,
+      "stage": "finished",
+      "case_wall_seconds": 0.1280235000012908,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "balanced_high/A/A/das-true",
+      "shoe_name": "balanced_high",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "A",
+      "double_after_split": true,
+      "reference": {
+        "value": 0.5714285714285714,
+        "states": 73,
+        "elapsed_seconds": 0.0002657999866642058,
+        "cache_hits": 18,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            27
+          ],
+          [
+            "settle",
+            16
+          ],
+          [
+            "play",
+            25
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2
+      ],
+      "production_seconds": 0.0005698000022675842,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.17460317460317454,
+        "values": {
+          "S": -1.0,
+          "H": 0.39682539682539686,
+          "D": 0.09523809523809534,
+          "P": 0.5714285714285714
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.17460317460317454,
+        "values": {
+          "S": -1.0,
+          "H": 0.39682539682539686,
+          "D": 0.09523809523809534,
+          "P": 0.5714285714285714
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0009278999932575971,
+      "stage": "finished",
+      "case_wall_seconds": 0.12735429999884218,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/2/6/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "6",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.8761904761904762,
+        "states": 1096,
+        "elapsed_seconds": 0.0050765000050887465,
+        "cache_hits": 758,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            39
+          ],
+          [
+            "dealer",
+            329
+          ],
+          [
+            "settle",
+            214
+          ],
+          [
+            "play",
+            514
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.000616599980276078,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.019047619047619202,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9285714285714285,
+          "D": 1.857142857142857,
+          "P": 1.8761904761904762
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.019047619047619202,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9285714285714285,
+          "D": 1.857142857142857,
+          "P": 1.8761904761904762
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.005810000002384186,
+      "stage": "finished",
+      "case_wall_seconds": 0.16210220000357367,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/2/6/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "6",
+      "double_after_split": true,
+      "reference": {
+        "value": 2.8476190476190477,
+        "states": 1513,
+        "elapsed_seconds": 0.006441200006520376,
+        "cache_hits": 1605,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            39
+          ],
+          [
+            "dealer",
+            329
+          ],
+          [
+            "settle",
+            432
+          ],
+          [
+            "play",
+            713
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00029520000680349767,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.9904761904761903,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9285714285714285,
+          "D": 1.857142857142857,
+          "P": 2.8476190476190473
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.9904761904761907,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9285714285714285,
+          "D": 1.857142857142857,
+          "P": 2.8476190476190477
+        }
+      },
+      "signed_gap": -4.440892098500626e-16,
+      "absolute_gap": 4.440892098500626e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0068472000129986554,
+      "stage": "finished",
+      "case_wall_seconds": 0.14948500000173226,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/2/T/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "T",
+      "double_after_split": false,
+      "reference": {
+        "value": -0.04761904761904761,
+        "states": 866,
+        "elapsed_seconds": 0.003609899984439835,
+        "cache_hits": 758,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            39
+          ],
+          [
+            "dealer",
+            99
+          ],
+          [
+            "settle",
+            214
+          ],
+          [
+            "play",
+            514
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00023020000662654638,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.41666666666666674,
+        "values": {
+          "S": -1.0,
+          "H": -0.4642857142857144,
+          "D": -2.0,
+          "P": -0.047619047619047644
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.4166666666666668,
+        "values": {
+          "S": -1.0,
+          "H": -0.4642857142857144,
+          "D": -2.0,
+          "P": -0.04761904761904761
+        }
+      },
+      "signed_gap": -3.469446951953614e-17,
+      "absolute_gap": 3.469446951953614e-17,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.003968500008340925,
+      "stage": "finished",
+      "case_wall_seconds": 0.15388810000149533,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/2/T/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "T",
+      "double_after_split": true,
+      "reference": {
+        "value": 0.19880952380952382,
+        "states": 1283,
+        "elapsed_seconds": 0.007842499995604157,
+        "cache_hits": 1605,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            39
+          ],
+          [
+            "dealer",
+            99
+          ],
+          [
+            "settle",
+            432
+          ],
+          [
+            "play",
+            713
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.0002995999820996076,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.630952380952381,
+        "values": {
+          "S": -1.0,
+          "H": -0.4642857142857144,
+          "D": -2.0,
+          "P": 0.16666666666666663
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.6630952380952382,
+        "values": {
+          "S": -1.0,
+          "H": -0.4642857142857144,
+          "D": -2.0,
+          "P": 0.19880952380952382
+        }
+      },
+      "signed_gap": -0.032142857142857195,
+      "absolute_gap": 0.032142857142857195,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.008311600016895682,
+      "stage": "finished",
+      "case_wall_seconds": 0.1672690999985207,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/2/A/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "A",
+      "double_after_split": false,
+      "reference": {
+        "value": -0.1904761904761905,
+        "states": 716,
+        "elapsed_seconds": 0.0035672000085469335,
+        "cache_hits": 530,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            37
+          ],
+          [
+            "dealer",
+            62
+          ],
+          [
+            "settle",
+            190
+          ],
+          [
+            "play",
+            427
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.0001762000028975308,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.35714285714285715,
+        "values": {
+          "S": -1.0,
+          "H": -0.5476190476190476,
+          "D": -2.0,
+          "P": -0.1904761904761904
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.3571428571428571,
+        "values": {
+          "S": -1.0,
+          "H": -0.5476190476190476,
+          "D": -2.0,
+          "P": -0.1904761904761905
+        }
+      },
+      "signed_gap": 8.326672684688674e-17,
+      "absolute_gap": 8.326672684688674e-17,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.003853700007312,
+      "stage": "finished",
+      "case_wall_seconds": 0.15244390000589192,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/2/A/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "2",
+      "dealer_up": "A",
+      "double_after_split": true,
+      "reference": {
+        "value": 0.13095238095238085,
+        "states": 1077,
+        "elapsed_seconds": 0.004033200006233528,
+        "cache_hits": 1131,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            37
+          ],
+          [
+            "dealer",
+            62
+          ],
+          [
+            "settle",
+            386
+          ],
+          [
+            "play",
+            592
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00043230000301264226,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.6666666666666666,
+        "values": {
+          "S": -1.0,
+          "H": -0.5476190476190476,
+          "D": -2.0,
+          "P": 0.11904761904761907
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.6785714285714284,
+        "values": {
+          "S": -1.0,
+          "H": -0.5476190476190476,
+          "D": -2.0,
+          "P": 0.13095238095238085
+        }
+      },
+      "signed_gap": -0.01190476190476178,
+      "absolute_gap": 0.01190476190476178,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.004806000011740252,
+      "stage": "finished",
+      "case_wall_seconds": 0.15815229999134317,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/5/6/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "6",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.857142857142857,
+        "states": 591,
+        "elapsed_seconds": 0.0031304000003729016,
+        "cache_hits": 267,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            27
+          ],
+          [
+            "dealer",
+            228
+          ],
+          [
+            "settle",
+            120
+          ],
+          [
+            "play",
+            216
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00025820001610554755,
+      "production": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9285714285714285,
+          "D": 1.857142857142857,
+          "P": 1.857142857142857
+        }
+      },
+      "joint": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9285714285714285,
+          "D": 1.857142857142857,
+          "P": 1.857142857142857
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.003494299977319315,
+      "stage": "finished",
+      "case_wall_seconds": 0.15320729999803007,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/5/6/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "6",
+      "double_after_split": true,
+      "reference": {
+        "value": 1.857142857142857,
+        "states": 876,
+        "elapsed_seconds": 0.0035118999949190766,
+        "cache_hits": 713,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            27
+          ],
+          [
+            "dealer",
+            228
+          ],
+          [
+            "settle",
+            294
+          ],
+          [
+            "play",
+            327
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00021840000408701599,
+      "production": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9285714285714285,
+          "D": 1.857142857142857,
+          "P": 1.857142857142857
+        }
+      },
+      "joint": {
+        "best": [
+          "D",
+          "P"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9285714285714285,
+          "D": 1.857142857142857,
+          "P": 1.857142857142857
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0038340000028256327,
+      "stage": "finished",
+      "case_wall_seconds": 0.14287920002243482,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/5/T/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "T",
+      "double_after_split": false,
+      "reference": {
+        "value": -1.619047619047619,
+        "states": 429,
+        "elapsed_seconds": 0.002077100012684241,
+        "cache_hits": 267,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            27
+          ],
+          [
+            "dealer",
+            66
+          ],
+          [
+            "settle",
+            120
+          ],
+          [
+            "play",
+            216
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.0001640999980736524,
+      "production": {
+        "best": [
+          "H",
+          "D"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": 0.0,
+          "D": 0.0,
+          "P": -1.619047619047619
+        }
+      },
+      "joint": {
+        "best": [
+          "H",
+          "D"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": 0.0,
+          "D": 0.0,
+          "P": -1.619047619047619
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0023560000117868185,
+      "stage": "finished",
+      "case_wall_seconds": 0.12692469998728484,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/5/T/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "T",
+      "double_after_split": true,
+      "reference": {
+        "value": -1.6154761904761905,
+        "states": 714,
+        "elapsed_seconds": 0.003457299986621365,
+        "cache_hits": 713,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            27
+          ],
+          [
+            "dealer",
+            66
+          ],
+          [
+            "settle",
+            294
+          ],
+          [
+            "play",
+            327
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00014030002057552338,
+      "production": {
+        "best": [
+          "H",
+          "D"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": 0.0,
+          "D": 0.0,
+          "P": -1.619047619047619
+        }
+      },
+      "joint": {
+        "best": [
+          "H",
+          "D"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": 0.0,
+          "D": 0.0,
+          "P": -1.6154761904761905
+        }
+      },
+      "signed_gap": -0.0035714285714285587,
+      "absolute_gap": 0.0035714285714285587,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0036986999912187457,
+      "stage": "finished",
+      "case_wall_seconds": 0.13798620001762174,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/5/A/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "A",
+      "double_after_split": false,
+      "reference": {
+        "value": -1.7619047619047619,
+        "states": 377,
+        "elapsed_seconds": 0.0016137000056914985,
+        "cache_hits": 196,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            26
+          ],
+          [
+            "dealer",
+            42
+          ],
+          [
+            "settle",
+            110
+          ],
+          [
+            "play",
+            199
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00012059998698532581,
+      "production": {
+        "best": [
+          "D"
+        ],
+        "margin": 0.10714285714285715,
+        "values": {
+          "S": -1.0,
+          "H": 0.10714285714285715,
+          "D": 0.2142857142857143,
+          "P": -1.7619047619047619
+        }
+      },
+      "joint": {
+        "best": [
+          "D"
+        ],
+        "margin": 0.10714285714285715,
+        "values": {
+          "S": -1.0,
+          "H": 0.10714285714285715,
+          "D": 0.2142857142857143,
+          "P": -1.7619047619047619
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0018325999844819307,
+      "stage": "finished",
+      "case_wall_seconds": 0.13670239999191836,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/5/A/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "5",
+      "dealer_up": "A",
+      "double_after_split": true,
+      "reference": {
+        "value": -1.7619047619047619,
+        "states": 635,
+        "elapsed_seconds": 0.0025870999961625785,
+        "cache_hits": 535,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            26
+          ],
+          [
+            "dealer",
+            42
+          ],
+          [
+            "settle",
+            268
+          ],
+          [
+            "play",
+            299
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00018770000315271318,
+      "production": {
+        "best": [
+          "D"
+        ],
+        "margin": 0.10714285714285715,
+        "values": {
+          "S": -1.0,
+          "H": 0.10714285714285715,
+          "D": 0.2142857142857143,
+          "P": -1.7619047619047619
+        }
+      },
+      "joint": {
+        "best": [
+          "D"
+        ],
+        "margin": 0.10714285714285715,
+        "values": {
+          "S": -1.0,
+          "H": 0.10714285714285715,
+          "D": 0.2142857142857143,
+          "P": -1.7619047619047619
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0029165000014472753,
+      "stage": "finished",
+      "case_wall_seconds": 0.1309169999731239,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/8/6/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "6",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.857142857142857,
+        "states": 507,
+        "elapsed_seconds": 0.0023156999959610403,
+        "cache_hits": 209,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            24
+          ],
+          [
+            "dealer",
+            200
+          ],
+          [
+            "settle",
+            102
+          ],
+          [
+            "play",
+            181
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00018050000653602183,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.9285714285714284,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": -1.0,
+          "D": -2.0,
+          "P": 1.857142857142857
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.9285714285714284,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": -1.0,
+          "D": -2.0,
+          "P": 1.857142857142857
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0025950000272132456,
+      "stage": "finished",
+      "case_wall_seconds": 0.1328640000137966,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/8/6/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "6",
+      "double_after_split": true,
+      "reference": {
+        "value": 1.857142857142857,
+        "states": 772,
+        "elapsed_seconds": 0.0029298999870661646,
+        "cache_hits": 560,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            24
+          ],
+          [
+            "dealer",
+            200
+          ],
+          [
+            "settle",
+            266
+          ],
+          [
+            "play",
+            282
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.0001613000058569014,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.9285714285714284,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": -1.0,
+          "D": -2.0,
+          "P": 1.857142857142857
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.9285714285714284,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": -1.0,
+          "D": -2.0,
+          "P": 1.857142857142857
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0031934999860823154,
+      "stage": "finished",
+      "case_wall_seconds": 0.12895350001053885,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/8/T/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "T",
+      "double_after_split": false,
+      "reference": {
+        "value": -1.4999999999999998,
+        "states": 363,
+        "elapsed_seconds": 0.0015339000092353672,
+        "cache_hits": 209,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            24
+          ],
+          [
+            "dealer",
+            56
+          ],
+          [
+            "settle",
+            102
+          ],
+          [
+            "play",
+            181
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00010859998292289674,
+      "production": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.5
+        }
+      },
+      "joint": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.4999999999999998
+        }
+      },
+      "signed_gap": -2.220446049250313e-16,
+      "absolute_gap": 2.220446049250313e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0017414999892935157,
+      "stage": "finished",
+      "case_wall_seconds": 0.14549239998450503,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/8/T/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "T",
+      "double_after_split": true,
+      "reference": {
+        "value": -1.4999999999999998,
+        "states": 628,
+        "elapsed_seconds": 0.002819700021063909,
+        "cache_hits": 560,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            24
+          ],
+          [
+            "dealer",
+            56
+          ],
+          [
+            "settle",
+            266
+          ],
+          [
+            "play",
+            282
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00010870001278817654,
+      "production": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.5
+        }
+      },
+      "joint": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.4999999999999998
+        }
+      },
+      "signed_gap": -2.220446049250313e-16,
+      "absolute_gap": 2.220446049250313e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.003030899999430403,
+      "stage": "finished",
+      "case_wall_seconds": 0.1361942000221461,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/8/A/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "A",
+      "double_after_split": false,
+      "reference": {
+        "value": -1.7142857142857142,
+        "states": 333,
+        "elapsed_seconds": 0.0015909999783616513,
+        "cache_hits": 161,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            24
+          ],
+          [
+            "dealer",
+            37
+          ],
+          [
+            "settle",
+            98
+          ],
+          [
+            "play",
+            174
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 9.6399977337569e-05,
+      "production": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.7142857142857142
+        }
+      },
+      "joint": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.7142857142857142
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0017865000118035823,
+      "stage": "finished",
+      "case_wall_seconds": 0.13591209999867715,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/8/A/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "8",
+      "dealer_up": "A",
+      "double_after_split": true,
+      "reference": {
+        "value": -1.7142857142857142,
+        "states": 579,
+        "elapsed_seconds": 0.002393700007814914,
+        "cache_hits": 453,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            24
+          ],
+          [
+            "dealer",
+            37
+          ],
+          [
+            "settle",
+            250
+          ],
+          [
+            "play",
+            268
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00015619999612681568,
+      "production": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.7142857142857142
+        }
+      },
+      "joint": {
+        "best": [
+          "S",
+          "H"
+        ],
+        "margin": 0.0,
+        "values": {
+          "S": -1.0,
+          "H": -1.0,
+          "D": -2.0,
+          "P": -1.7142857142857142
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0026769000105559826,
+      "stage": "finished",
+      "case_wall_seconds": 0.14116640001884662,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/A/6/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "6",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.9047619047619047,
+        "states": 135,
+        "elapsed_seconds": 0.0007941999938338995,
+        "cache_hits": 18,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            93
+          ],
+          [
+            "settle",
+            14
+          ],
+          [
+            "play",
+            23
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00024649998522363603,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.023809523809523725,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9404761904761905,
+          "D": 1.880952380952381,
+          "P": 1.9047619047619047
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.023809523809523725,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9404761904761905,
+          "D": 1.880952380952381,
+          "P": 1.9047619047619047
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.001128700008848682,
+      "stage": "finished",
+      "case_wall_seconds": 0.1266905999800656,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/A/6/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "6",
+      "double_after_split": true,
+      "reference": {
+        "value": 1.9047619047619047,
+        "states": 135,
+        "elapsed_seconds": 0.0012392000062391162,
+        "cache_hits": 18,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            93
+          ],
+          [
+            "settle",
+            14
+          ],
+          [
+            "play",
+            23
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.00028059998294338584,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.023809523809523725,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9404761904761905,
+          "D": 1.880952380952381,
+          "P": 1.9047619047619047
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.023809523809523725,
+        "values": {
+          "S": 0.9285714285714286,
+          "H": 0.9404761904761905,
+          "D": 1.880952380952381,
+          "P": 1.9047619047619047
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0017076999938581139,
+      "stage": "finished",
+      "case_wall_seconds": 0.1312888000102248,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/A/T/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "T",
+      "double_after_split": false,
+      "reference": {
+        "value": 0.8928571428571428,
+        "states": 67,
+        "elapsed_seconds": 0.00025400001322850585,
+        "cache_hits": 18,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            25
+          ],
+          [
+            "settle",
+            14
+          ],
+          [
+            "play",
+            23
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.0006227999983821064,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.7023809523809524,
+        "values": {
+          "S": -1.0,
+          "H": 0.19047619047619047,
+          "D": -0.5,
+          "P": 0.8928571428571429
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.7023809523809523,
+        "values": {
+          "S": -1.0,
+          "H": 0.19047619047619047,
+          "D": -0.5,
+          "P": 0.8928571428571428
+        }
+      },
+      "signed_gap": 1.1102230246251565e-16,
+      "absolute_gap": 1.1102230246251565e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0009695999906398356,
+      "stage": "finished",
+      "case_wall_seconds": 0.13885509999818169,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/A/T/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "T",
+      "double_after_split": true,
+      "reference": {
+        "value": 0.8928571428571428,
+        "states": 67,
+        "elapsed_seconds": 0.0004000999906565994,
+        "cache_hits": 18,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            25
+          ],
+          [
+            "settle",
+            14
+          ],
+          [
+            "play",
+            23
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.0008188999781850725,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.7023809523809524,
+        "values": {
+          "S": -1.0,
+          "H": 0.19047619047619047,
+          "D": -0.5,
+          "P": 0.8928571428571429
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 0.7023809523809523,
+        "values": {
+          "S": -1.0,
+          "H": 0.19047619047619047,
+          "D": -0.5,
+          "P": 0.8928571428571428
+        }
+      },
+      "signed_gap": 1.1102230246251565e-16,
+      "absolute_gap": 1.1102230246251565e-16,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0013421000039670616,
+      "stage": "finished",
+      "case_wall_seconds": 0.14924989998689853,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/A/A/das-false",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "A",
+      "double_after_split": false,
+      "reference": {
+        "value": 1.1428571428571428,
+        "states": 59,
+        "elapsed_seconds": 0.0003115000145044178,
+        "cache_hits": 12,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            17
+          ],
+          [
+            "settle",
+            14
+          ],
+          [
+            "play",
+            23
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.0009150000114459544,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 1.130952380952381,
+        "values": {
+          "S": -1.0,
+          "H": 0.011904761904761918,
+          "D": -0.7857142857142857,
+          "P": 1.1428571428571428
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 1.130952380952381,
+        "values": {
+          "S": -1.0,
+          "H": 0.011904761904761918,
+          "D": -0.7857142857142857,
+          "P": 1.1428571428571428
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0013509000127669424,
+      "stage": "finished",
+      "case_wall_seconds": 0.14176180001231842,
+      "worker_exit_code": 0
+    },
+    {
+      "id": "ten_rich/A/A/das-true",
+      "shoe_name": "ten_rich",
+      "shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4,
+        0
+      ],
+      "pair": "A",
+      "dealer_up": "A",
+      "double_after_split": true,
+      "reference": {
+        "value": 1.1428571428571428,
+        "states": 59,
+        "elapsed_seconds": 0.00022509999689646065,
+        "cache_hits": 12,
+        "maximum_probability_mass_error": 0.0,
+        "state_counts": [
+          [
+            "draw",
+            5
+          ],
+          [
+            "dealer",
+            17
+          ],
+          [
+            "settle",
+            14
+          ],
+          [
+            "play",
+            23
+          ]
+        ]
+      },
+      "production_rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "production_shoe": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        4
+      ],
+      "production_seconds": 0.0005688999954145402,
+      "production": {
+        "best": [
+          "P"
+        ],
+        "margin": 1.130952380952381,
+        "values": {
+          "S": -1.0,
+          "H": 0.011904761904761918,
+          "D": -0.7857142857142857,
+          "P": 1.1428571428571428
+        }
+      },
+      "joint": {
+        "best": [
+          "P"
+        ],
+        "margin": 1.130952380952381,
+        "values": {
+          "S": -1.0,
+          "H": 0.011904761904761918,
+          "D": -0.7857142857142857,
+          "P": 1.1428571428571428
+        }
+      },
+      "signed_gap": 0.0,
+      "absolute_gap": 0.0,
+      "decision_changed": false,
+      "status": "completed",
+      "worker_seconds": 0.0008834999753162265,
+      "stage": "finished",
+      "case_wall_seconds": 0.14005940000060946,
+      "worker_exit_code": 0
+    }
+  ],
+  "finished_utc": "2026-09-27T09:24:04.689692+00:00",
+  "unattempted": []
+}

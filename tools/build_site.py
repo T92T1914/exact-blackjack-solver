@@ -6,8 +6,10 @@ import shutil
 
 try:
     from .presentation import appearance_css
+    from .render_joint_report import render_outputs
 except ImportError:
     from presentation import appearance_css
+    from render_joint_report import render_outputs
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "_site"
@@ -28,7 +30,8 @@ def main():
         raise ValueError("Example data must retain its source revision.")
     OUT.mkdir(exist_ok=True)
     css = appearance_css()
-    expected = set(FILES.values()) | {"appearance.css"}
+    report = render_outputs()
+    expected = set(FILES.values()) | {"appearance.css"} | set(report)
     unexpected = {p.name for p in OUT.iterdir()} - expected
     if unexpected:
         raise ValueError("Unexpected site output files: " + str(sorted(unexpected)))
@@ -38,6 +41,8 @@ def main():
             raise ValueError("Expected a regular source file: " + source)
         shutil.copyfile(path, OUT / target)
     (OUT / "appearance.css").write_text(css, encoding="utf-8", newline="\n")
+    for target, content in report.items():
+        (OUT / target).write_bytes(content)
     print("Built", len(expected), "public files in", OUT)
 
 

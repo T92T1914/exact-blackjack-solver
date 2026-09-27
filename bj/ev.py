@@ -122,20 +122,14 @@ APPROXIMATIONS
     against the shoe as it stood when the split was made, and the results are
     added.
 
-    Direction and size of the error: the effect is second-order and slightly
-    OPTIMISTIC.  It ignores the negative correlation between the two hands -
-    if hand one eats the tens, hand two is less likely to find one - so it
-    understates the variance clearly, and overstates the mean by a small
-    amount because each hand is credited with a shoe that is a card or two
-    richer than the one it will actually face.  Published comparisons of this
-    "independent hands" convention against full joint enumeration put the mean
-    error at well under 0.001 units on a split, i.e. under 0.0001 on the
-    overall house edge, and the one clean local reading available here agrees:
-    8,8 vs 10 comes out +0.00050 above the published cell once the resplit
-    convention is matched.  The test suite checks the two published split
-    values (8,8 vs 10 and 9,9 vs 7) to 0.01, which is 10x looser than the
-    stand/hit tolerance, for this reason and for the convention difference
-    tests/test_ev.py records against 9,9 vs 7.
+    A common shoe also couples later choices and both settlements. Correlation
+    alone does not prove a direction or bound for the error in their sum.
+    The historical 8,8 vs 10 result is +0.00050 above its published cell once
+    the resplit convention is matched. That observation is not a universal
+    error bound or a proof of optimism. The two published split checks retain
+    their 0.01 tolerance and the convention qualification for 9,9 vs 7.
+    bj.joint_split provides a separate bounded two hand reference. It does not
+    replace this production approximation or establish a full shoe bound.
 
 2.  THE RESPLIT BUDGET IS A SHARED POOL; THE RESPLIT DECISION INSIDE IT IS
     GREEDY.  rules.max_hands caps the number of hands in play across the whole
@@ -152,19 +146,21 @@ APPROXIMATIONS
     pair cells - every cell where splitting is the play, of which 26 by more
     than 0.002, which is the tolerance this project holds a play EV to - and
     moved the house edge by 0.0059 percentage points.  It is gone.
-    _split_hand_outcomes now returns a distribution over how many extra hands
-    the subtree actually consumed, and the second hand is dealt whatever the
-    first one leaves, in the order a real table plays them.
+    _split_hand_outcomes returns a distribution over extra hands consumed.
+    The second hand receives the unused slots. It still uses the independent
+    starting shoe approximation rather than the first hand's depleted shoe.
 
     What is still approximate is the DECISION, not the budget: a hand resplits
     when resplitting raises its own EV, without charging itself for the slot it
     takes away from its sibling.  That is a policy a player could actually
-    follow, so the number returned is a genuine LOWER bound on the shared-pool
-    optimum; giving both hands the whole pool at once, which no table would
-    allow, is an upper bound.  Measured width of that bracket over all 100 pair
+    follow within the independent hand approximation. Its value is a lower
+    bound on the shared slot optimum inside that same approximation. Giving
+    both hands the whole pool supplies an upper bound in that model only.
+    Neither bound includes the effect of joint shoe depletion, information or
+    dealer outcomes. Measured width of that bracket over all 100 pair
     cells at max_hands=4: at most 0.00084 units on a split (8,8 vs 7), and
-    4.5e-06 on the house edge.  So what is left of this approximation is about
-    a thirteenth of what the divided budget was costing.
+    4.5e-06 on the house edge. These historical measurements concern only the
+    remaining slot allocation approximation, not total split error.
 
 3.  derive_table's HARD rows average over compositions.  A printed chart has
     one cell for "hard 16", but 16 is 10+6, 9+7 and 8+8, and this solver gives
