@@ -49,6 +49,10 @@ eight card high rank shoes, four pairs, three dealer upcards and both DAS states
 Its first comparison must run from a clean reviewed commit. The runner retains
 the first attempt, every exclusion, source identities, values, margins, runtimes
 and work counts. It never replaces an existing result path.
+The reference uses rank order 2 through T, then A. Production uses A, then 2
+through T. The comparison translates counts by rank name and records the
+production order and counts in every completed row. Positional equivalence is
+not assumed.
 
 ```python
 from bj.joint_split import joint_split_value

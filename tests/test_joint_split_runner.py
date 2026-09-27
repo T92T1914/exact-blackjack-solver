@@ -25,6 +25,14 @@ def test_ranking_exposes_ties_and_does_not_relabel_other_actions():
     assert study.ranking(dict(values, P=0.7), 1e-12)['best'] == ['P']
 
 
+def test_rank_schema_adapter_preserves_every_distinct_card_count():
+    source = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'A')
+    target = ('A', '2', '3', '4', '5', '6', '7', '8', '9', 'T')
+    assert study.align_shoe(tuple(range(1, 11)), source, target) == (10, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+    assert study.align_shoe((0, 0, 0, 0, 0, 2, 1, 1, 3, 0), source, target) == (
+        0, 0, 0, 0, 0, 0, 2, 1, 1, 3)
+
+
 def test_separate_seven_card_pilot_preserves_both_values_and_work():
     protocol = json.loads(study.PROTOCOL.read_text())
     case = dict(id='test/pilot-seven', pair='5', dealer_up='T',
@@ -39,6 +47,8 @@ def test_separate_seven_card_pilot_preserves_both_values_and_work():
     assert result['signed_gap'] == (result['production']['values']['P']
                                     - result['joint']['values']['P'])
     assert result['worker_exit_code'] == 0
+    assert result['production_rank_order'] == ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T']
+    assert result['production_shoe'] == [0, 0, 0, 0, 0, 0, 2, 1, 1, 3]
 
 
 def test_timeout_is_retained_and_owned_child_is_stopped():

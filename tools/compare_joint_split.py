@@ -40,11 +40,20 @@ def ranking(values, tolerance):
                 margin=ordered[0] - ordered[1], values=values)
 
 
+def align_shoe(counts, source_ranks, target_ranks):
+    """Translate by rank identity rather than treating positional schemas as equal."""
+    if (len(counts) != 10 or len(source_ranks) != 10 or len(target_ranks) != 10
+            or len(set(source_ranks)) != 10 or set(source_ranks) != set(target_ranks)):
+        raise ValueError('rank schemas must describe the same ten unique ranks')
+    by_rank = dict(zip(source_ranks, counts, strict=True))
+    return tuple(by_rank[rank] for rank in target_ranks)
+
+
 def _worker(connection, case, protocol):
     # Import only inside the isolated child. The reference itself has no production imports.
     sys.path.insert(0, str(ROOT))
     from bj import ev
-    from bj.core import Rules
+    from bj.core import RANKS, Rules
     from bj.joint_split import ReferenceLimitExceeded, UnsupportedShoeError, joint_split_value
 
     output = {}
@@ -63,7 +72,9 @@ def _worker(connection, case, protocol):
         ev.clear_caches()
         measured = time.perf_counter()
         pair = (case['pair'],) * 2
-        counts = tuple(case['shoe'])
+        counts = align_shoe(case['shoe'], protocol['rank_order'], RANKS)
+        output['production_rank_order'] = list(RANKS)
+        output['production_shoe'] = list(counts)
         _, values, _ = ev.best_action(pair, case['dealer_up'], counts, rules)
         output['production_seconds'] = time.perf_counter() - measured
         output['production'] = ranking(values, limits['decision_tie_tolerance'])
