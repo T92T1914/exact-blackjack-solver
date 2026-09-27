@@ -76,3 +76,45 @@ The historical resplit bracket concerns one shared slot decision inside the
 independent hand approximation. It does not bound joint shoe or information
 effects. This new toy family also cannot establish a full shoe error bound or
 house edge. The production API continues to use its existing approximation.
+
+
+## Retained comparison
+
+The [public report](https://t92t1914.github.io/exact-blackjack-solver/joint-split.html)
+uses the saved [matched result](joint-split-results.json) from revision
+`9b8f54c85fe7689490503a8874e41f7d48b53127`. All 48 conditions completed. The largest
+absolute gap was 0.032142857 units, for twos against T in the ten rich shoe with
+DAS enabled. Its sign was negative, so production valued the split lower.
+The mean absolute gap was 0.003056107 units.
+
+For fives against 6 in the balanced shoe with DAS enabled, the best action set
+expanded from D to a D/P tie. The production margin was 0.023809524 and the
+joint margin was zero. No best action set became disjoint from its production
+counterpart. A tie expansion is not a strict reversal.
+
+The [invalid first attempt](joint-split-first-invalid.json) ran at
+`58330ad09985ad265d25cc3cb93069d2d09d7aa5`. Its runner passed reference ordered
+counts directly into production, whose first rank is A. Its production values,
+gaps and combined root recommendations therefore compare different shoes and
+cannot support the declared claim. The raw attempt remains unchanged. A rank
+keyed adapter and asymmetric mapping regression were committed before the
+single corrected run. The frozen protocol and reference arithmetic did not
+change. Every completed corrected row records both rank orders and counts.
+
+The report auditor independently checks these identities and recomputes gaps,
+root rankings and margins from saved values. It does not invoke either solver.
+The maximum reference work count was 3,260 states. The largest observed
+reference time was about 0.014 seconds on a shared machine, which is bounded
+feasibility evidence rather than a controlled speed comparison.
+
+```sh
+python tools/render_joint_report.py --check
+python tools/build_site.py
+```
+
+The site build includes all rows, data downloads and editable SVG editions.
+Auto, Clair and Obscur preserve dealer identities, units and values. Print
+uses Clair. Inter resolves locally when available, with system fallback for
+other visitors and no remote font requests. The old diagram and its evidence
+retain their original bytes. The renderer revision is recorded separately
+from the measured source revision. Rebuilding does not rerun the study.

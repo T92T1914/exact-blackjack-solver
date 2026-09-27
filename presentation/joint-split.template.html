@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A bounded comparison of independent split valuation and a joint two hand reference. All 48 declared toy conditions, values, recommendation margins and execution limits are retained.">
+<title>Two hands, one shoe | Exact Blackjack Solver</title>
+<script src="appearance.js"></script><link rel="stylesheet" href="appearance.css"><link rel="stylesheet" href="style.css">
+<style>{palette}</style>
+</head>
+<body data-project="exact-blackjack-solver" class="joint-report">
+<a class="skip" href="#main">Skip to the report</a>
+<div class="wrap">
+<nav aria-label="Project navigation"><a href="index.html">Saved decision examples</a><a href="https://github.com/T92T1914/exact-blackjack-solver">Source on GitHub</a></nav>
+<div class="appearance-control"><label for="appearance">Appearance</label><select id="appearance" disabled><option value="auto">Auto</option><option value="clair">Clair</option><option value="obscur">Obscur</option></select><noscript><small>Auto follows your system appearance.</small></noscript></div>
+<main id="main">
+<p class="eyebrow">Bounded numerical comparison</p>
+<h1>Two hands still draw from one shoe.</h1>
+<p class="lead">The production solver values split hands independently. This separate reference carries the cards removed by the first hand into the second and settles both against the same dealer. I compared the two models on 48 declared toy conditions.</p>
+<div class="metrics" aria-label="Comparison summary">
+<div class="metric"><strong>{completed} of 48</strong><span>completed conditions, {excluded} exclusions</span></div>
+<div class="metric"><strong>0.032142857</strong><span>largest absolute difference, original bet units</span></div>
+<div class="metric"><strong>1 tie expansion</strong><span>changed best action set, no strict reversal</span></div>
+</div>
+<p>The mean absolute difference was <strong>{mean}</strong> units. Production was lower in {below} conditions, higher in {above}, and equal within <code>1e-12</code> in {tied}. The largest difference was for a pair of twos against a ten in the ten rich shoe with double after split allowed. Its signed production minus joint gap was <strong>{minimum}</strong>.</p>
+<p><strong>This is not a full shoe error bound.</strong> Two constructed shoes cannot establish a typical error, a house edge or a general direction for the approximation. The production API is unchanged. The reference uses floating point enumeration, not symbolic exact arithmetic.</p>
+<div class="actions"><a class="button" href="#all-conditions">Read all conditions</a><a class="button" href="joint-split.csv" download>Download values as CSV</a><a class="button" href="joint-split-results.json" download>Download matched result JSON</a></div>
+<section class="panel" aria-labelledby="contract-title">
+<h2 id="contract-title">What the comparison holds fixed</h2>
+<p>Each unseen shoe contains eight cards and includes a reserved hidden dealer hole. Visible pair cards and the dealer upcard are already excluded. The balanced shoe has two each of 7, 8, 9 and T. The ten rich shoe has one 7, one 8, two 9s and four tens. Both are high rank toy compositions, not a sample of ordinary shoe frequencies.</p>
+<p>The protocol crosses those shoes with pairs 2, 5, 8 and A, dealer upcards 6, T and A, and both states of double after split, abbreviated DAS. The dealer stands on soft 17. There are exactly two hands, no resplits and no surrender. Split aces get one additional card each.</p>
+<p>The first hand finishes before the second receives its additional card. Choices maximize the combined round value using only visible information and the completed peek. The hidden hole is averaged before choosing an action. Both final hands settle against one shared dealer outcome.</p>
+<p>A missing draw in any admitted action, including an action that might later be rejected, makes the condition unsupported. Limits are 100,000 reference states, ten reference seconds and twenty wall seconds per condition. The runner preserves failures instead of replacing them with a value. Every declared condition completed here.</p>
+<p><a href="joint-split-protocol.json" download>Download the frozen protocol</a> and <a href="https://github.com/T92T1914/exact-blackjack-solver/blob/{measured}/docs/joint-split.md">read the measured method</a>.</p>
+</section>
+<figure aria-labelledby="figure-caption">
+<div class="chart-wrap" tabindex="0" role="region" aria-label="Scrollable signed gap figure">{chart}</div>
+<figcaption id="figure-caption">All 48 conditions use the same centered quantitative scale. Negative means production is lower. Dealer colors retain their identity in either appearance, and marker shape identifies DAS. Scroll the figure horizontally on a narrow screen or use the values below. <a href="joint-split-clair.svg" download>Download Clair SVG</a> or <a href="joint-split-obscur.svg" download>download Obscur SVG</a>.</figcaption>
+</figure>
+<section id="recommendations">
+<h2>A recommendation changed into a tie</h2>
+<p>For a pair of fives against a six in the balanced shoe with DAS allowed, production preferred double with a margin of 0.023809524. Replacing only the split value made double and split tie within <code>1e-12</code>, with a raw numerical margin of zero. The original double recommendation remained in the best set. No condition changed to a disjoint best action set.</p>
+<p>The root comparison preserves production stand, hit and double values. <strong>S</strong> means stand, <strong>H</strong> hit, <strong>D</strong> double and <strong>P</strong> split. Each value is expected net return per original bet. A doubled split hand risks two units. Margins are the best value minus the next value, not win probabilities.</p>
+{changes}
+</section>
+<section id="all-conditions">
+<h2>Every declared condition</h2>
+<p>The tables show nine decimal places for values and six for runtime. The downloads retain the full stored numbers. Tiny positive gaps up to about <code>4.44e-16</code> are floating point differences within the declared equality tolerance.</p>
+{table}
+<p>The largest reference state count was 3,260 and the largest observed reference time was about 0.014 seconds. Reported probability mass error was zero in all rows. These times describe bounded feasibility on a shared machine. They are not a controlled speed comparison between the solvers.</p>
+</section>
+<section class="panel" id="attempts">
+<h2>The first comparison was invalid</h2>
+<p>The first runner passed a count array in reference rank order to production, whose rank order starts with A. It therefore compared different card compositions. Its gaps and combined root recommendations are invalid for the declared question. The raw attempt remains available, clearly separated from the matched result above.</p>
+<p>The correction maps counts by rank name and records both schemas in every completed row. An asymmetric mapping regression was added before the corrected attempt. The protocol, reference arithmetic and production model did not change. The corrected 48 condition attempt ran once, and the report independently checks rank identities and recomputes gaps, rankings and margins from its retained values.</p>
+<p><a href="joint-split-first-invalid.json" download>Download the invalid first attempt for audit</a>. It is excluded from every summary and figure on this page.</p>
+<dl class="identities"><dt>Corrected measured revision</dt><dd><a href="https://github.com/T92T1914/exact-blackjack-solver/commit/{measured}"><code>{measured}</code></a></dd><dt>Invalid first revision</dt><dd><a href="https://github.com/T92T1914/exact-blackjack-solver/commit/{invalid}"><code>{invalid}</code></a></dd><dt>Report renderer revision</dt><dd><code>{renderer}</code>{dirty}</dd></dl>
+<p class="fine">Rendering this page does not run either solver. <a href="joint-split-presentation.json" download>Download the presentation record</a> for source identities and normalized text checksums.</p>
+</section>
+<section>
+<h2>Read the limits with the result</h2>
+<p>The reference has its own hand, draw and dealer arithmetic. Tiny independent tests enumerate physical card permutations with rational values, check hidden information, and reject unsupported exhaustion. The 48 condition study is broader than those fixtures but remains a constructed high rank family. It does not establish full shoe accuracy, resplitting behavior or an advantage in real play.</p>
+<p>The older lower and upper resplit bracket concerns shared slot allocation inside the independent hand model. It does not bound the shared shoe effects measured here. The existing studies and production defaults remain intact.</p>
+<p>Auto follows system appearance. Clair and Obscur preserve values, units and dealer identities. Print uses Clair. Proportional text uses locally installed Inter when available and a system fallback otherwise. No fonts are downloaded. SVG text remains editable, but its rendered font depends on the receiving environment. Original project evidence is not recolored.</p>
+</section>
+</main>
+<footer>Built by <a href="https://github.com/T92T1914">Trinidy Farris</a>. <a href="index.html">Return to the saved decision examples</a>.</footer>
+</div>
+</body></html>

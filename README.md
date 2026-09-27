@@ -166,6 +166,17 @@ information carried between hands. The separate [bounded joint reference](docs/j
 models exactly two hands without resplitting and leaves the production default
 unchanged. Its enumeration uses floating point, not symbolic exact arithmetic.
 
+The [retained 48 condition comparison](https://t92t1914.github.io/exact-blackjack-solver/joint-split.html)
+completed both declared eight card toy shoes without exclusions. The largest
+absolute split difference was 0.032142857 units of the original bet and the
+mean absolute difference was 0.003056107. One best action set expanded from
+double to a double and split tie. No condition changed to a disjoint best set.
+These constructed high rank shoes do not establish a full shoe error bound
+or a general direction for the approximation. The report includes every
+condition, values, margins, work counts, CSV and JSON, and editable Clair and
+Obscur figures. It also retains and identifies the first comparison attempt,
+whose rank order adapter compared different shoes and invalidated its gaps.
+
 Custom shoes passed to the Python API include the dealer's hidden hole card.
 When only that card remains, `best_action` offers standing; a direct request
 to hit or double raises `ValueError`. After the last drawable card, hit
