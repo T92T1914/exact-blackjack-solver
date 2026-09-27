@@ -341,7 +341,7 @@ test('six real Inter faces and ordinary text use the intended local providers',
 });
 
 test('composition editions follow Auto and overrides without changing saved evidence', async t => {
-  const page = await fixture(t,{colorScheme:'dark'});
+  const page = await fixture(t,{colorScheme:'dark',viewport:{width:390,height:844}});
   await ready(page);
   const visible = page.locator('#composition-figure img:visible');
   assert.equal(await visible.getAttribute('src'),'composition-obscur.png');
@@ -356,7 +356,7 @@ test('composition editions follow Auto and overrides without changing saved evid
     assert.equal(await visible.getAttribute('src'),`composition-${mode}.png`);
     await visible.scrollIntoViewIfNeeded();
     await page.waitForFunction(() => [...document.querySelectorAll('#composition-figure img')]
-      .filter(e => getComputedStyle(e).display !== 'none').every(e => e.complete && e.naturalWidth===960));
+      .filter(e => e.getBoundingClientRect().width > 0).every(e => e.complete && e.naturalWidth===960));
     assert.equal(await visible.evaluate(e => getComputedStyle(e).filter),'none');
     assert.equal(await page.locator('#interactive').textContent(),values);
     assert.equal(page.url(),url);
@@ -387,7 +387,7 @@ test('composition editions follow Auto and overrides without changing saved evid
   assert.equal(await visible.getAttribute('src'),'composition-clair.png');
   await page.emulateMedia({colorScheme:'dark'});
   assert.equal(await visible.getAttribute('src'),'composition-obscur.png');
-  const noScript=await fixture(t,{javaScriptEnabled:false,colorScheme:'dark'});
+  const noScript=await fixture(t,{javaScriptEnabled:false,colorScheme:'dark',viewport:{width:390,height:844}});
   await noScript.goto(base+'/');
   assert.equal(await noScript.locator('#composition-figure img:visible').getAttribute('src'),'composition-obscur.png');
   await noScript.emulateMedia({colorScheme:'light'});
@@ -409,6 +409,30 @@ test('maintained Markdown pictures select the portable editions at narrow size',
         `composition-${mode}.png`) && document.querySelector('img').complete,mode);
       assert.equal(await page.locator('img').evaluate(e=>e.naturalWidth),960);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    }
+  }
+});
+
+
+test('wide figure follows its container and preserves every delivered file', async t => {
+  const page = await fixture(t, {viewport:{width:1280,height:900},colorScheme:'dark'});
+  await page.goto(base+'/'); await page.locator('#appearance:not([disabled])').waitFor();
+  for (const mode of ['clair','obscur']) {
+    await page.locator('#appearance').selectOption(mode);
+    const visible=page.locator('#composition-figure img:visible');
+    assert.equal(await visible.count(),1);
+    assert.equal(await visible.getAttribute('src'),`composition-${mode}-wide.png`);
+    await visible.scrollIntoViewIfNeeded(); await visible.evaluate(e=>e.decode());
+    assert.deepEqual(await visible.evaluate(e=>[e.naturalWidth,e.naturalHeight]),[1800,1280]);
+    const destination=process.env.SOLVER_SCREENSHOT_DIR;
+    if(destination){await mkdir(destination,{recursive:true});await visible.screenshot({path:path.join(destination,`composition-${mode}-wide.png`)});}
+    await page.locator('#composition-figure').evaluate(e=>e.style.width='400px');
+    assert.equal(await visible.getAttribute('src'),`composition-${mode}.png`);
+    await page.locator('#composition-figure').evaluate(e=>e.style.removeProperty('width'));
+    for(const suffix of ['','-wide'])for(const ext of ['png','svg']){
+      const file=`composition-${mode}${suffix}.${ext}`;
+      const response=await page.request.get(base+'/'+file);assert.equal(response.status(),200);
+      assert.deepEqual(await response.body(),await readFile(path.join(root,file)));
     }
   }
 });

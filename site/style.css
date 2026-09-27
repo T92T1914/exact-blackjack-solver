@@ -34,7 +34,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 @media print{.joint-report .chart-wrap{overflow:visible}.joint-report .chart-wrap svg{min-width:0}.joint-report .table-wrap{overflow:visible}.joint-report table{font-size:8pt}.joint-report th,.joint-report td{white-space:normal;padding:3px}.joint-report th:first-child,.joint-report td:first-child{min-width:0}.joint-report .panel{break-inside:auto}}
 
 /* Authored editions retain the same values and action colors. */
-#composition-figure{max-width:480px;margin-inline:auto}
+#composition-figure{max-width:960px;container-type:inline-size;margin-inline:auto}
 .composition-obscur{display:none}
 :root[data-appearance="obscur"] .composition-clair{display:none}
 :root[data-appearance="obscur"] .composition-obscur{display:block}
@@ -43,3 +43,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 :root:not([data-appearance="clair"]):not([data-appearance="obscur"]) .composition-obscur{display:block}
 }
 @media print{#composition-figure .composition-clair{display:block}#composition-figure .composition-obscur{display:none}}
+
+#composition-figure img{width:100%}
+.figure-wide{display:none}
+@container(min-width:560px){.figure-narrow{display:none}.figure-wide{display:block}}

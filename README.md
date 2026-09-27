@@ -105,9 +105,11 @@ prints the margin between available actions alongside each recommendation.
 
 <a href="docs/visual-example.md">
   <picture>
+    <source media="(min-width: 1024px) and (prefers-color-scheme: dark)" srcset="docs/blackjack-composition-obscur-wide.png">
+    <source media="(min-width: 1024px) and (prefers-color-scheme: light)" srcset="docs/blackjack-composition-clair-wide.png">
     <source media="(prefers-color-scheme: dark)" srcset="docs/blackjack-composition-obscur.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/blackjack-composition-clair.png">
-    <img src="docs/blackjack-composition-clair.png" alt="Two hard 16 hands against a dealer ten. Hit 10 + 6 at negative 0.534676, or stand on 8 + 5 + 3 at negative 0.539887. Both expected returns are negative. Margins are 0.006279 and 0.004117 original wager units." width="480">
+    <img src="docs/blackjack-composition-clair.png" alt="Two hard 16 hands against a dealer ten. Hit 10 + 6 at negative 0.534676, or stand on 8 + 5 + 3 at negative 0.539887. Both expected returns are negative. Margins are 0.006279 and 0.004117 original wager units." width="900">
   </picture>
 </a>
 
