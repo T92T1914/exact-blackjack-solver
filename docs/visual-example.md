@@ -1,6 +1,12 @@
 # Read the visual example
 
-![Two hard 16 hands against a dealer ten have different exact hit and stand values.](blackjack-composition-example.png)
+<a href="visual-example-data.json">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="blackjack-composition-obscur.png">
+    <source media="(prefers-color-scheme: light)" srcset="blackjack-composition-clair.png">
+    <img src="blackjack-composition-clair.png" alt="Two hard 16 hands against a dealer ten. Hit 10 + 6 at negative 0.534676, or stand on 8 + 5 + 3 at negative 0.539887. Both expected returns are negative. Margins are 0.006279 and 0.004117 original wager units." width="480">
+  </picture>
+</a>
 
 Both hands total 16, but the cards remaining in the shoe differ. Under the same six deck rules, the solver recommends hitting 10 + 6 and standing on 8 + 5 + 3. Both decisions still have negative expected returns.
 
@@ -33,6 +39,41 @@ particular composition matters.
 ## Inspect the source
 
 The [underlying values](visual-example-data.json) include the source and
-conditions. A [vector copy](blackjack-composition-example.svg) is available for a closer look.
+conditions. The [Clair SVG](blackjack-composition-clair.svg) and
+[Obscur SVG](blackjack-composition-obscur.svg) carry the same values and outlined
+Inter labels. The [original PNG](blackjack-composition-example.png) and
+[original SVG](blackjack-composition-example.svg) remain unchanged.
 The figure is a visual explanation of the public implementation, not a
 screenshot of an external application.
+
+## Rebuild the authored editions
+
+The maintained renderer reads the retained source data. It does not calculate
+new action values or rerun the separate joint split study. Supply the six
+official static Inter TTFs from one release in a local directory:
+
+```sh
+python -m pip install -r requirements-figures.txt
+python tools/render_composition_figure.py --font-dir /path/to/Inter/extras/ttf
+python tools/render_composition_figure.py --check
+```
+
+The renderer checks each font's name, weight, italic flag and Latin glyph
+coverage. All six real faces supply labels in the final PNG and SVG editions.
+The [rendering record](blackjack-composition-figure.json) records font hashes,
+retained values, renderer and token identities, output hashes and layout bounds.
+PNG glyphs are rasterized from the supplied files. SVG glyphs are outlined from
+the same files, so viewing them does not depend on installed Inter. Selectable
+explanations and the original numerical data accompany the images. No font
+files are distributed or downloaded.
+
+Hit stays blue and stand amber. The chosen value is bold, with the recommendation
+also written explicitly. The two hands keep separate margins and every displayed
+value remains negative. GitHub uses light and dark picture sources with a Clair
+fallback. The site follows Auto, Clair or Obscur and prints Clair. The compact
+portrait layout keeps the values readable in a narrow README. Site builds check
+committed input and output identities without fonts or a silent rebuild.
+
+Source `23a42e6` belongs to this retained example, not the later
+[joint split reference](joint-split.md). The original image, data and numerical
+meaning are preserved.

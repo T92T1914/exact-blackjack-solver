@@ -103,7 +103,13 @@ prints the margin between available actions alongside each recommendation.
 
 ## How it works
 
-[![Two hard 16 hands against a dealer ten have different exact hit and stand values.](docs/blackjack-composition-example.png)](docs/visual-example.md)
+<a href="docs/visual-example.md">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/blackjack-composition-obscur.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/blackjack-composition-clair.png">
+    <img src="docs/blackjack-composition-clair.png" alt="Two hard 16 hands against a dealer ten. Hit 10 + 6 at negative 0.534676, or stand on 8 + 5 + 3 at negative 0.539887. Both expected returns are negative. Margins are 0.006279 and 0.004117 original wager units." width="480">
+  </picture>
+</a>
 
 Both hands total 16, but the cards remaining in the shoe differ. Under the same six deck rules, the solver recommends hitting 10 + 6 and standing on 8 + 5 + 3. Both decisions still have negative expected returns.
 [Reproduce and inspect the values](docs/visual-example.md).

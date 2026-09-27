@@ -32,3 +32,14 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 .joint-report code,.joint-report .identities{overflow-wrap:anywhere}
 .joint-report dd{margin:4px 0 16px}
 @media print{.joint-report .chart-wrap{overflow:visible}.joint-report .chart-wrap svg{min-width:0}.joint-report .table-wrap{overflow:visible}.joint-report table{font-size:8pt}.joint-report th,.joint-report td{white-space:normal;padding:3px}.joint-report th:first-child,.joint-report td:first-child{min-width:0}.joint-report .panel{break-inside:auto}}
+
+/* Authored editions retain the same values and action colors. */
+#composition-figure{max-width:480px;margin-inline:auto}
+.composition-obscur{display:none}
+:root[data-appearance="obscur"] .composition-clair{display:none}
+:root[data-appearance="obscur"] .composition-obscur{display:block}
+@media(prefers-color-scheme:dark){
+:root:not([data-appearance="clair"]):not([data-appearance="obscur"]) .composition-clair{display:none}
+:root:not([data-appearance="clair"]):not([data-appearance="obscur"]) .composition-obscur{display:block}
+}
+@media print{#composition-figure .composition-clair{display:block}#composition-figure .composition-obscur{display:none}}
