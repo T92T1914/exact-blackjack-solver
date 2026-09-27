@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "bounded-joint-split-v1",
+  "declared_date": "2026-09-27",
+  "question": "How does the production independent split approximation differ from a joint two hand numerical reference in a declared toy composition family?",
+  "rank_order": ["2", "3", "4", "5", "6", "7", "8", "9", "T", "A"],
+  "unseen_shoes": {
+    "balanced_high": [0, 0, 0, 0, 0, 2, 2, 2, 2, 0],
+    "ten_rich": [0, 0, 0, 0, 0, 1, 1, 2, 4, 0]
+  },
+  "pair_ranks": ["2", "5", "8", "A"],
+  "dealer_upcards": ["6", "T", "A"],
+  "double_after_split": [false, true],
+  "conditions": 48,
+  "stand_soft_17": true,
+  "resplits": false,
+  "split_aces": "Exactly one additional card each. No hit, double, resplit or natural premium.",
+  "play_order": "Fully play the first split hand before dealing the second hand its additional card. Finish both before resolving the shared dealer outcome. A player total of 21 ends play.",
+  "information": "Counts exclude both visible pair cards and the dealer upcard. They include one reserved hidden hole, conditioned on the completed peek having found no natural. All maxima use observable information only and optimize combined round settlement.",
+  "actions": "Stand and hit. Double only on the two card split hand when DAS is true. No surrender. Production single hand stand, hit and double values remain the root comparators.",
+  "units": "Net units of the original bet, summed across both hands. A doubled hand has wager two.",
+  "limits": {
+    "max_states": 100000,
+    "reference_seconds": 10.0,
+    "case_wall_seconds": 20.0,
+    "numerical_tolerance": 1e-12,
+    "decision_tie_tolerance": 1e-12
+  },
+  "order": "Listed shoe, then pair, then dealer, then DAS. One attempt per condition, no parameter selection or retuning from comparison outcomes.",
+  "metrics": ["joint value", "production split value", "signed production minus joint gap", "absolute gap", "root action set and margin using unchanged single hand values", "decision change", "runtime", "state count", "maximum probability mass error", "failures and exclusions"],
+  "exhaustion_policy": "If any admitted action needs an unavailable player or dealer draw, mark the condition unsupported. Do not omit that action, resample a shoe or invent a terminal payoff. Time and state limits remain explicit exclusions.",
+  "scope": "Two constructed eight card unseen shoes with only ranks 7, 8, 9 and T. Visible cards are supplied separately and are not removed again. This high rank toy family was chosen to keep complete enumeration tractable, not to represent full shoe frequencies.",
+  "interpretation": "Retain every condition and any adverse decision tail. No claim about full shoe split error, house edge, resplitting, wagering advantage or general approximation direction. Floating enumeration is not symbolic exactness.",
+  "pilot": "Tests use separate shoes with at most seven unseen cards and independent physical permutation Fraction oracles. They establish arithmetic and execution feasibility, not comparison outcomes for this eight card study."
+}

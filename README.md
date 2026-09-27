@@ -160,6 +160,11 @@ Split hands are valued independently against the shoe at the split, and
 the shared resplit budget uses a greedy decision rule. The notes in `bj/ev.py`
 describe comparisons for the studied rules and hands. Those measured
 differences are not a proven error bound for every possible configuration.
+The historical lower and upper resplit bracket concerns slot allocation inside
+the independent hand model. It does not bound shared shoe depletion or the
+information carried between hands. The separate [bounded joint reference](docs/joint-split.md)
+models exactly two hands without resplitting and leaves the production default
+unchanged. Its enumeration uses floating point, not symbolic exact arithmetic.
 
 Custom shoes passed to the Python API include the dealer's hidden hole card.
 When only that card remains, `best_action` offers standing; a direct request

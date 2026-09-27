@@ -35,7 +35,13 @@ Keep the independent check alongside the change. A small hand calculation, separ
 
 State the rules, the visible cards and the remaining shoe when reporting a numerical difference. Preserve the distinction between exact hit, stand and double calculations and approximate split valuation. Use an independent derivation, reference or simulation when checking numerical changes. A test that calls the same solver twice does not independently verify its mathematics.
 
-Useful next work includes comparing split approximations with a small exact reference model and widening independent checks across rule variations. Report the tested configurations instead of treating a measured difference as a universal error bound.
+The [bounded joint reference](docs/joint-split.md) supports exactly two hands
+without resplitting. It has its own hand and dealer arithmetic, an independent
+physical permutation test oracle and explicit state and time limits. Run
+`python -m pytest -q tests/test_joint_split.py tests/test_joint_split_runner.py`
+for those checks. The declared comparison uses new paths outside the checkout
+and refuses dirty source or an existing attempt. Preserve every exclusion and
+keep its toy composition scope distinct from full shoe production accuracy.
 
 ## Longer statistical runs
 
