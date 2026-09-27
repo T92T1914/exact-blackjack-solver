@@ -52,3 +52,30 @@ BJ_SLOW=1 python -m pytest -q
 Open this repository in Codespaces or use VS Code Dev Containers. The container uses Python 3.11 and installs the project into `.venv` during setup. Its image is pinned by digest. The `Project access` workflow builds that same environment and runs `.devcontainer/smoke.sh`. Runtime dependencies still follow the project configuration. Codespaces uses the creating account's compute and storage allowance.
 
 Run `python tools/build_site.py` to assemble the public page in `_site`, then `python -m http.server 8080 --directory _site` to preview it. The builder copies only the listed example files. The page reads saved evidence; it does not silently rerun the experiment or claim current results. Pages deploys from `main` after the site and development environment checks pass.
+
+The appearance adapter reads the pinned `presentation/tokens.json` from
+Clair/Obscur revision `7a57fe750ff50205a17e1d342106a0d3f2777159` and generates
+`_site/appearance.css`. Review the pin and token changes together. The six local
+Inter aliases cover 400, 600 and 700 with genuine italics. Code keeps a monospace
+font, other scripts can use language fallbacks, and visitors without Inter keep
+their system font. Print uses Clair without changing the saved screen preference.
+The storage key is `exact-blackjack-solver.appearance.v1`.
+
+Presentation checks do not rerun the retained calculation:
+
+```sh
+python -m pytest -q tests/test_presentation.py
+node --test tests/selection-state.test.mjs tests/appearance.test.mjs
+npm ci --ignore-scripts
+python tools/build_site.py
+npm run test:browser
+```
+
+The browser suite uses fresh, isolated headless contexts with Chromium's sandbox
+enabled. Set `SOLVER_BROWSER_CHANNEL=chrome` to use installed Google Chrome, as CI
+does. Otherwise install Playwright's Chromium with `npx playwright install chromium`.
+The optional `SOLVER_REQUIRE_INTER=1` adds strict rendered-glyph checks in an
+environment where the six Inter faces are installed. The default test still
+checks deliberate missing-font fallback and does not claim Inter coverage.
+`SOLVER_SCREENSHOT_DIR` can save captures outside the repository. Headless checks
+cover the page, not native browser chrome, a physical phone or display comfort.

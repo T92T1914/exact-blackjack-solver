@@ -4,6 +4,11 @@ from pathlib import Path
 import json
 import shutil
 
+try:
+    from .presentation import appearance_css
+except ImportError:
+    from presentation import appearance_css
+
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "_site"
 FILES = {
@@ -11,6 +16,7 @@ FILES = {
     "site/style.css": "style.css",
     "site/app.js": "app.js",
     "site/selection-state.mjs": "selection-state.mjs",
+    "site/appearance.js": "appearance.js",
     "docs/visual-example-data.json": "data.json",
     "docs/blackjack-composition-example.svg": "example.svg",
 }
@@ -21,15 +27,18 @@ def main():
     if not data.get("source_commit"):
         raise ValueError("Example data must retain its source revision.")
     OUT.mkdir(exist_ok=True)
+    css = appearance_css()
+    expected = set(FILES.values()) | {"appearance.css"}
+    unexpected = {p.name for p in OUT.iterdir()} - expected
+    if unexpected:
+        raise ValueError("Unexpected site output files: " + str(sorted(unexpected)))
     for source, target in FILES.items():
         path = ROOT / source
         if not path.is_file() or path.is_symlink():
             raise ValueError("Expected a regular source file: " + source)
         shutil.copyfile(path, OUT / target)
-    unexpected = {p.name for p in OUT.iterdir()} - set(FILES.values())
-    if unexpected:
-        raise ValueError("Unexpected site output files: " + str(sorted(unexpected)))
-    print("Built", len(FILES), "public files in", OUT)
+    (OUT / "appearance.css").write_text(css, encoding="utf-8", newline="\n")
+    print("Built", len(expected), "public files in", OUT)
 
 
 if __name__ == "__main__":

@@ -34,6 +34,13 @@ Use **Link to this example** in the browser demo to share the selected result.
 The URL keeps the example's visible label, and Back and Forward restore earlier
 selections. These links inspect saved evidence; they do not run a new calculation.
 
+The page offers Auto, Clair and Obscur appearances. Auto follows your system,
+and a selected appearance stays in this project's browser storage. Switching
+keeps the hand, values and share link intact. The original recorded diagram
+and source data remain available without JavaScript and keep their original
+bytes. The interface uses locally installed Inter when available, with a system
+font fallback for other visitors. It does not download fonts.
+
 ## Run it
 
 ```sh
