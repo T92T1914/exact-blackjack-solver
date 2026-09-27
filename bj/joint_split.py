@@ -186,12 +186,11 @@ def joint_split_value(pair_rank, dealer_up, shoe, *, double_after_split=True,
         # Each action is a combined round EV under the same observable state.
         # In particular this maximum is never inside a hidden hole loop.
         options = [finish(unseen, cards, first)]
-        if sum(unseen) > 1:
-            options.append(math.fsum(p * play(sub, cards + (rank,), first)
+        options.append(math.fsum(p * play(sub, cards + (rank,), first)
+                                 for rank, p, sub in draw(unseen)))
+        if double_after_split and len(cards) == 2:
+            options.append(math.fsum(p * finish(sub, cards + (rank,), first, 2)
                                      for rank, p, sub in draw(unseen)))
-            if double_after_split and len(cards) == 2:
-                options.append(math.fsum(p * finish(sub, cards + (rank,), first, 2)
-                                         for rank, p, sub in draw(unseen)))
         return max(options)
 
     holes(counts)

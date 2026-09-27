@@ -40,6 +40,9 @@ and ten seconds. Each call owns its caches. Exceeding a limit is an explicit
 failure, not a partial value. An unavailable draw in any admitted continuation
 also fails the case. This includes an action that would not be selected after
 all valid values were known. The reference does not invent a reshuffle.
+For example, if the second hand is below 21 with only the hidden hole left,
+its hit action cannot be valued. The reference refuses the whole condition
+even when standing could settle. It does not silently force that hand to stand.
 
 The [declared protocol](joint-split-protocol.json) fixes 48 conditions across two
 eight card high rank shoes, four pairs, three dealer upcards and both DAS states.

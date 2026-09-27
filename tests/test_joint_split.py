@@ -67,10 +67,9 @@ def permutation_oracle(pair, up, cards, das=False, s17=True, reveal_hole=False):
         if total(hand)[0] >= 21 or pair == 'A':
             return finish(worlds, hand, first)
         options = [finish(worlds, hand, first)]
-        if worlds[0][1]:
-            options.append(observed_draw(worlds, hand, first))
-            if das and len(hand) == 2:
-                options.append(observed_draw(worlds, hand, first, True))
+        options.append(observed_draw(worlds, hand, first))
+        if das and len(hand) == 2:
+            options.append(observed_draw(worlds, hand, first, True))
         return max(options)
 
     physical = permutations(range(len(cards)))
@@ -148,6 +147,17 @@ def test_exhaustion_is_an_error_not_a_zero_or_an_omitted_action():
         reference.joint_split_value('2', 'T', shoe(('7', '8', '9')))
     with pytest.raises(reference.UnsupportedShoeError, match='peek'):
         reference.joint_split_value('A', 'A', shoe(('T',) * 4))
+
+
+def test_second_hand_cannot_drop_a_hit_when_only_the_hole_remains():
+    # The first hand can consume two cards and bust. The second mandatory card
+    # leaves a standing total below 21 and only the hole. Stand can settle, but
+    # the admitted hit cannot draw. The whole condition must be unsupported.
+    cards = ('7', '8', '9', 'T')
+    with pytest.raises(reference.UnsupportedShoeError, match='player draw'):
+        reference.joint_split_value('8', 'T', shoe(cards), double_after_split=False)
+    with pytest.raises(ValueError, match='oracle player exhausted'):
+        permutation_oracle('8', 'T', cards)
 
 
 @pytest.mark.parametrize('kwargs', [
