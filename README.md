@@ -372,3 +372,5 @@ This project gives me a concrete way to work on dynamic programming, state repre
 - **Model boundaries.** Inspect the split approximation and the assumptions behind an action value. [Inspect the work](README.md#what-this-does-not-prove).
 
 The transferable work is numerical software and verification. A correct result inside this rule model does not establish a model for financial risk or another real-world decision.
+
+See [sharing previews](docs/sharing-preview.md) for the maintained link image and its source.

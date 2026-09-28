@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "content": {
+    "title": "Exact Blackjack Solver",
+    "subtitle": "Same total. Different decision.",
+    "panels": [
+      [
+        "10 + 6",
+        "HIT",
+        "-0.534676 / original wager"
+      ],
+      [
+        "8 + 5 + 3",
+        "STAND",
+        "-0.539887 / original wager"
+      ]
+    ],
+    "context": "Both total 16 | Dealer shows 10 | Saved six-deck example",
+    "footer": "Exact hit / stand / double. Split values approximate.",
+    "source_sha256": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c"
+  },
+  "inputs_sha256_lf": {
+    "tools/render_share_preview.py": "3d05d0d5d220eee7d0cda84cbd3c4136b1ecc9a28434458b166369aa22e8894f",
+    "docs/sharing-card.json": "d1c248ddd3b02a5eb210639953fa69522a86948b43b4f380d03ca037868f1792",
+    "docs/visual-example-data.json": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c",
+    "presentation/tokens.json": "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7",
+    "tools/render_composition_figure.py": "bc996c1e3104ffdc4fdbbef3fa490ebf5c4c382fed41f91d6812021983ae2ecf"
+  },
+  "png_sha256": "bcc6899d5961c4bd61d5d0fec8f2fc80a41015c62e811d6bbdd23cf13de770d6",
+  "dimensions": [
+    1280,
+    640
+  ],
+  "appearance": "obscur",
+  "opaque": true,
+  "renderer": {
+    "Pillow": "12.3.0"
+  },
+  "font_files": {
+    "Regular": {
+      "sha256": "40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82",
+      "postscript": "Inter-Regular",
+      "weight": 400,
+      "italic": false
+    },
+    "SemiBold": {
+      "sha256": "78a843fade9d4612a5567302fb595b56976eb5fcebf4fea5a5912d638bafcde3",
+      "postscript": "Inter-SemiBold",
+      "weight": 600,
+      "italic": false
+    },
+    "Bold": {
+      "sha256": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f",
+      "postscript": "Inter-Bold",
+      "weight": 700,
+      "italic": false
+    },
+    "Italic": {
+      "sha256": "bbc051dd204b5019a1aa0bc0ae2aa8a05ab13e7a3f979fa357631dc7feb6833a",
+      "postscript": "Inter-Italic",
+      "weight": 400,
+      "italic": true
+    },
+    "SemiBoldItalic": {
+      "sha256": "eff2930c3d3b35d3fcf5f76252b6baef4c3e907d9d2fde1d16cf5d417f8deef4",
+      "postscript": "Inter-SemiBoldItalic",
+      "weight": 600,
+      "italic": true
+    },
+    "BoldItalic": {
+      "sha256": "948405a16cdc62701da5f4005ed068ca5f4d27061d98f7974ccfc37831d9581d",
+      "postscript": "Inter-BoldItalic",
+      "weight": 700,
+      "italic": true
+    }
+  },
+  "painted_labels": [
+    {
+      "text": "Exact Blackjack Solver",
+      "face": "Inter-Bold",
+      "bounds": [
+        68,
+        52,
+        774,
+        115
+      ],
+      "size": 64
+    },
+    {
+      "text": "Same total. Different decision.",
+      "face": "Inter-SemiBold",
+      "bounds": [
+        68,
+        136,
+        679,
+        169
+      ],
+      "size": 42
+    },
+    {
+      "text": "Both total 16 | Dealer shows 10 | Saved six-deck example",
+      "face": "Inter-Regular",
+      "bounds": [
+        68,
+        208,
+        874,
+        245
+      ],
+      "size": 30
+    },
+    {
+      "text": "10 + 6",
+      "face": "Inter-SemiBold",
+      "bounds": [
+        94,
+        298,
+        187,
+        322
+      ],
+      "size": 32
+    },
+    {
+      "text": "HIT",
+      "face": "Inter-Bold",
+      "bounds": [
+        94,
+        350,
+        209,
+        400
+      ],
+      "size": 68
+    },
+    {
+      "text": "-0.534676 / original wager",
+      "face": "Inter-Regular",
+      "bounds": [
+        94,
+        451,
+        473,
+        481
+      ],
+      "size": 30
+    },
+    {
+      "text": "8 + 5 + 3",
+      "face": "Inter-SemiBold",
+      "bounds": [
+        682,
+        298,
+        818,
+        322
+      ],
+      "size": 32
+    },
+    {
+      "text": "STAND",
+      "face": "Inter-Bold",
+      "bounds": [
+        682,
+        350,
+        917,
+        402
+      ],
+      "size": 68
+    },
+    {
+      "text": "-0.539887 / original wager",
+      "face": "Inter-Regular",
+      "bounds": [
+        682,
+        451,
+        1060,
+        481
+      ],
+      "size": 30
+    },
+    {
+      "text": "Exact hit / stand / double. Split values approximate.",
+      "face": "Inter-Italic",
+      "bounds": [
+        68,
+        548,
+        799,
+        578
+      ],
+      "size": 30
+    }
+  ],
+  "experimental_work_rerun": false,
+  "kind": "authored summary, not an application screenshot"
+}
