@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import shutil
+import sys
 
 try:
     from .presentation import appearance_css
@@ -14,8 +15,10 @@ except ImportError:
     from render_composition_figure import check_outputs
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 OUT = ROOT / "_site"
 FILES = {
+    "site/share-preview.png": "share-preview.png",
     "docs/blackjack-composition-clair-wide.png": "composition-clair-wide.png",
     "docs/blackjack-composition-clair-wide.svg": "composition-clair-wide.svg",
     "docs/blackjack-composition-obscur-wide.png": "composition-obscur-wide.png",
@@ -36,6 +39,9 @@ FILES = {
 
 
 def main():
+    from tools.render_share_preview import check as check_share_preview
+
+    check_share_preview()
     data = json.loads((ROOT / "docs/visual-example-data.json").read_text())
     if not data.get("source_commit"):
         raise ValueError("Example data must retain its source revision.")

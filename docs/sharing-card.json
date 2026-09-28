@@ -1,0 +1,19 @@
+{
+  "repo": "exact-blackjack-solver",
+  "title": "Exact Blackjack Solver",
+  "subtitle": "Same total. Different decision.",
+  "description": "Compare saved action values from the remaining cards. Stand, hit and double are exact within the supported model. Split valuation remains approximate.",
+  "helper": "render_composition_figure",
+  "tokens": "presentation/tokens.json",
+  "source": "docs/visual-example-data.json",
+  "pages": [
+    "site/index.html"
+  ],
+  "kind": "solver",
+  "output": "site/share-preview.png",
+  "image_url": "https://t92t1914.github.io/exact-blackjack-solver/share-preview.png",
+  "page_urls": {
+    "site/index.html": "https://t92t1914.github.io/exact-blackjack-solver/"
+  },
+  "alt": "Exact Blackjack Solver. Same total. Different decision.. Authored summary of the linked evidence."
+}
