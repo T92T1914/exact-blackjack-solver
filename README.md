@@ -165,9 +165,10 @@ Three details carry most of the weight, and each has a test with its name on it:
   (`test_results_are_identical_before_and_after_clearing_caches`).
 
 The [cache guide](docs/caches.md) explains the production table ownership,
-supported diagnostics and combined reset. It also records the pending bounded
-measurement protocol. Clearing tables does not promise a lower process memory
-reading or change the supported numerical model.
+supported diagnostics and combined reset. The [bounded cache measurements](docs/cache-results-2026-09-30.md)
+retain cold, repeated, cleared and varied-query results with separate process
+memory and instrumentation costs. Clearing tables does not promise a lower
+process memory reading or change the supported numerical model.
 
 Split hands are valued independently against the shoe at the split, and
 the shared resplit budget uses a greedy decision rule. The notes in `bj/ev.py`
