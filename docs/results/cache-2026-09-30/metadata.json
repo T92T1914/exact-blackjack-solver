@@ -373,15 +373,15 @@
     "machine": "AMD64",
     "psutil": "5.9.8"
   },
-  "memory_contract": "RSS sampled every 50 ms; threshold can be overshot. Windows peak_wset is the OS process peak working set. tracemalloc records traced Python allocations, not total RSS.",
+  "memory_contract": "RSS sampled every 50 ms. threshold can be overshot. Windows peak_wset is the OS process peak working set. tracemalloc records traced Python allocations, not total RSS.",
   "workstation": "Shared workstation. Sole declared performance slot reserved.",
   "tracing_scope": "solver imports and subsequent child work. Excludes runner imports.",
   "timing_scope": "Query includes completed best_action return, before encoding. Launch-to-ready includes delivery, not pure startup. No overhead is subtracted.",
   "publication": {
-    "derivative": "Process IDs removed. No source inputs or numerical rows changed.",
+    "derivative": "Process IDs removed. Canonical LF line endings. No source inputs or numerical rows changed.",
     "original_rows_sha256": "bf501d933e6eb8040f6b3fd4dde50b38947fd60fb99d9a51ff98f0861df911e1",
-    "public_rows_sha256": "6351fe4579f1ed7a399302f2459b82f5f16f55bf9b854e545ac919975e71f98a",
-    "derivation_source_sha256": "7a339866a7d4cdfa3cc0fc069976dae84772ea826232f4a512eb04597f1f3f5e",
+    "public_rows_sha256": "2a20e1dc57ab7ca46d21cc54cd12aefc06e9445be2d05be5cf0305aec3147cf4",
+    "derivation_source_sha256": "428e59a1cad1baa40efbffd32e15ca393c918d4605fbef57e40ff4640be04fce",
     "setup_attempt": "One relative-path inventory error occurred before collection. Zero children launched. The corrected runner collected this series."
   }
 }
