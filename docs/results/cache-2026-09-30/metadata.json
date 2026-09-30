@@ -1,0 +1,387 @@
+{
+  "schema_version": 1,
+  "source_revision": "97cb02ccac55be371460911b16684b1eaad0517b",
+  "source_hashes": {
+    "bj/__init__.py": "c0c9fddc2d34f1be22ba2f7beba38a363cb9268e2cfa0d1d61129fcdaf9b6a11",
+    "bj/caches.py": "f31308731db0da72e375399748ef728173307e63d37c7aeee6655342ced31736",
+    "bj/chart.py": "7816660cbbf591a33224c5f155b1bcade2bd660dd92baae50bf82fa71ce09d75",
+    "bj/cli.py": "9fcea204943913f9fc48c6fb57302da68658855eb06eb7bc384eef3a4dd7482a",
+    "bj/core.py": "c22546eaeaf9c7662f09fec96798aa123ac86856fa1abdfc0ff07006d3df09a8",
+    "bj/dealer.py": "b36875e116b192f4a89a582b38a365941d92db893d4b8584a84c50b377ef36a1",
+    "bj/ev.py": "c2fee848abe69c2496782d434a5088ad01da0a1fc182ae4ae2271daf9c3a539d",
+    "bj/joint_split.py": "0cd746562bb214e9ac3554eedaa58a0f91fcc618caf891f99944f64dd6575b4e",
+    "bj/simulate.py": "4a2547eff7d93c1b2086a415dbf09a035f7eac9c28a17439ff5dd207f4c5b45a",
+    "bj/strategy.py": "1c789999c2e41b7b9944d78d1eb5cc6275926ff4ef064c519b4f3ae796412fe1",
+    "pyproject.toml": "e646412b4e0276d39a1fe9f6caafd9d845cb815f53db1c63b8f492492a032610",
+    "docs/cache-protocol.json": "d767238de9f5e5bcc8e66a4df27a707792f223cd64e12626e436c4c649a617c9"
+  },
+  "runner_sha256": "54767df6db2669ed989463dabc65df57b80d867237fc7d8a2fee29094afb1dcf",
+  "protocol": {
+    "schema_version": 1,
+    "id": "production-cache-lifecycle-v1",
+    "question": "How do repeated and varied queries populate production memo tables, and what changes after clearing them?",
+    "status": "declared before collection",
+    "rank_order": [
+      "A",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "T"
+    ],
+    "rules": {
+      "decks": 1,
+      "s17": true,
+      "das": true,
+      "max_hands": 2,
+      "peek": true
+    },
+    "split": "Disabled for these production queries. Stand, hit and double retain their existing floating enumeration contract.",
+    "cases": [
+      {
+        "id": "tiny-16-ten",
+        "cards": [
+          "T",
+          "6"
+        ],
+        "up": "T",
+        "shoe": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          2,
+          2,
+          2
+        ]
+      },
+      {
+        "id": "tiny-varied-16-ten",
+        "cards": [
+          "T",
+          "6"
+        ],
+        "up": "T",
+        "shoe": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          2,
+          1,
+          4
+        ]
+      },
+      {
+        "id": "one-deck-16-ten",
+        "cards": [
+          "T",
+          "6"
+        ],
+        "up": "T",
+        "shoe": "initial_shoe_for with the declared one-deck rules"
+      }
+    ],
+    "operating_modes": {
+      "cold_process": "Spawn a new interpreter per replicate, record startup/import separately, then execute the query once with empty tables.",
+      "warm_cache": "In that interpreter execute the identical query twice more without clearing. Keep each output and timing separately.",
+      "cleared_cache": "Clear all production tables at a quiescent boundary, record clear duration separately, assert counters and occupancy are zero, then execute the identical query again.",
+      "varied_states": "In another fresh interpreter run tiny-16-ten, tiny-varied-16-ten, tiny-16-ten in that order. Record snapshots after every query and then after a combined clear.",
+      "independent_runs": "Repeat each interpreter sequence five times. Every repeated value, action and margin must agree bit for bit for an identical input. This checks cache equivalence, not an independent mathematical oracle."
+    },
+    "instrumentation": "Run each sequence both with tracemalloc disabled and enabled, alternating the order across replicates. Timers and process-memory readings are the same in both. Cache snapshots occur outside query timing. Record time spent collecting each snapshot. Do not subtract overhead to fabricate an uninstrumented duration.",
+    "metrics": [
+      "per-table hits, misses and occupancy",
+      "completed query seconds",
+      "clear seconds",
+      "snapshot seconds",
+      "current process resident bytes",
+      "process peak resident bytes where available",
+      "current and peak traced Python bytes when enabled",
+      "complete action values and margin",
+      "exceptions, timeout and memory exclusions"
+    ],
+    "boundaries": "Query timing includes returning all host values for the same validated cards, shoe and rules. It excludes process startup, imports, snapshots and clearing. Wall time for the complete child includes those parts. Do not add overlapping query and child intervals.",
+    "limits": {
+      "replicates": 5,
+      "child_wall_seconds": 30,
+      "child_resident_bytes": 268435456,
+      "children_concurrent": 1
+    },
+    "incomplete_policy": "Terminate only the experiment-owned child on its limit. Retain any completed preceding outputs, identify the unfinished query explicitly, and do not publish an exact value for that query. The parent resource limit is not a new production solver API or a precise live-cache byte limit.",
+    "run_order": "tiny-16-ten, tiny-varied-16-ten, one-deck-16-ten, then the varied-state sequence. Replicates are ordered. Alternate instrumentation off/on and on/off per replicate. No case selection based on results.",
+    "reporting": "Retain every attempt and raw sample. Generate medians, ranges and per-table deltas from those rows. Do not claim extreme tails, a leak, a speedup or a universal shoe-size bound from five repeats.",
+    "environment": "Record source revision and content hashes, Python and OS versions, exact inputs/rules, available memory metric definitions, and shared-workstation contention. Collect only when the machine has no conflicting performance workload.",
+    "ownership": "The production tables are process-wide and retain argument/result references until clear or process exit. Clearing requires caller-controlled quiescence and does not promise an RSS decrease. Joint split reference caches remain per-call and outside this experiment.",
+    "decision": "Retain the unbounded default and existing arithmetic unless the observed workload supports another lifecycle policy. No eviction or result limit is proposed by this protocol."
+  },
+  "jobs": [
+    {
+      "id": 0,
+      "sequence": "tiny-16-ten",
+      "replicate": 0,
+      "tracemalloc": false
+    },
+    {
+      "id": 1,
+      "sequence": "tiny-16-ten",
+      "replicate": 0,
+      "tracemalloc": true
+    },
+    {
+      "id": 2,
+      "sequence": "tiny-16-ten",
+      "replicate": 1,
+      "tracemalloc": true
+    },
+    {
+      "id": 3,
+      "sequence": "tiny-16-ten",
+      "replicate": 1,
+      "tracemalloc": false
+    },
+    {
+      "id": 4,
+      "sequence": "tiny-16-ten",
+      "replicate": 2,
+      "tracemalloc": false
+    },
+    {
+      "id": 5,
+      "sequence": "tiny-16-ten",
+      "replicate": 2,
+      "tracemalloc": true
+    },
+    {
+      "id": 6,
+      "sequence": "tiny-16-ten",
+      "replicate": 3,
+      "tracemalloc": true
+    },
+    {
+      "id": 7,
+      "sequence": "tiny-16-ten",
+      "replicate": 3,
+      "tracemalloc": false
+    },
+    {
+      "id": 8,
+      "sequence": "tiny-16-ten",
+      "replicate": 4,
+      "tracemalloc": false
+    },
+    {
+      "id": 9,
+      "sequence": "tiny-16-ten",
+      "replicate": 4,
+      "tracemalloc": true
+    },
+    {
+      "id": 10,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 0,
+      "tracemalloc": false
+    },
+    {
+      "id": 11,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 0,
+      "tracemalloc": true
+    },
+    {
+      "id": 12,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 1,
+      "tracemalloc": true
+    },
+    {
+      "id": 13,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 1,
+      "tracemalloc": false
+    },
+    {
+      "id": 14,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 2,
+      "tracemalloc": false
+    },
+    {
+      "id": 15,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 2,
+      "tracemalloc": true
+    },
+    {
+      "id": 16,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 3,
+      "tracemalloc": true
+    },
+    {
+      "id": 17,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 3,
+      "tracemalloc": false
+    },
+    {
+      "id": 18,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 4,
+      "tracemalloc": false
+    },
+    {
+      "id": 19,
+      "sequence": "tiny-varied-16-ten",
+      "replicate": 4,
+      "tracemalloc": true
+    },
+    {
+      "id": 20,
+      "sequence": "one-deck-16-ten",
+      "replicate": 0,
+      "tracemalloc": false
+    },
+    {
+      "id": 21,
+      "sequence": "one-deck-16-ten",
+      "replicate": 0,
+      "tracemalloc": true
+    },
+    {
+      "id": 22,
+      "sequence": "one-deck-16-ten",
+      "replicate": 1,
+      "tracemalloc": true
+    },
+    {
+      "id": 23,
+      "sequence": "one-deck-16-ten",
+      "replicate": 1,
+      "tracemalloc": false
+    },
+    {
+      "id": 24,
+      "sequence": "one-deck-16-ten",
+      "replicate": 2,
+      "tracemalloc": false
+    },
+    {
+      "id": 25,
+      "sequence": "one-deck-16-ten",
+      "replicate": 2,
+      "tracemalloc": true
+    },
+    {
+      "id": 26,
+      "sequence": "one-deck-16-ten",
+      "replicate": 3,
+      "tracemalloc": true
+    },
+    {
+      "id": 27,
+      "sequence": "one-deck-16-ten",
+      "replicate": 3,
+      "tracemalloc": false
+    },
+    {
+      "id": 28,
+      "sequence": "one-deck-16-ten",
+      "replicate": 4,
+      "tracemalloc": false
+    },
+    {
+      "id": 29,
+      "sequence": "one-deck-16-ten",
+      "replicate": 4,
+      "tracemalloc": true
+    },
+    {
+      "id": 30,
+      "sequence": "varied_states",
+      "replicate": 0,
+      "tracemalloc": false
+    },
+    {
+      "id": 31,
+      "sequence": "varied_states",
+      "replicate": 0,
+      "tracemalloc": true
+    },
+    {
+      "id": 32,
+      "sequence": "varied_states",
+      "replicate": 1,
+      "tracemalloc": true
+    },
+    {
+      "id": 33,
+      "sequence": "varied_states",
+      "replicate": 1,
+      "tracemalloc": false
+    },
+    {
+      "id": 34,
+      "sequence": "varied_states",
+      "replicate": 2,
+      "tracemalloc": false
+    },
+    {
+      "id": 35,
+      "sequence": "varied_states",
+      "replicate": 2,
+      "tracemalloc": true
+    },
+    {
+      "id": 36,
+      "sequence": "varied_states",
+      "replicate": 3,
+      "tracemalloc": true
+    },
+    {
+      "id": 37,
+      "sequence": "varied_states",
+      "replicate": 3,
+      "tracemalloc": false
+    },
+    {
+      "id": 38,
+      "sequence": "varied_states",
+      "replicate": 4,
+      "tracemalloc": false
+    },
+    {
+      "id": 39,
+      "sequence": "varied_states",
+      "replicate": 4,
+      "tracemalloc": true
+    }
+  ],
+  "environment": {
+    "python": "3.11.8 (tags/v3.11.8:db85d51, Feb  6 2024, 22:03:32) [MSC v.1937 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "machine": "AMD64",
+    "psutil": "5.9.8"
+  },
+  "memory_contract": "RSS sampled every 50 ms. threshold can be overshot. Windows peak_wset is the OS process peak working set. tracemalloc records traced Python allocations, not total RSS.",
+  "workstation": "Shared workstation. Sole declared performance slot reserved.",
+  "tracing_scope": "solver imports and subsequent child work. Excludes runner imports.",
+  "timing_scope": "Query includes completed best_action return, before encoding. Launch-to-ready includes delivery, not pure startup. No overhead is subtracted.",
+  "publication": {
+    "derivative": "Process IDs removed. Canonical LF line endings. No source inputs or numerical rows changed.",
+    "original_rows_sha256": "bf501d933e6eb8040f6b3fd4dde50b38947fd60fb99d9a51ff98f0861df911e1",
+    "public_rows_sha256": "2a20e1dc57ab7ca46d21cc54cd12aefc06e9445be2d05be5cf0305aec3147cf4",
+    "derivation_source_sha256": "428e59a1cad1baa40efbffd32e15ca393c918d4605fbef57e40ff4640be04fce",
+    "setup_attempt": "One relative-path inventory error occurred before collection. Zero children launched. The corrected runner collected this series."
+  }
+}

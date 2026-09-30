@@ -76,8 +76,12 @@ The [bounded measurement protocol](cache-protocol.json) was declared before
 collection. It separates a fresh process from empty tables in a process that
 has already imported the solver. It keeps completed-query timing, table
 counters, allocation tracing, process memory and instrumentation overhead
-distinct. Measurement collection remains pending. There is no new performance,
-memory-release or leak result in this change.
+distinct. The [September 30 measurements](cache-results-2026-09-30.md) retain
+40 independent process sequences and 150 completed queries. They show reuse
+for the declared repeated inputs, zero table counters after combined clearing
+and substantial allocation-tracing overhead. Resident process memory remains
+distinct from cache occupancy. This bounded series does not establish a leak,
+a general speedup or a memory bound for arbitrary shoe compositions.
 
 No eviction policy or production work limit is added. The exact stand, hit and
 double model and approximate production split remain unchanged. Historical
