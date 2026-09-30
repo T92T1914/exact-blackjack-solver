@@ -164,6 +164,11 @@ Three details carry most of the weight, and each has a test with its name on it:
   caches reproduces every number bit for bit
   (`test_results_are_identical_before_and_after_clearing_caches`).
 
+The [cache guide](docs/caches.md) explains the production table ownership,
+supported diagnostics and combined reset. It also records the pending bounded
+measurement protocol. Clearing tables does not promise a lower process memory
+reading or change the supported numerical model.
+
 Split hands are valued independently against the shoe at the split, and
 the shared resplit budget uses a greedy decision rule. The notes in `bj/ev.py`
 describe comparisons for the studied rules and hands. Those measured
