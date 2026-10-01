@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from numbers import Integral
 
 # --- ranks -----------------------------------------------------------------
 
@@ -154,6 +155,24 @@ STANDARD = Rules()
 #: count of unseen cards per rank, in RANKS order.  Immutable on purpose:
 #: see the module docstring.
 Shoe = tuple[int, ...]
+
+
+def normalize_shoe(shoe: Iterable[int]) -> Shoe:
+    """Copy ten nonnegative integer counts into an immutable cache key.
+
+    Integer scalar types are converted to Python ints. Booleans and floats
+    are not card counts, even where they compare equal to an integer. This
+    validates the representation, not which visible cards a caller removed.
+    """
+    try:
+        counts = tuple(shoe)
+    except TypeError:
+        raise ValueError('shoe must contain ten nonnegative integer counts') from None
+    if len(counts) != len(RANKS) or any(
+            not isinstance(count, Integral) or isinstance(count, bool) or count < 0
+            for count in counts):
+        raise ValueError('shoe must contain ten nonnegative integer counts')
+    return tuple(int(count) for count in counts)
 
 
 def fresh_shoe(decks: int = 6) -> Shoe:

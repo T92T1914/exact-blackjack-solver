@@ -78,6 +78,7 @@ from .core import (
     Rules,
     Shoe,
     normalize,
+    normalize_shoe,
     remove_card,
     shoe_size,
 )
@@ -234,8 +235,9 @@ def dealer_distribution(up, shoe: Shoe, rules: Rules = STANDARD, *,
 
     Args:
         up: dealer upcard rank, in any form core.normalize accepts ('K', 10, 'a').
-        shoe: immutable Shoe tuple with the player's cards AND the dealer upcard
-            already removed.  This module trusts the caller on that.
+        shoe: ten nonnegative integer counts, copied into an immutable tuple.
+            The player's cards AND the dealer upcard must already be removed.
+            This module trusts the caller on those removals.
         rules: only rules.s17 is consulted; the dealer has no other choices.
         peek_resolved: True models the original table as played - the dealer has already
             peeked and does not have a natural, so the distribution is
@@ -246,7 +248,8 @@ def dealer_distribution(up, shoe: Shoe, rules: Rules = STANDARD, *,
     Returns:
         A 7-tuple of floats summing to 1.0.
     """
-    return _distribution(normalize(up), tuple(shoe), bool(rules.s17), bool(peek_resolved))
+    return _distribution(normalize(up), normalize_shoe(shoe),
+                         bool(rules.s17), bool(peek_resolved))
 
 
 def dealer_bust_prob(up, shoe: Shoe, rules: Rules = STANDARD) -> float:
