@@ -210,6 +210,7 @@ from .core import (
     is_pair,
     normalize,
     normalize_hand,
+    normalize_shoe,
     remove_card,
     remove_cards,
     shoe_size,
@@ -596,10 +597,11 @@ def ev_stand(player_cards, dealer_up, shoe: Shoe | None = None,
     up = normalize(dealer_up)
     if shoe is None:
         shoe = initial_shoe_for(cards, up, rules)
+    shoe = normalize_shoe(shoe)
     total, _soft = hand_total(cards)
     if len(cards) == 2 and total == 21 and not is_split_hand:
         return float(rules.blackjack_payout)
-    return _stand_ev(total, up, tuple(shoe), rules.s17)
+    return _stand_ev(total, up, shoe, rules.s17)
 
 
 def ev_hit(player_cards, dealer_up, shoe: Shoe | None = None,
@@ -614,10 +616,11 @@ def ev_hit(player_cards, dealer_up, shoe: Shoe | None = None,
     up = normalize(dealer_up)
     if shoe is None:
         shoe = initial_shoe_for(cards, up, rules)
+    shoe = normalize_shoe(shoe)
     total, soft = hand_total(cards)
     if total > 21:
         raise ValueError(f'hand {cards} is busted at {total}; it cannot hit')
-    return _hit_ev(total, soft, up, tuple(shoe), rules.s17)
+    return _hit_ev(total, soft, up, shoe, rules.s17)
 
 
 def ev_double(player_cards, dealer_up, shoe: Shoe | None = None,
@@ -633,10 +636,11 @@ def ev_double(player_cards, dealer_up, shoe: Shoe | None = None,
     up = normalize(dealer_up)
     if shoe is None:
         shoe = initial_shoe_for(cards, up, rules)
+    shoe = normalize_shoe(shoe)
     total, soft = hand_total(cards)
     if total > 21:
         raise ValueError(f'hand {cards} is busted at {total}; it cannot double')
-    return _double_ev(total, soft, up, tuple(shoe), rules.s17)
+    return _double_ev(total, soft, up, shoe, rules.s17)
 
 
 def ev_split(pair_rank, dealer_up, shoe: Shoe | None = None,
@@ -666,7 +670,8 @@ def ev_split(pair_rank, dealer_up, shoe: Shoe | None = None,
     up = normalize(dealer_up)
     if shoe is None:
         shoe = initial_shoe_for((r, r), up, rules)
-    return _split_total_ev(RANK_INDEX[r], up, tuple(shoe), rules, hand_count)
+    shoe = normalize_shoe(shoe)
+    return _split_total_ev(RANK_INDEX[r], up, shoe, rules, hand_count)
 
 
 # --- the recommendation ----------------------------------------------------
@@ -714,7 +719,7 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
         raise ValueError(f'hand {cards} is busted at {total}; there is no decision left')
     if shoe is None:
         shoe = initial_shoe_for(cards, up, rules)
-    shoe = tuple(shoe)
+    shoe = normalize_shoe(shoe)
 
     two_cards = len(cards) == 2
     if two_cards and total == 21 and not is_split_hand:
