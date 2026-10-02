@@ -435,6 +435,7 @@ def _tables(rules: Rules, comp16_requires_45: bool):
 def compiled_action(cards, dealer_up, rules: Rules = STANDARD, *,
                     can_double: bool, can_split: bool,
                     is_split_hand: bool = False,
+                    hand_count: int = 1,
                     comp16_requires_45: bool = False) -> str:
     """The compiled table's answer, in the same vocabulary as basic_action.
 
@@ -444,6 +445,10 @@ def compiled_action(cards, dealer_up, rules: Rules = STANDARD, *,
     simulated results.  This is the slow, obvious version; the round loop
     inlines it for speed and the test suite proves the two agree by replaying
     identical seeds through both.
+
+    Caller buttons restrict the table rules. They cannot permit doubling
+    after a split without DAS, resplit aces when forbidden, or exceed the
+    shared hand cap. hand_count includes the current hand and defaults to 1.
     """
     idx = [RANK_INDEX[r] for r in normalize_hand(cards)]
     dec, spl = _tables(rules, comp16_requires_45)
@@ -459,13 +464,21 @@ def compiled_action(cards, dealer_up, rules: Rules = STANDARD, *,
     if total > 21:
         raise ValueError('busted hand has no decision')
 
-    if can_split and nc == 2 and idx[0] == idx[1] and spl[idx[0] * 10 + up_col]:
+    pair = nc == 2 and idx[0] == idx[1]
+    blocked_resplit_aces = (is_split_hand and pair and idx[0] == _ACE
+                            and not rules.resplit_aces)
+    can_split = (bool(can_split) and pair and hand_count < rules.max_hands
+                 and not blocked_resplit_aces)
+    can_double = (bool(can_double) and nc == 2
+                  and (not is_split_hand or rules.das))
+
+    if can_split and spl[idx[0] * 10 + up_col]:
         return SPLIT
     if (is_split_hand and idx[0] == _ACE and nc == 2
             and not rules.hit_split_aces and not can_split):
         return STAND
     multi = _shape_class(idx)
-    cd = 1 if (can_double and nc == 2) else 0
+    cd = 1 if can_double else 0
     return _ACT_NAME[dec[_dec_key(cd, total, soft, multi, up_col)]]
 
 
