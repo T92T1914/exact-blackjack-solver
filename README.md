@@ -67,6 +67,11 @@ cannot permit a double after split when DAS is off, exceed `max_hands`, or
 resplit aces when that rule is off. Passing `False` removes the action and
 keeps the chart's fallback explanation.
 
+The public `bj.simulate.compiled_action` lookup applies the same restrictions.
+Pass `hand_count` when checking a hand in a round that has already split.
+It counts all hands currently in play and defaults to 1. The simulation round
+loop already tracks this count and applies the rules before each action.
+
 ## A worked decision
 
 `python demo.py 8,8 T`, the famous split eights hand, against a dealer ten:
