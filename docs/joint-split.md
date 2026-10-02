@@ -53,6 +53,12 @@ eight card high rank shoes, four pairs, three dealer upcards and both DAS states
 Its first comparison must run from a clean reviewed commit. The runner retains
 the first attempt, every exclusion, source identities, values, margins, runtimes
 and work counts. It never replaces an existing result path.
+The runner owns each case's worker and both parent pipe handles from startup.
+An interrupted start or pipe close triggers bounded cleanup. A visible child
+PID permits joining and, if needed, terminating that owned worker. An unstarted
+process is never joined or terminated. Cleanup errors preserve the original
+failure with a diagnostic note. A failed cleanup can leave a resource pending,
+so interruption alone is not proof that the child stopped.
 The reference uses rank order 2 through T, then A. Production uses A, then 2
 through T. The comparison translates counts by rank name and records the
 production order and counts in every completed row. Positional equivalence is

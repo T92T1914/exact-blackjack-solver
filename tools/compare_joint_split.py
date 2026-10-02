@@ -98,13 +98,15 @@ def _worker(connection, case, protocol):
 
 def run_case(case, protocol):
     context = mp.get_context('spawn')
-    receiver, sender = context.Pipe(duplex=False)
-    process = context.Process(target=_worker, args=(sender, case, protocol))
-    started = time.perf_counter()
+    receiver = sender = process = None
+    failure = None
     result = {}
-    process.start()
-    sender.close()
     try:
+        receiver, sender = context.Pipe(duplex=False)
+        process = context.Process(target=_worker, args=(sender, case, protocol))
+        started = time.perf_counter()
+        process.start()
+        sender.close()
         while time.perf_counter() - started < protocol['limits']['case_wall_seconds']:
             if receiver.poll(0.05):
                 try:
@@ -119,14 +121,42 @@ def run_case(case, protocol):
             result.update(status='timed_out', error='case wall time limit exceeded')
         if result.get('stage') != 'finished' and result.get('status') != 'timed_out':
             result.update(status='failed', error='worker exited without a completed result')
+    except BaseException as error:
+        failure = error
+        raise
     finally:
-        process.join(timeout=0.5)
-        if process.is_alive():
-            process.terminate()
-            process.join(timeout=2)
-        receiver.close()
+        cleanup_errors = []
+
+        def cleanup(action):
+            try:
+                return action()
+            except BaseException as error:
+                cleanup_errors.append(error)
+                return None
+
+        if process is not None:
+            # A start can take effect before raising. Its public PID identifies
+            # a started child without joining or terminating an unstarted one.
+            if cleanup(lambda: process.pid) is not None:
+                cleanup(lambda: process.join(timeout=0.5))
+                if cleanup(process.is_alive):
+                    cleanup(process.terminate)
+                    cleanup(lambda: process.join(timeout=2))
+            exit_code = cleanup(lambda: process.exitcode)
+            cleanup(process.close)
+        for connection in (sender, receiver):
+            if connection is not None:
+                cleanup(connection.close)
+        if cleanup_errors:
+            if failure is None:
+                raise cleanup_errors[0]
+            try:
+                failure.add_note('Case cleanup reported: ' + ', '.join(
+                    type(error).__name__ for error in cleanup_errors))
+            except BaseException:
+                pass  # Reporting a cleanup error must not replace the original failure.
     result['case_wall_seconds'] = time.perf_counter() - started
-    result['worker_exit_code'] = process.exitcode
+    result['worker_exit_code'] = exit_code
     return dict(case, **result)
 
 
