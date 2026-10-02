@@ -42,6 +42,9 @@ Repository = "https://github.com/T92T1914/exact-blackjack-solver"
 [tool.setuptools]
 packages = ["bj"]
 
+[tool.setuptools.package-data]
+bj = ["py.typed"]
+
 [tool.setuptools.dynamic]
 version = { attr = "bj.__version__" }
 
