@@ -37,8 +37,12 @@ dealer or Bellman helper supplies the reference arithmetic.
 
 The API accepts 3 to 20 unseen cards. Defaults cap enumeration at 100,000 states
 and ten seconds. Each call owns its caches. Exceeding a limit is an explicit
-failure, not a partial value. An unavailable draw in any admitted continuation
-also fails the case. This includes an action that would not be selected after
+failure, not a partial value. The time cap is checked at each new enumeration
+state and before returning a completed value. It is a cooperative check, not a
+process watchdog. The final check includes preparation of the result diagnostics.
+
+An unavailable draw in any admitted continuation also fails the case. This
+includes an action that would not be selected after
 all valid values were known. The reference does not invent a reshuffle.
 For example, if the second hand is below 21 with only the hidden hole left,
 its hit action cannot be valued. The reference refuses the whole condition
