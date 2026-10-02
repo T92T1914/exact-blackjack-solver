@@ -599,12 +599,12 @@ def basic_action(player_cards, dealer_up, rules: Rules = STANDARD, *,
     can_double     None means "work it out from the rules": exactly two cards,
                    and either this is not a split hand or DAS is allowed.
                    Pass False when the game is not showing the DOUBLE button.
-                   Passing True can never create a double on a hand of three or
-                   more cards - doubling after a hit is not a table rule
-                   anywhere, so the UI can only ever be more restrictive than
-                   the chart, never less.
+                   True still requires two cards and permission under DAS.
+                   Caller availability can remove actions, but cannot override
+                   the table's rules.
     can_split      None means: two cards, a pair, and fewer hands in play than
                    rules.max_hands (plus the resplit-aces rule).
+                   True still requires those conditions. False removes splitting.
     is_split_hand  this hand was born of a split
     hand_count     how many hands are currently in play, splits included
     comp16_requires_45
@@ -622,21 +622,17 @@ def basic_action(player_cards, dealer_up, rules: Rules = STANDARD, *,
 
     pair = is_pair(cards, rules.tens_are_pairs)
 
-    if can_double is None:
-        can_double = len(cards) == 2 and (not is_split_hand or rules.das)
-    else:
-        can_double = bool(can_double) and len(cards) == 2
+    can_double = (len(cards) == 2 and (not is_split_hand or rules.das)
+                  and (can_double is None or bool(can_double)))
 
-    if can_split is None:
-        # resplit_aces defaults to False in core.Rules because it was never
-        # confirmed at the table.  Under that assumption a second A,A on a
-        # split hand cannot be split again.
-        blocked_resplit_aces = (is_split_hand and pair and cards[0] == 'A'
-                                and not rules.resplit_aces)
-        can_split = (len(cards) == 2 and pair and hand_count < rules.max_hands
-                     and not blocked_resplit_aces)
-    else:
-        can_split = bool(can_split) and len(cards) == 2 and pair
+    # A caller can restrict the rule-derived actions, not create permission.
+    # In particular, an affirmative flag cannot replenish the shared hand
+    # allowance or authorize another split of aces when that rule is off.
+    blocked_resplit_aces = (is_split_hand and pair and cards[0] == 'A'
+                            and not rules.resplit_aces)
+    can_split = (len(cards) == 2 and pair and hand_count < rules.max_hands
+                 and not blocked_resplit_aces
+                 and (can_split is None or bool(can_split)))
 
     # --- split aces get one card and the hand is over.
     # Checked before the pair chart, but only when the hand cannot legally be
