@@ -61,6 +61,12 @@ table). The [contribution guide](CONTRIBUTING.md) includes the longer statistica
 checks and the environment commands for PowerShell and other shells.
 `ruff check .` runs the same lint check as CI.
 
+In the Python chart interface, `basic_action` treats `can_double` and
+`can_split` as additional restrictions on the selected rules. Passing `True`
+cannot permit a double after split when DAS is off, exceed `max_hands`, or
+resplit aces when that rule is off. Passing `False` removes the action and
+keeps the chart's fallback explanation.
+
 ## A worked decision
 
 `python demo.py 8,8 T`, the famous split eights hand, against a dealer ten:
