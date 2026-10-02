@@ -75,13 +75,34 @@ async function capture(page, name, fullPage = true) {
   await page.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR, name+'.png'), fullPage});
 }
 
-for (const route of ['index.html','joint-split.html']) test(
-  `phone text enlargement keeps ${route} prose inside the configured width`, async t => {
+const phoneFonts = [
+  {label:'',family:null},
+  {label:' with the missing-font system fallback',family:'"Solver deliberately missing face",system-ui,"Segoe UI",sans-serif'},
+  {label:' with the missing-font Verdana or sans-serif fallback',family:'"Solver deliberately missing face",Verdana,sans-serif'},
+];
+for (const route of ['index.html','joint-split.html']) for (const fallback of phoneFonts) test(
+  `phone text enlargement keeps ${route} prose inside the configured width` +
+    fallback.label, async t => {
     const width = 320;
     const page = await fixture(t, {viewport:{width,height:700},hasTouch:true,isMobile:true});
     await page.goto(base+'/'+route);
     await page.locator('#appearance:not([disabled])').waitFor();
     if (route === 'index.html') await page.locator('#interactive:visible').waitFor();
+    if (fallback.family) {
+      await page.addStyleTag({content:
+        `body{font-family:${fallback.family} !important}`});
+      assert.match(await page.locator('h1').evaluate(e => getComputedStyle(e).fontFamily),
+        /Solver deliberately missing face/);
+    }
+    await page.evaluate(() => document.fonts.ready);
+    if (process.env.SOLVER_BROWSER_ENGINE !== 'webkit') {
+      for (const selector of route === 'index.html' ? ['h1','#engineering h3','#engineering a'] : ['h1']) {
+        const providers = await fonts(page,selector);
+        assert.ok(providers.length > 0);
+        if (fallback.family) assert.ok(providers.every(f => !f.postScriptName.startsWith('Inter')));
+        console.log(`Enlarged ${route}${fallback.label} ${selector} glyph providers:`,JSON.stringify(providers));
+      }
+    }
     const prose = await page.locator('main').textContent();
     await page.evaluate(() => {
       const text = [...document.querySelectorAll('body *')].filter(e =>
@@ -117,7 +138,8 @@ for (const route of ['index.html','joint-split.html']) test(
       assert.ok(chart.scrollWidth >= 980 && chart.left > 0 && chart.width <= width,
         'The quantitative figure retains its local scroll region');
     }
-    await capture(page,'enlarged-320-'+route.replace('.html',''),false);
+    await capture(page,'enlarged-320-'+route.replace('.html','')+
+      (fallback.family?(fallback.family.includes('Verdana')?'-wide-fallback':'-system-fallback'):''),false);
   });
 
 test('Auto and overrides preserve the selected hand, exact saved data and history', async t => {

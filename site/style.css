@@ -8,7 +8,9 @@ nav{flex-wrap:wrap}nav a{display:inline-flex;align-items:center;min-height:44px}
 .table-wrap:focus-visible,pre:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 summary{min-height:44px;padding-block:10px}
 .engineering-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:24px}
-.engineering-grid p{font-size:15px}.engineering-grid a{display:inline-flex;align-items:center;min-height:44px}
+h1,.engineering-grid{overflow-wrap:anywhere}
+.engineering-grid>section{min-width:0}
+.engineering-grid p{font-size:15px}.engineering-grid a{display:inline-flex;align-items:center;min-height:44px;max-width:100%}
 @media(max-width:700px){.engineering-grid{grid-template-columns:1fr;gap:16px}.panel{padding:18px}.button{max-width:100%;overflow-wrap:anywhere}}
 
 /* Appearance changes never recolor the retained diagram. */
