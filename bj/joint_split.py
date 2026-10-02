@@ -195,6 +195,10 @@ def joint_split_value(pair_rank, dealer_up, shoe, *, double_after_split=True,
 
     holes(counts)
     value = play(counts, (pair,), None)
-    return ReferenceResult(value, sum(counts_by_kind.values()), perf_counter() - started,
-                           sum(fn.cache_info().hits for fn in (draw, dealer, settle, play)),
-                           mass_error, tuple(counts_by_kind.items()))
+    states = sum(counts_by_kind.values())
+    hits = sum(fn.cache_info().hits for fn in (draw, dealer, settle, play))
+    state_counts = tuple(counts_by_kind.items())
+    elapsed = perf_counter() - started
+    if elapsed > max_seconds:
+        raise ReferenceLimitExceeded('time limit exceeded', states, elapsed)
+    return ReferenceResult(value, states, elapsed, hits, mass_error, state_counts)

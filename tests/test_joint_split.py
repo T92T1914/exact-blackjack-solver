@@ -183,3 +183,32 @@ def test_state_limit_and_deadline_are_explicit(monkeypatch):
     monkeypatch.setattr(reference, 'perf_counter', lambda: next(times))
     with pytest.raises(reference.ReferenceLimitExceeded, match='time limit'):
         reference.joint_split_value('8', 'T', counts, max_seconds=1)
+
+
+def test_completion_deadline_refuses_a_late_final_result(monkeypatch):
+    counts = shoe(('T',) * 4)
+    completed = reference.joint_split_value('A', '7', counts)
+    # Every admitted state starts before the deadline. The completed arithmetic
+    # can still consume time after the last state entry.
+    times = iter([0.0] * (completed.states + 1) + [2.0])
+    monkeypatch.setattr(reference, 'perf_counter', lambda: next(times))
+    with pytest.raises(reference.ReferenceLimitExceeded, match='time limit') as exc:
+        reference.joint_split_value('A', '7', counts, max_seconds=1)
+    assert exc.value.states == completed.states
+    assert exc.value.elapsed_seconds == 2.0
+
+
+@pytest.mark.parametrize('elapsed', [0.75, 1.0])
+def test_completed_deadline_boundary_preserves_numerical_diagnostics(monkeypatch, elapsed):
+    counts = shoe(('T',) * 4)
+    completed = reference.joint_split_value('A', '7', counts)
+    times = iter([0.0] * (completed.states + 1) + [elapsed])
+    monkeypatch.setattr(reference, 'perf_counter', lambda: next(times))
+    result = reference.joint_split_value(
+        'A', '7', counts, max_seconds=1, max_states=completed.states)
+    assert result.elapsed_seconds == elapsed
+    assert result.value == completed.value
+    assert result.states == completed.states
+    assert result.cache_hits == completed.cache_hits
+    assert result.state_counts == completed.state_counts
+    assert result.maximum_probability_mass_error == completed.maximum_probability_mass_error
