@@ -4,7 +4,7 @@ import {createServer} from 'node:http';
 import {readFile, mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {chromium} from 'playwright';
+import {chromium, webkit} from 'playwright';
 
 // An owned loopback server, headless sandbox and fresh temporary contexts only.
 // Never connect to an existing browser or fall back to a visible window.
@@ -29,8 +29,13 @@ before(async () => {
   base = `http://127.0.0.1:${server.address().port}`;
   const channel = process.env.SOLVER_BROWSER_CHANNEL;
   if (channel && !['chrome','chromium'].includes(channel)) throw Error('Unsupported channel');
-  browser = await chromium.launch({headless:true, chromiumSandbox:true, ...(channel ? {channel} : {})});
-  console.log(`Isolated headless browser ${browser.version()}; sandbox requested; fresh contexts`);
+  const engine = process.env.SOLVER_BROWSER_ENGINE ?? 'chromium';
+  if (!['chromium','webkit'].includes(engine)) throw Error('Unsupported engine');
+  browser = await (engine === 'webkit' ? webkit.launch({headless:true}) :
+    chromium.launch({headless:true, chromiumSandbox:true, args:['--mute-audio','--disable-gpu'],
+      ...(channel ? {channel} : {})}));
+  console.log(`Isolated headless ${engine} ${browser.version()}; fresh contexts` +
+    (engine === 'chromium' ? '; sandbox requested' : ''));
 });
 after(async () => {
   if (browser) await browser.close();
@@ -64,11 +69,77 @@ async function ready(page) {
   await page.goto(base+'/');
   await page.locator('#interactive:visible').waitFor();
 }
-async function capture(page, name) {
+async function capture(page, name, fullPage = true) {
   if (!process.env.SOLVER_SCREENSHOT_DIR) return;
   await mkdir(process.env.SOLVER_SCREENSHOT_DIR, {recursive:true});
-  await page.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR, name+'.png'), fullPage:true});
+  await page.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR, name+'.png'), fullPage});
 }
+
+const phoneFonts = [
+  {label:'',family:null},
+  {label:' with the missing-font system fallback',family:'"Solver deliberately missing face",system-ui,"Segoe UI",sans-serif'},
+  {label:' with the missing-font Verdana or sans-serif fallback',family:'"Solver deliberately missing face",Verdana,sans-serif'},
+];
+for (const route of ['index.html','joint-split.html']) for (const fallback of phoneFonts) test(
+  `phone text enlargement keeps ${route} prose inside the configured width` +
+    fallback.label, async t => {
+    const width = 320;
+    const page = await fixture(t, {viewport:{width,height:700},hasTouch:true,isMobile:true});
+    await page.goto(base+'/'+route);
+    await page.locator('#appearance:not([disabled])').waitFor();
+    if (route === 'index.html') await page.locator('#interactive:visible').waitFor();
+    if (fallback.family) {
+      await page.addStyleTag({content:
+        `body{font-family:${fallback.family} !important}`});
+      assert.match(await page.locator('h1').evaluate(e => getComputedStyle(e).fontFamily),
+        /Solver deliberately missing face/);
+    }
+    await page.evaluate(() => document.fonts.ready);
+    if (process.env.SOLVER_BROWSER_ENGINE !== 'webkit') {
+      for (const selector of route === 'index.html' ? ['h1','#engineering h3','#engineering a'] : ['h1']) {
+        const providers = await fonts(page,selector);
+        assert.ok(providers.length > 0);
+        console.log(`Enlarged ${route}${fallback.label} ${selector} glyph providers:`,JSON.stringify(providers));
+      }
+    }
+    const prose = await page.locator('main').textContent();
+    await page.evaluate(() => {
+      const text = [...document.querySelectorAll('body *')].filter(e =>
+        e instanceof HTMLElement && [...e.childNodes].some(node =>
+          node.nodeType === Node.TEXT_NODE && node.textContent.trim()));
+      const initial = text.map(element => [element,parseFloat(getComputedStyle(element).fontSize)]);
+      for (const [element,size] of initial) element.style.fontSize = `${size*2}px`;
+    });
+    assert.equal(await page.locator('main').textContent(),prose,'Text remains complete');
+    assert.equal(await page.locator('h2').first().evaluate(e =>
+      parseFloat(getComputedStyle(e).fontSize)),54,'Headings stay enlarged');
+    const geometry = await page.evaluate(width => {
+      const overflow = [];
+      for (const element of document.querySelectorAll('main *')) {
+        if (!(element instanceof HTMLElement) || element.closest('.table-wrap,.chart-wrap,pre')) continue;
+        for (const node of element.childNodes) {
+          if (node.nodeType !== Node.TEXT_NODE || !node.textContent.trim()) continue;
+          const range = document.createRange(); range.selectNodeContents(node);
+          if ([...range.getClientRects()].some(rect => rect.right > width+1 || rect.left < -1)) {
+            overflow.push(node.textContent.trim());
+          }
+        }
+      }
+      return {scrollWidth:document.documentElement.scrollWidth,overflow};
+    },width);
+    assert.ok(geometry.scrollWidth <= width,JSON.stringify(geometry));
+    assert.deepEqual(geometry.overflow,[],'Ordinary prose wraps without page overflow');
+    if (route === 'joint-split.html') {
+      const chart = await page.locator('.chart-wrap').evaluate(element => {
+        element.scrollLeft = 120;
+        return {width:element.clientWidth,scrollWidth:element.scrollWidth,left:element.scrollLeft};
+      });
+      assert.ok(chart.scrollWidth >= 980 && chart.left > 0 && chart.width <= width,
+        'The quantitative figure retains its local scroll region');
+    }
+    await capture(page,'enlarged-320-'+route.replace('.html','')+
+      (fallback.family?(fallback.family.includes('Verdana')?'-wide-fallback':'-system-fallback'):''),false);
+  });
 
 test('Auto and overrides preserve the selected hand, exact saved data and history', async t => {
   const page = await fixture(t, {colorScheme:'dark'});
