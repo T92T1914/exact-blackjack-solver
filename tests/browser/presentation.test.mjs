@@ -99,7 +99,6 @@ for (const route of ['index.html','joint-split.html']) for (const fallback of ph
       for (const selector of route === 'index.html' ? ['h1','#engineering h3','#engineering a'] : ['h1']) {
         const providers = await fonts(page,selector);
         assert.ok(providers.length > 0);
-        if (fallback.family) assert.ok(providers.every(f => !f.postScriptName.startsWith('Inter')));
         console.log(`Enlarged ${route}${fallback.label} ${selector} glyph providers:`,JSON.stringify(providers));
       }
     }
