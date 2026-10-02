@@ -31,6 +31,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 .joint-report th:first-child,.joint-report td:first-child{white-space:normal;min-width:220px}
 .joint-report code,.joint-report .identities{overflow-wrap:anywhere}
 .joint-report dd{margin:4px 0 16px}
+.panel h2,.joint-report h2,.joint-report p{overflow-wrap:anywhere}
 @media print{.joint-report .chart-wrap{overflow:visible}.joint-report .chart-wrap svg{min-width:0}.joint-report .table-wrap{overflow:visible}.joint-report table{font-size:8pt}.joint-report th,.joint-report td{white-space:normal;padding:3px}.joint-report th:first-child,.joint-report td:first-child{min-width:0}.joint-report .panel{break-inside:auto}}
 
 /* Authored editions retain the same values and action colors. */
