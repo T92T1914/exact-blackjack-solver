@@ -708,7 +708,9 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
     it is worth on the first decision, and quoting the fresh-round number to a
     player who has already split twice is quoting an option he does not have.
 
-    A natural is not a decision.  It returns STAND with a margin of 0.0.
+    A completed 21 is not a decision. It returns STAND with a margin of 0.0.
+    An unsplit natural receives the posted payout. Other hands at 21 settle
+    against the dealer's distribution without evaluating a further draw.
     """
     cards = normalize_hand(player_cards)
     up = normalize(dealer_up)
@@ -724,6 +726,8 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
     two_cards = len(cards) == 2
     if two_cards and total == 21 and not is_split_hand:
         return STAND, {STAND: float(rules.blackjack_payout)}, 0.0
+    if total == 21:
+        return STAND, {STAND: _stand_ev(total, up, shoe, rules.s17)}, 0.0
 
     pair = is_pair(cards, rules.tens_are_pairs)
     can_double = bool(can_double) and two_cards and (not is_split_hand or rules.das)
