@@ -102,6 +102,45 @@ A shortage that prevents required dealer draws is an error, not an invented
 settlement or reshuffle. Explicit shoes make constructed cases inspectable,
 but do not remove the split approximation or establish a full-shoe error bound.
 
+For a portable record of one decision, add `--json`:
+
+```sh
+bj-advise T,4 T --unseen 2,3,7,8,9,T --json
+```
+
+The versioned JSON contains normalized cards, the dealer upcard, complete
+remaining rank counts, all rules, split state and hand count. It records whether
+the counts were supplied or made from a fresh shoe minus visible cards. Action
+values and the decision margin retain their floating point precision in original
+wager units. This mode computes one hand, with no whole game estimate. The
+ordinary text output stays unchanged, and `--json` cannot accompany `--table`.
+
+The same record is available without parsing console text:
+
+```python
+from bj.core import Rules
+from bj.ev import best_action
+from bj.record import decision_record
+
+record = decision_record("T,4", "T", shoe=(0, 1, 1, 0, 0, 0, 1, 1, 1, 1))
+state = record["state"]
+action, values, margin = best_action(
+    state["cards"], state["dealer_up"], shoe=tuple(state["shoe"]["counts"]),
+    rules=Rules(**record["rules"]), is_split_hand=state["is_split_hand"],
+    hand_count=state["hand_count"],
+)
+```
+
+`bj.record.decision_json` serializes this object. Schema version 1 includes the
+package version and the model qualifications. The hole stays hidden, values
+assume the dealer peek has ruled out a natural, and ten value ranks collapse to
+T. Insurance is not priced in a hand decision. Split still uses independent
+hands and a greedy shared resplit budget, with no general error bound. The
+record refuses unsupported no-peek, surrender, restricted-double and distinct
+ten-pair rules instead of labeling them as implemented. Invalid states and
+nonfinite results also fail before a JSON record is emitted. These checks belong
+to the record interface and do not change the existing solver arithmetic.
+
 ## A worked decision
 
 `python demo.py 8,8 T`, the famous split eights hand, against a dealer ten:
