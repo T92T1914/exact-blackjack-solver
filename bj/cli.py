@@ -22,9 +22,11 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from dataclasses import replace
+from numbers import Integral
 
 from .chart import describe_rules, render_chart
-from .core import ACTION_NAMES, STANDARD, CardLike, Rules, hand_total, normalize, normalize_hand
+from .core import (ACTION_NAMES, RANKS, STANDARD, CardLike, Rules, Shoe, hand_total,
+                   normalize, normalize_hand, normalize_shoe)
 from .ev import best_action, derive_table, house_edge
 from .strategy import basic_action
 
@@ -32,22 +34,45 @@ __all__ = ['advise', 'table', 'main']
 
 
 def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
-           rules: Rules = STANDARD) -> str:
+           rules: Rules = STANDARD, *, shoe: Shoe | None = None,
+           is_split_hand: bool = False, hand_count: int | None = None) -> str:
     """The report for one hand: the text `bj-advise CARDS UP` prints.
 
     Every action the table allows, ranked by modeled EV; the margin between the
     best and the next-best, which is the honest measure of how much the
-    decision is worth; and the bottom line - the player's expectation per hand
+    decision is worth, and the player's expectation per hand
     at this table under the printed chart, which bj.ev.house_edge follows all
     the way down under the stated rules and split approximations.
+
+    An explicit shoe contains every unseen card, including the reserved dealer
+    hole card. Visible cards have already been removed. Its report omits the
+    fresh-shoe whole-game estimate. Split state changes available actions and
+    distinguishes a split 21 from a natural, without changing the solver.
     """
+    if hand_count is None:
+        hand_count = 2 if is_split_hand else 1
+    if (not isinstance(hand_count, Integral) or isinstance(hand_count, bool)
+            or not 1 <= hand_count <= rules.max_hands):
+        raise ValueError(f'hand_count must be an integer from 1 to {rules.max_hands}')
+    if is_split_hand and hand_count < 2:
+        raise ValueError('a split hand requires at least two hands in the round')
+    if not is_split_hand and hand_count != 1:
+        raise ValueError('hand_count above 1 requires a split hand')
     hand = normalize_hand(cards)
     up = normalize(dealer_up)
     total, soft = hand_total(hand)
-    action, evs, margin = best_action(hand, up, rules=rules)
+    unseen = None if shoe is None else normalize_shoe(shoe)
+    action, evs, margin = best_action(hand, up, shoe=unseen, rules=rules,
+                                    is_split_hand=is_split_hand, hand_count=hand_count)
 
     label = ('soft ' if soft else '') + str(total)
     lines = [f'Hand: {" ".join(hand)}  ({label})  vs dealer {up}', '']
+    if unseen is not None:
+        lines += ['Unseen shoe (includes dealer hole): '
+                  + ', '.join(f'{rank}={count}' for rank, count in zip(RANKS, unseen)), '']
+    if is_split_hand or hand_count != 1:
+        lines += [f'Round state: {"split hand" if is_split_hand else "unsplit hand"}, '
+                  f'{hand_count} hands in the round', '']
     for act, ev in sorted(evs.items(), key=lambda kv: -kv[1]):
         star = '  <- recommended' if act == action else ''
         lines.append(f'  {ACTION_NAMES[act]:<8} EV {ev:+.4f}{star}')
@@ -55,10 +80,26 @@ def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
               f'Recommended: {ACTION_NAMES[action]}  '
               f'(margin {margin:+.4f} over the next-best action)',
               '']
-    edge = house_edge(rules, strategy=basic_action)
-    lines.append('Player EV per hand under basic strategy (split approximations apply): '
-                 f'{100 * edge:+.4f}%')
+    if unseen is None and not is_split_hand and hand_count == 1:
+        edge = house_edge(rules, strategy=basic_action)
+        lines.append('Player EV per hand under basic strategy (split approximations apply): '
+                     f'{100 * edge:+.4f}%')
+    else:
+        lines.append('Values apply to this hand and stated round state. '
+                     'No whole-game estimate is computed.')
     return '\n'.join(lines)
+
+
+def _unseen_cards(text: str) -> Shoe:
+    """Convert a comma-separated physical rank list without removing visible cards."""
+    parts = text.split(',')
+    if any(not part.strip() for part in parts):
+        raise argparse.ArgumentTypeError('--unseen needs a nonempty comma-separated card list')
+    try:
+        cards = tuple(normalize(part.strip()) for part in parts)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+    return tuple(cards.count(rank) for rank in RANKS)
 
 
 def table(rules: Rules = STANDARD) -> str:
@@ -98,13 +139,31 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help='dealer hits soft 17 (default: stands)')
     parser.add_argument('--no-das', action='store_true',
                         help='no doubling after a split (default: allowed)')
+    parser.add_argument('--unseen', type=_unseen_cards, metavar='CARDS',
+                        help='explicit unseen cards, including the dealer hole, e.g. '
+                             '2,3,7,8,9,T. Visible cards are already removed')
+    parser.add_argument('--split-hand', action='store_true',
+                        help='this hand came from splitting; first card is the split rank')
+    parser.add_argument('--hand-count', type=int, default=None, metavar='N',
+                        help='total hands created in this round, including completed hands '
+                             '(default: 2 with --split-hand, otherwise 1)')
     args = parser.parse_args(argv)
     if args.decks < 1:
         parser.error('--decks must be at least 1')
     rules = replace(STANDARD, decks=args.decks, s17=not args.h17, das=not args.no_das)
+    if args.table and (args.unseen is not None or args.split_hand or args.hand_count is not None):
+        parser.error('--table cannot be combined with hand-specific state options')
+    hand_count = args.hand_count if args.hand_count is not None else 2 if args.split_hand else 1
+    if args.split_hand and hand_count < 2:
+        parser.error('--split-hand requires at least two hands in the round')
+    if not args.split_hand and hand_count != 1:
+        parser.error('--hand-count above 1 requires --split-hand')
 
     try:
-        text = table(rules) if args.table else advise(args.cards, args.upcard, rules)
+        text = table(rules) if args.table else advise(args.cards, args.upcard, rules,
+                                                    shoe=args.unseen,
+                                                    is_split_hand=args.split_hand,
+                                                    hand_count=hand_count)
     except ValueError as exc:
         # Unknown card, a busted hand, more cards than the shoe holds: the
         # solver refuses rather than guessing, and so does the command line.

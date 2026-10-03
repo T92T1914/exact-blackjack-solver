@@ -77,6 +77,31 @@ and a zero decision margin. An unsplit natural receives its posted payout.
 A split or drawn 21 uses ordinary dealer settlement and can still reject
 an explicit shoe that cannot supply the dealer's required cards.
 
+The command line can also inspect an explicit remaining shoe or a hand that
+has already split:
+
+```sh
+bj-advise T,4 T --unseen 2,3,7,8,9,T
+bj-advise A,T T --unseen 9 --split-hand
+bj-advise 8,8 T --unseen 7,8,9,T --split-hand --hand-count 4
+```
+
+`--unseen` lists every card still unseen, including the dealer's hidden hole
+card. Remove visible cards before supplying this list. The command does not
+subtract them again. Rank aliases such as K, Q, J and 10 all count as T.
+`--split-hand` identifies the first card as the original split rank. The hand
+count includes completed hands in the same round and defaults to two for a
+split hand. It controls the remaining shared split allowance. `--no-das`
+still removes doubling after a split.
+
+Explicit-shoe reports print the supplied rank counts. Split reports also print
+the round state. These reports omit the
+fresh-shoe whole-game estimate because it describes a different starting
+state. The ordinary command and its recorded example remain unchanged.
+A shortage that prevents required dealer draws is an error, not an invented
+settlement or reshuffle. Explicit shoes make constructed cases inspectable,
+but do not remove the split approximation or establish a full-shoe error bound.
+
 ## A worked decision
 
 `python demo.py 8,8 T`, the famous split eights hand, against a dealer ten:
