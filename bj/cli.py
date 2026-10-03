@@ -28,6 +28,7 @@ from .chart import describe_rules, render_chart
 from .core import (ACTION_NAMES, RANKS, STANDARD, CardLike, Rules, Shoe, hand_total,
                    normalize, normalize_hand, normalize_shoe)
 from .ev import best_action, derive_table, house_edge
+from .record import decision_json
 from .strategy import basic_action
 
 __all__ = ['advise', 'table', 'main']
@@ -133,6 +134,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument('--table', action='store_true',
                         help='print the full basic-strategy chart the solver derives '
                              '(Markdown; about a minute) instead of advising a hand')
+    parser.add_argument('--json', action='store_true',
+                        help='print a versioned decision record with complete state and raw EVs; '
+                             'no whole-game estimate')
     parser.add_argument('--decks', type=int, default=STANDARD.decks, metavar='N',
                         help=f'decks in the shoe (default: {STANDARD.decks})')
     parser.add_argument('--h17', action='store_true',
@@ -153,6 +157,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     rules = replace(STANDARD, decks=args.decks, s17=not args.h17, das=not args.no_das)
     if args.table and (args.unseen is not None or args.split_hand or args.hand_count is not None):
         parser.error('--table cannot be combined with hand-specific state options')
+    if args.table and args.json:
+        parser.error('--table cannot be combined with --json')
     hand_count = args.hand_count if args.hand_count is not None else 2 if args.split_hand else 1
     if args.split_hand and hand_count < 2:
         parser.error('--split-hand requires at least two hands in the round')
@@ -160,10 +166,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error('--hand-count above 1 requires --split-hand')
 
     try:
-        text = table(rules) if args.table else advise(args.cards, args.upcard, rules,
-                                                    shoe=args.unseen,
-                                                    is_split_hand=args.split_hand,
-                                                    hand_count=hand_count)
+        if args.json:
+            text = decision_json(args.cards, args.upcard, rules, shoe=args.unseen,
+                                 is_split_hand=args.split_hand, hand_count=hand_count)
+        else:
+            text = table(rules) if args.table else advise(args.cards, args.upcard, rules,
+                                                        shoe=args.unseen,
+                                                        is_split_hand=args.split_hand,
+                                                        hand_count=hand_count)
     except ValueError as exc:
         # Unknown card, a busted hand, more cards than the shoe holds: the
         # solver refuses rather than guessing, and so does the command line.
