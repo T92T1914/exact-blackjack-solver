@@ -287,6 +287,16 @@ def _peek_out(up: str) -> int:
     return -1
 
 
+def _require_possible_post_peek_hole(shoe: Shoe, up: str) -> None:
+    """A settled natural still needs a dealer hole consistent with the peek."""
+    unseen = shoe_size(shoe)
+    if unseen == 0:
+        raise ValueError('empty shoe: the dealer has no hole card to draw')
+    excluded = _peek_out(up)
+    if excluded >= 0 and unseen == shoe[excluded]:
+        raise ValueError(f'after the peek there is no possible hole card for upcard {up}')
+
+
 @lru_cache(maxsize=None)
 def _draw_probs(shoe: Shoe, up: str) -> tuple[float, ...]:
     """Probability of each rank being the player's NEXT card, post-peek.
@@ -600,6 +610,7 @@ def ev_stand(player_cards, dealer_up, shoe: Shoe | None = None,
     shoe = normalize_shoe(shoe)
     total, _soft = hand_total(cards)
     if len(cards) == 2 and total == 21 and not is_split_hand:
+        _require_possible_post_peek_hole(shoe, up)
         return float(rules.blackjack_payout)
     return _stand_ev(total, up, shoe, rules.s17)
 
@@ -725,6 +736,7 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
 
     two_cards = len(cards) == 2
     if two_cards and total == 21 and not is_split_hand:
+        _require_possible_post_peek_hole(shoe, up)
         return STAND, {STAND: float(rules.blackjack_payout)}, 0.0
     if total == 21:
         return STAND, {STAND: _stand_ev(total, up, shoe, rules.s17)}, 0.0
