@@ -81,6 +81,34 @@ def test_natural_payout_and_split_settlement_remain_distinct(payout):
     )
 
 
+@pytest.mark.parametrize('up,unseen', [('T', ('A',)), ('A', ('T',))])
+def test_natural_refuses_an_impossible_post_peek_hole_in_solver_and_text_cli(
+        up, unseen, capsys):
+    # A natural is settled early, but it still needs a possible dealer hole.
+    with pytest.raises(ValueError, match='after the peek there is no possible hole card'):
+        ev.best_action(('A', 'T'), up, _shoe(unseen))
+    with pytest.raises(ValueError, match='after the peek there is no possible hole card'):
+        ev.ev_stand(('A', 'T'), up, _shoe(unseen))
+    with pytest.raises(SystemExit) as exc:
+        cli.main(['A,T', up, '--unseen', ','.join(unseen)])
+    assert exc.value.code == 2
+    output = capsys.readouterr()
+    assert output.out == ''
+    assert 'after the peek there is no possible hole card' in output.err
+
+
+def test_natural_requires_a_reserved_dealer_hole():
+    with pytest.raises(ValueError, match='no hole card'):
+        ev.best_action(('A', 'T'), '6', _shoe(()))
+    with pytest.raises(ValueError, match='no hole card'):
+        ev.ev_stand(('A', 'T'), '6', _shoe(()))
+    # A valid natural settles before any otherwise-required dealer draw.
+    assert ev.best_action(('A', 'T'), '6', _shoe(('2',))) == (
+        STAND, {STAND: 1.5}, 0.0,
+    )
+    assert ev.ev_stand(('A', 'T'), '6', _shoe(('2',))) == 1.5
+
+
 @pytest.mark.parametrize('cards', [(), ('T',), ('T', 'T', '2')])
 def test_invalid_or_busted_hands_do_not_enter_completed_hand_settlement(cards):
     with pytest.raises(ValueError):
