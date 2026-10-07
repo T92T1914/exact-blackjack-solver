@@ -722,11 +722,15 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
     A completed 21 is not a decision. It returns STAND with a margin of 0.0.
     An unsplit natural receives the posted payout. Other hands at 21 settle
     against the dealer's distribution without evaluating a further draw.
+    A split ace cannot have more than two cards unless hit_split_aces is on.
     """
     cards = normalize_hand(player_cards)
     up = normalize(dealer_up)
     if len(cards) < 2:
         raise ValueError('a hand needs at least two cards before it has a decision')
+    if (is_split_hand and cards[0] == 'A' and len(cards) > 2
+            and not rules.hit_split_aces):
+        raise ValueError('a split ace receives only one card when hit_split_aces is False')
     total, soft = hand_total(cards)
     if total > 21:
         raise ValueError(f'hand {cards} is busted at {total}; there is no decision left')
