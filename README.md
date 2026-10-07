@@ -93,6 +93,8 @@ subtract them again. Rank aliases such as K, Q, J and 10 all count as T.
 count includes completed hands in the same round and defaults to two for a
 split hand. It controls the remaining shared split allowance. `--no-das`
 still removes doubling after a split.
+When split aces receive only one card, a split hand beginning with A must
+contain exactly two cards. A longer hand is rejected in text and JSON advice.
 
 Explicit-shoe reports print the supplied rank counts. Split reports also print
 the round state. These reports omit the
