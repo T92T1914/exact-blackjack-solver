@@ -38,7 +38,8 @@ __all__ = ['advise', 'table', 'main']
 
 def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
            rules: Rules = STANDARD, *, shoe: Shoe | None = None,
-           is_split_hand: bool = False, hand_count: int | None = None) -> str:
+           is_split_hand: bool = False, hand_count: int | None = None,
+           can_double: bool = True, can_split: bool = True) -> str:
     """The report for one hand: the text `bj-advise CARDS UP` prints.
 
     Every action the table allows, ranked by modeled EV; the margin between the
@@ -51,7 +52,11 @@ def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
     hole card. Visible cards have already been removed. Its report omits the
     fresh-shoe whole-game estimate. Split state changes available actions and
     distinguishes a split 21 from a natural, without changing the solver.
+    False action controls restrict only the current double or split choice.
     """
+    for name, value in (('can_double', can_double), ('can_split', can_split)):
+        if not isinstance(value, bool):
+            raise ValueError(f'{name} must be a boolean')
     if hand_count is None:
         hand_count = 2 if is_split_hand else 1
     if (not isinstance(hand_count, Integral) or isinstance(hand_count, bool)
@@ -66,7 +71,8 @@ def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
     total, soft = hand_total(hand)
     unseen = None if shoe is None else normalize_shoe(shoe)
     action, evs, margin = best_action(hand, up, shoe=unseen, rules=rules,
-                                    is_split_hand=is_split_hand, hand_count=hand_count)
+                                    is_split_hand=is_split_hand, hand_count=hand_count,
+                                    can_double=can_double, can_split=can_split)
 
     label = ('soft ' if soft else '') + str(total)
     lines = [f'Hand: {" ".join(hand)}  ({label})  vs dealer {up}', '']
@@ -76,6 +82,10 @@ def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
     if is_split_hand or hand_count != 1:
         lines += [f'Round state: {"split hand" if is_split_hand else "unsplit hand"}, '
                   f'{hand_count} hands in the round', '']
+    restricted = [name for name, enabled in (('DOUBLE', can_double), ('SPLIT', can_split))
+                  if not enabled]
+    if restricted:
+        lines += ['Current action restrictions: ' + ', '.join(restricted), '']
     for act, ev in sorted(evs.items(), key=lambda kv: -kv[1]):
         star = '  <- recommended' if act == action else ''
         lines.append(f'  {ACTION_NAMES[act]:<8} EV {ev:+.4f}{star}')
@@ -83,10 +93,13 @@ def advise(cards: str | Sequence[CardLike], dealer_up: CardLike,
               f'Recommended: {ACTION_NAMES[action]}  '
               f'(margin {margin:+.4f} over the next-best action)',
               '']
-    if unseen is None and not is_split_hand and hand_count == 1:
+    if unseen is None and not is_split_hand and hand_count == 1 and not restricted:
         edge = house_edge(rules, strategy=basic_action)
         lines.append('Player EV per hand under basic strategy (split approximations apply): '
                      f'{100 * edge:+.4f}%')
+    elif restricted:
+        lines.append('Values apply to this hand and declared current choices. '
+                     'No whole-game estimate is computed.')
     else:
         lines.append('Values apply to this hand and stated round state. '
                      'No whole-game estimate is computed.')
@@ -185,6 +198,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help='dealer hits soft 17 (default: stands)')
     parser.add_argument('--no-das', action='store_true',
                         help='no doubling after a split (default: allowed)')
+    parser.add_argument('--no-double', action='store_true',
+                        help='exclude the current DOUBLE alternative, without changing rules')
+    parser.add_argument('--no-split', action='store_true',
+                        help='exclude the current SPLIT alternative, without changing rules')
     parser.add_argument('--max-hands', type=_max_hands, default=None, metavar='N',
                         help='maximum hands allowed in a round, including completed hands '
                              f'(default: {STANDARD.max_hands}); distinct from --hand-count')
@@ -204,6 +221,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.replay is not None:
         if (args.cards is not None or args.upcard is not None or args.table
                 or args.decks is not None or args.h17 or args.no_das
+                or args.no_double or args.no_split
                 or args.max_hands is not None or args.unseen is not None
                 or args.split_hand or args.hand_count is not None):
             parser.error('--replay cannot be combined with cards, upcard, --table or state options')
@@ -218,7 +236,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error('--decks must be at least 1')
     rules = replace(STANDARD, decks=args.decks, s17=not args.h17, das=not args.no_das,
                     max_hands=args.max_hands)
-    if args.table and (args.unseen is not None or args.split_hand or args.hand_count is not None):
+    if args.table and (args.unseen is not None or args.split_hand or args.hand_count is not None
+                       or args.no_double or args.no_split):
         parser.error('--table cannot be combined with hand-specific state options')
     if args.table and args.json:
         parser.error('--table cannot be combined with --json')
@@ -231,12 +250,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.json:
             text = decision_json(args.cards, args.upcard, rules, shoe=args.unseen,
-                                 is_split_hand=args.split_hand, hand_count=hand_count)
+                                 is_split_hand=args.split_hand, hand_count=hand_count,
+                                 can_double=not args.no_double, can_split=not args.no_split)
         else:
             text = table(rules) if args.table else advise(args.cards, args.upcard, rules,
                                                         shoe=args.unseen,
                                                         is_split_hand=args.split_hand,
-                                                        hand_count=hand_count)
+                                                        hand_count=hand_count,
+                                                        can_double=not args.no_double,
+                                                        can_split=not args.no_split)
     except ValueError as exc:
         # Unknown card, a busted hand, more cards than the shoe holds: the
         # solver refuses rather than guessing, and so does the command line.

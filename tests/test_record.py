@@ -1,6 +1,7 @@
 """Portable state, rational references and refusals for the opt-in record."""
 import json
 from dataclasses import asdict, dataclass, replace
+from pathlib import Path
 
 import pytest
 
@@ -193,3 +194,104 @@ def test_ordinary_cli_text_is_still_the_existing_report(capsys):
     expected = cli.advise('T,4', 'T', shoe=_shoe(('2', '3', '7', '8', '9', 'T'))) + '\n'
     assert cli.main(arguments) == 0
     assert capsys.readouterr().out == expected
+
+
+CONTROL_PAIRS = ((True, True), (False, True), (True, False), (False, False))
+
+
+@pytest.mark.parametrize('can_double,can_split', CONTROL_PAIRS)
+def test_current_controls_preserve_independent_physical_hit_and_stand(
+        can_double, can_split):
+    # This oracle enumerates physical deals independently. Removing the
+    # immediate DOUBLE must not remove later modeled hit/stand continuation.
+    cards, up, unseen, s17 = CASES[0]
+    expected = physical_reference(cards, up, unseen, s17=s17)
+    answer = record.decision_record(cards, up, shoe=_shoe(unseen),
+                                    can_double=can_double, can_split=can_split)
+    values = answer['decision']['evs']
+    permitted = {'H', 'S'} | ({'D'} if can_double else set())
+    assert set(values) == permitted
+    assert values == pytest.approx({a: float(expected[a]) for a in permitted},
+                                   rel=0, abs=1e-12)
+    ordered = sorted(values.values(), reverse=True)
+    assert values[answer['decision']['action']] == ordered[0]
+    assert answer['decision']['margin'] == ordered[0] - ordered[1]
+    assert answer['state']['shoe']['counts'] == list(_shoe(unseen))
+    if can_double and can_split:
+        assert answer['schema']['version'] == record.SCHEMA_VERSION == 1
+        assert 'action_controls' not in answer['state']
+    else:
+        assert answer['schema']['version'] == record.CONTROLLED_SCHEMA_VERSION == 2
+        assert list(answer['state']) == [
+            'cards', 'dealer_up', 'total', 'soft', 'is_split_hand', 'hand_count',
+            'action_controls', 'shoe']
+        assert list(answer['state']['action_controls']) == ['can_double', 'can_split']
+        assert answer['state']['action_controls'] == {
+            'can_double': can_double, 'can_split': can_split}
+
+
+@pytest.mark.parametrize('can_double,can_split', CONTROL_PAIRS)
+def test_current_controls_match_existing_engine_for_retained_split_case(
+        can_double, can_split):
+    # Same-engine consistency. The retained split case is not an independent
+    # split oracle or an approximation error bound.
+    rules = replace(STANDARD, max_hands=2)
+    counts = (1,) + (0,) * 8 + (5,)
+    answer = record.decision_record('T,T', '7', rules, shoe=counts,
+                                    can_double=can_double, can_split=can_split)
+    expected = best_action('T,T', '7', shoe=counts, rules=rules,
+                           can_double=can_double, can_split=can_split)
+    assert (answer['decision']['action'], answer['decision']['evs'],
+            answer['decision']['margin']) == expected
+    assert set(answer['decision']['evs']) == (
+        {'H', 'S'} | ({'D'} if can_double else set()) | ({'P'} if can_split else set()))
+    if can_split:
+        assert answer['decision']['evs']['P'] == 2.0
+    assert answer['decision']['evs']['S'] == 1.0
+
+
+def test_default_and_explicit_true_records_keep_immutable_version_one_bytes():
+    fixture = Path(__file__).parent / 'fixtures/saved-decision-v1-7a38141.json'
+    expected = fixture.read_text(encoding='utf-8').rstrip('\n')
+    args = ('T,4', 'T')
+    state = {'shoe': _shoe(('2', '3', '7', '8', '9', 'T'))}
+    assert record.decision_json(*args, **state) == expected
+    assert record.decision_json(*args, **state, can_double=True, can_split=True) == expected
+    old_text = (
+        'Hand: T 4  (14)  vs dealer T\n\n'
+        'Unseen shoe (includes dealer hole): A=0, 2=1, 3=1, 4=0, 5=0, 6=0, '
+        '7=1, 8=1, 9=1, T=1\n\n'
+        '  HIT      EV -0.5917  <- recommended\n'
+        '  STAND    EV -0.6667\n'
+        '  DOUBLE   EV -1.2000\n\n'
+        'Recommended: HIT  (margin +0.0750 over the next-best action)\n\n'
+        'Values apply to this hand and stated round state. No whole-game estimate is computed.')
+    assert cli.advise(*args, **state) == old_text
+    assert cli.advise(*args, **state, can_double=True, can_split=True) == old_text
+
+
+@pytest.mark.parametrize('wrapper', [record.decision_record, record.decision_json, cli.advise])
+@pytest.mark.parametrize('key', ['can_double', 'can_split'])
+@pytest.mark.parametrize('value', [None, 0, 1, 1.0, 'false', [], {}])
+def test_public_controls_are_genuine_booleans_before_pricing(
+        monkeypatch, wrapper, key, value):
+    def forbidden(*args, **kwargs):
+        pytest.fail('invalid action control reached pricing')
+    monkeypatch.setattr(record, 'best_action', forbidden)
+    monkeypatch.setattr(cli, 'best_action', forbidden)
+    with pytest.raises(ValueError, match=key + ' must be a boolean'):
+        wrapper('T,4', 'T', shoe=_shoe(('2', '3', '7', '8', '9', 'T')), **{key: value})
+
+
+@pytest.mark.parametrize('cards,up,unseen,kwargs,expected', [
+    ('T,2,2', 'T', ('7', '8', '9', 'T'), {}, {'H', 'S'}),
+    ('A,7', 'T', ('7', '8', '9', 'T'), {'is_split_hand': True}, {'S'}),
+    ('T,T', '7', ('A', 'T', 'T', 'T', 'T', 'T'),
+     {'is_split_hand': True, 'hand_count': 2}, {'H', 'S', 'D'}),
+    ('A,T', '9', ('9',), {}, {'S'}),
+])
+def test_true_controls_cannot_restore_ineligible_actions(cards, up, unseen, kwargs, expected):
+    answer = record.decision_record(cards, up, replace(STANDARD, max_hands=2),
+                                    shoe=_shoe(unseen), can_double=True, can_split=True,
+                                    **kwargs)
+    assert set(answer['decision']['evs']) == expected

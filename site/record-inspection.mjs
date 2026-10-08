@@ -148,11 +148,17 @@ export function inspectRecord(input) {
   if (!object(saved)) invalid('record must be an object');
   const schema=fields(saved.schema,['name','version'],'schema');
   string(schema.name,'schema.name'); integer(schema.version,'schema.version');
-  if (schema.name!=='blackjack-decision' || schema.version!==1n) unsupported('supported schema is blackjack-decision version 1');
+  if (schema.name!=='blackjack-decision' || ![1n,2n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1 and 2');
   fields(saved,['schema','package','state','rules','decision','model'],'record');
   const pkg=fields(saved.package,['name','version'],'package');
   constant(pkg.name,'exact-blackjack-solver','package.name'); string(pkg.version,'package.version');
-  const state=fields(saved.state,['cards','dealer_up','total','soft','is_split_hand','hand_count','shoe'],'state');
+  const stateKeys=['cards','dealer_up','total','soft','is_split_hand','hand_count','shoe'];
+  if (schema.version===2n) stateKeys.push('action_controls');
+  const state=fields(saved.state,stateKeys,'state');
+  if (schema.version===2n) {
+    const controls=fields(state.action_controls,['can_double','can_split'],'state.action_controls');
+    for (const key of ['can_double','can_split']) if (typeof controls[key]!=='boolean') invalid(`state.action_controls.${key} must be a boolean`);
+  }
   if (!Array.isArray(state.cards) || state.cards.some(rank=>typeof rank!=='string' || !RANKS.includes(rank))) invalid('state.cards must be a list of normalized ranks in dealt order');
   if (typeof state.dealer_up!=='string' || !RANKS.includes(state.dealer_up)) invalid('state.dealer_up must be a normalized rank');
   integer(state.total,'state.total'); integer(state.hand_count,'state.hand_count');
@@ -213,8 +219,10 @@ export function display(value) {
 }
 export function modeledRows(record) {
   const {state,rules,model}=record;
+  const controls=actionControls(record);
   return [
     ...['cards','dealer_up','total','soft','is_split_hand','hand_count'].map(key=>[`state.${key}`,state[key]]),
+    ...['can_double','can_split'].map(key=>[`state.action_controls.${key}`,controls[key]]),
     ['state.shoe.rank_order',state.shoe.rank_order],
     ...RANKS.map((rank,i)=>[`state.shoe.counts.${rank}`,state.shoe.counts[i]]),
     ...['source','includes_hidden_hole','visible_cards_already_removed'].map(key=>[`state.shoe.${key}`,state.shoe[key]]),
@@ -226,20 +234,23 @@ export function metadataRows(record) {
   return [['schema.name',record.schema.name],['schema.version',record.schema.version],
     ['package.name',record.package.name],['package.version',record.package.version]];
 }
-// For admitted records, match the exporter's default can_double/can_split=True.
+// Effective defaults do not add fields to the admitted version 1 object.
+export function actionControls(record) {
+  return record.schema.version===1n ? {can_double:true,can_split:true} : record.state.action_controls;
+}
 // This derives eligibility only and never evaluates an action's return.
 export function permittedActions(record) {
-  const {state,rules}=record,allowed=new Set(['S']);
+  const {state,rules}=record,controls=actionControls(record),allowed=new Set(['S']);
   if (state.total===21n) return ['S'];
   const twoCards=state.cards.length===2,pair=twoCards && state.cards[0]===state.cards[1];
   const unseen=state.shoe.counts.reduce((sum,count)=>sum+count,0n);
   const frozenAce=state.is_split_hand && twoCards && state.cards[0]==='A' && !rules.hit_split_aces;
   if (!frozenAce && unseen>=2n) {
     allowed.add('H');
-    if (twoCards && (!state.is_split_hand || rules.das)) allowed.add('D');
+    if (controls.can_double && twoCards && (!state.is_split_hand || rules.das)) allowed.add('D');
   }
   const blockedAceResplit=state.is_split_hand && pair && state.cards[0]==='A' && !rules.resplit_aces;
-  if (pair && unseen>=3n && state.hand_count<rules.max_hands && !blockedAceResplit) allowed.add('P');
+  if (controls.can_split && pair && unseen>=3n && state.hand_count<rules.max_hands && !blockedAceResplit) allowed.add('P');
   return Object.keys(ACTION_NAMES).filter(action=>allowed.has(action));
 }
 export function recordedActionDifferences(record) {

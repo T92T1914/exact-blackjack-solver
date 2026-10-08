@@ -527,3 +527,95 @@ def test_selected_table_cap_preserves_state_and_json_refusals(capsys, monkeypatc
     assert exc.value.code == 2
     captured = capsys.readouterr()
     assert captured.out == '' and '--table cannot be combined' in captured.err
+
+
+@pytest.mark.parametrize('can_double,can_split', [
+    (True, True), (False, True), (True, False), (False, False),
+])
+def test_current_controls_create_and_replay_the_actual_saved_stdout(
+        capsys, tmp_path, can_double, can_split):
+    flags = ([] if can_double else ['--no-double']) + ([] if can_split else ['--no-split'])
+    args = ['T,T', '7', '--unseen-counts', CAP_CSV, '--max-hands', '2', *flags]
+    assert cli.main([*args, '--json']) == 0
+    created = capsys.readouterr()
+    assert created.err == ''
+    saved = json.loads(created.out)
+    expected = record.decision_record('T,T', '7', replace(STANDARD, max_hands=2),
+                                      shoe=CAP_COUNTS, can_double=can_double,
+                                      can_split=can_split)
+    assert saved == expected
+    assert saved['state']['shoe']['counts'] == list(CAP_COUNTS)
+    assert set(saved['decision']['evs']) == (
+        {'H', 'S'} | ({'D'} if can_double else set()) | ({'P'} if can_split else set()))
+    path = tmp_path / 'current-choices.json'
+    with path.open('x', encoding='utf-8', newline='') as stream:
+        stream.write(created.out)
+    before = (path.read_bytes(), path.stat().st_mtime_ns)
+    assert cli.main(['--replay', str(path), '--json']) == 0
+    captured = capsys.readouterr()
+    assert captured.err == ''
+    replayed = json.loads(captured.out)
+    assert replayed['status'] == 'agreement'
+    assert replayed['modeled_input']['state'] == saved['state']
+    assert replayed['recorded'] == replayed['recomputed'] == saved['decision']
+    assert replayed['comparison']['evs_match'] and replayed['comparison']['margin']['matches']
+    assert (path.read_bytes(), path.stat().st_mtime_ns) == before
+
+
+@pytest.mark.parametrize('flag,disabled', [
+    ('--no-double', 'DOUBLE'), ('--no-split', 'SPLIT'),
+])
+def test_repeated_disable_is_harmless_and_text_names_only_disabled_choice(capsys, flag, disabled):
+    args = ['T,T', '7', '--unseen-counts', CAP_CSV, '--max-hands', '2', flag]
+    assert cli.main(args) == 0
+    once = capsys.readouterr()
+    assert cli.main([*args, flag]) == 0
+    repeated = capsys.readouterr()
+    assert once == repeated
+    assert 'Current action restrictions: ' + disabled + '\n' in once.out
+    assert 'Values apply to this hand and declared current choices.' in once.out
+    assert 'Player EV per hand under basic strategy' not in once.out
+
+
+def test_disabled_choices_omit_fresh_whole_game_work(monkeypatch, capsys):
+    def forbidden(*args, **kwargs):
+        pytest.fail('current choice restrictions reached whole-game work')
+    monkeypatch.setattr(cli, 'house_edge', forbidden)
+    # A natural settles immediately, so this fresh-shoe witness adds no search.
+    assert cli.main(['A,T', '9', '--no-double', '--no-split']) == 0
+    captured = capsys.readouterr()
+    assert captured.err == ''
+    assert 'Current action restrictions: DOUBLE, SPLIT\n' in captured.out
+    assert '  STAND' in captured.out
+    assert 'No whole-game estimate is computed.' in captured.out
+
+
+@pytest.mark.parametrize('flag', ['--no-double', '--no-split'])
+@pytest.mark.parametrize('dispatch', [
+    ['--table'], ['--table', '--json'], ['--replay', 'not-read.json'],
+    ['--replay', 'not-read.json', '--json'],
+])
+def test_current_control_dispatch_conflicts_refuse_before_work(
+        monkeypatch, capsys, flag, dispatch):
+    _forbid_input_work(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        cli.main([*dispatch, flag])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == '' and 'usage:' in captured.err
+    assert 'cannot be combined' in captured.err and 'Traceback' not in captured.err
+
+
+def test_controls_keep_existing_split_rule_and_direct_count_options(capsys):
+    counts = (0, 0, 0, 0, 0, 0, 1, 1, 1, 1)
+    flags = ['--split-hand', '--hand-count', '2', '--max-hands', '2',
+             '--h17', '--no-das', '--decks', '1', '--no-double', '--no-split']
+    actual = _json_advice(capsys, ['8,8', 'T', '--unseen-counts',
+                                  '0,0,0,0,0,0,1,1,1,1', *flags])
+    physical = _json_advice(capsys, ['8,8', 'T', '--unseen', '7,8,9,T', *flags])
+    expected = record.decision_record(
+        '8,8', 'T', replace(STANDARD, decks=1, s17=False, das=False, max_hands=2),
+        shoe=counts, is_split_hand=True, hand_count=2, can_double=False, can_split=False)
+    assert actual == physical == expected
+    assert actual['state']['cards'] == ['8', '8']
+    assert set(actual['decision']['evs']) == {'H', 'S'}

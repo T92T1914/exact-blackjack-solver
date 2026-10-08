@@ -18,9 +18,10 @@ from .core import (ACTION_NAMES, RANKS, STANDARD, CardLike, Rules, Shoe, hand_to
                    normalize, normalize_hand, normalize_shoe)
 from .ev import best_action, initial_shoe_for
 
-__all__ = ['SCHEMA_VERSION', 'decision_record', 'decision_json']
+__all__ = ['SCHEMA_VERSION', 'CONTROLLED_SCHEMA_VERSION', 'decision_record', 'decision_json']
 
 SCHEMA_VERSION = 1
+CONTROLLED_SCHEMA_VERSION = 2
 
 
 class _UnsupportedRules(ValueError):
@@ -108,7 +109,8 @@ def _model_record(up):
 def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
                     rules: Rules = STANDARD, *, shoe: Shoe | None = None,
                     is_split_hand: bool = False,
-                    hand_count: int | None = None) -> dict[str, Any]:
+                    hand_count: int | None = None, can_double: bool = True,
+                    can_split: bool = True) -> dict[str, Any]:
     """Return a versioned JSON-compatible record of this hand's modeled decision.
 
     ``shoe`` is every unseen card, including the hidden dealer hole. Supplied
@@ -121,12 +123,18 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
     Split retains the independent-hand and greedy shared-budget approximation.
     Unsupported rules and nonfinite results are errors rather than JSON claims.
     The ordinary text interface remains independent of this stricter record.
+    False controls remove only the current double or split alternative. They
+    produce schema version 2, without changing continuation rules or policy.
     """
+    for name, value in (('can_double', can_double), ('can_split', can_split)):
+        if not isinstance(value, bool):
+            raise ValueError(f'{name} must be a boolean')
     rule_values = _rules_record(rules)
     hand, up, unseen, hand_count = _record_inputs(
         cards, dealer_up, rules, shoe, is_split_hand, hand_count)
     action, evs, margin = best_action(hand, up, shoe=unseen, rules=rules,
-                                    is_split_hand=is_split_hand, hand_count=hand_count)
+                                    is_split_hand=is_split_hand, hand_count=hand_count,
+                                    can_double=can_double, can_split=can_split)
     if not evs or action not in evs or any(key not in ACTION_NAMES for key in evs):
         raise ValueError('solver returned an invalid action set')
     values = {}
@@ -142,11 +150,14 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
         raise ValueError('solver returned an inconsistent recommendation or margin')
     total, soft = hand_total(hand)
     return {
-        'schema': {'name': 'blackjack-decision', 'version': SCHEMA_VERSION},
+        'schema': {'name': 'blackjack-decision', 'version': (
+            SCHEMA_VERSION if can_double and can_split else CONTROLLED_SCHEMA_VERSION)},
         'package': {'name': 'exact-blackjack-solver', 'version': __version__},
         'state': {
             'cards': list(hand), 'dealer_up': up, 'total': total, 'soft': soft,
             'is_split_hand': is_split_hand, 'hand_count': hand_count,
+            **({} if can_double and can_split else {
+                'action_controls': {'can_double': can_double, 'can_split': can_split}}),
             'shoe': {
                 'rank_order': list(RANKS), 'counts': list(unseen),
                 'source': 'fresh_minus_visible' if shoe is None else 'supplied_unseen',
@@ -165,8 +176,10 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
 
 def decision_json(cards: str | Sequence[CardLike], dealer_up: CardLike,
                   rules: Rules = STANDARD, *, shoe: Shoe | None = None,
-                  is_split_hand: bool = False, hand_count: int | None = None) -> str:
+                  is_split_hand: bool = False, hand_count: int | None = None,
+                  can_double: bool = True, can_split: bool = True) -> str:
     """Serialize a decision record as one JSON object, with no display rounding."""
     return json.dumps(decision_record(cards, dealer_up, rules, shoe=shoe,
-                                     is_split_hand=is_split_hand, hand_count=hand_count),
+                                     is_split_hand=is_split_hand, hand_count=hand_count,
+                                     can_double=can_double, can_split=can_split),
                       indent=2, allow_nan=False)

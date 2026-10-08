@@ -18,7 +18,7 @@ def main():
     permitted = []
     for case in cases:
         try:
-            hand, up, unseen, rules, split, hands = replay._admit(
+            hand, up, unseen, rules, split, hands, double, pair = replay._admit(
                 replay._parse(bytes(case["bytes"])))
             status = "accepted"
             # Keep existing eligibility branches and replace every valuation.
@@ -26,7 +26,8 @@ def main():
                 for name in ("_stand_ev", "_hit_ev", "_double_ev", "_split_total_ev"):
                     replacements.enter_context(patch.object(ev, name, return_value=0.0))
                 _, values, _ = ev.best_action(hand, up, shoe=unseen, rules=rules,
-                                              is_split_hand=split, hand_count=hands)
+                                              is_split_hand=split, hand_count=hands,
+                                              can_double=double, can_split=pair)
             permitted.append([action for action in ACTION_NAMES if action in values])
         except replay._UnsupportedRecord:
             status = "unsupported_record"
@@ -43,6 +44,7 @@ def main():
             "max_bytes": replay.MAX_RECORD_BYTES,
             "max_depth": replay.MAX_RECORD_DEPTH,
             "schema_version": record.SCHEMA_VERSION,
+            "controlled_schema_version": record.CONTROLLED_SCHEMA_VERSION,
             "rule_fields": [field.name for field in fields(Rules)],
             "ranks": list(RANKS),
             "actions": ACTION_NAMES,

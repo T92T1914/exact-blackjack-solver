@@ -30,7 +30,7 @@ add('fresh origin consistent',change(r=>{r.state.shoe.source='fresh_minus_visibl
 add('split dealt ace order',change(r=>{r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('split non-ace first order',change(r=>{r.state.cards=['4','A'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('changed supported rule',change(r=>{r.rules.s17=false;}));
-add('schema future',change(r=>{r.schema.version=2;}),'unsupported_record');
+add('schema future',change(r=>{r.schema.version=3;}),'unsupported_record');
 add('schema name future',change(r=>{r.schema.name='different';}),'unsupported_record');
 add('float schema version',fixture.replace('"version": 1','"version": 1.0'),'invalid_input');
 add('exponent schema version',fixture.replace('"version": 1','"version": 1e0'),'invalid_input');
@@ -89,6 +89,27 @@ add('byte limit exactly',fixture+' '.repeat(MAX_RECORD_BYTES-bytes(fixture).leng
 add('byte limit exceeded',fixture+' '.repeat(MAX_RECORD_BYTES-bytes(fixture).length+1),'invalid_input');
 add('UTF-8 byte limit distinct from character count',change(r=>{r.package.version='é'.repeat(33000);}),'invalid_input');
 
+const controlled=(r,double=true,pair=true)=>{
+  r.schema.version=2;r.state.action_controls={can_double:double,can_split:pair};
+};
+for (const [double,pair] of [[true,true],[false,true],[true,false],[false,false]]) {
+  add(`version 2 controls ${double}/${pair}`,change(r=>controlled(r,double,pair)));
+}
+add('version 2 reordered controls',change(r=>{
+  controlled(r);r.state.action_controls={can_split:true,can_double:true};
+}));
+add('version 1 excludes controls',change(r=>{r.state.action_controls={can_double:true,can_split:true};}),'invalid_input');
+add('version 2 missing controls',change(r=>{r.schema.version=2;}),'invalid_input');
+add('version 2 missing control key',change(r=>{controlled(r);delete r.state.action_controls.can_split;}),'invalid_input');
+add('version 2 unknown control key',change(r=>{controlled(r);r.state.action_controls.extra=true;}),'invalid_input');
+for (const value of [null,[],true,0,'false']) {
+  add(`version 2 invalid control object ${JSON.stringify(value)}`,change(r=>{controlled(r);r.state.action_controls=value;}),'invalid_input');
+}
+for (const key of ['can_double','can_split']) for (const value of [null,0,1,'false',[]]) {
+  add(`version 2 invalid ${key} ${JSON.stringify(value)}`,change(r=>{controlled(r);r.state.action_controls[key]=value;}),'invalid_input');
+}
+add('duplicate escaped control key',change(r=>controlled(r)).replace('"can_double":true','"can_double":true,"\\u0063an_double":false'),'invalid_input');
+
 const eligibility=(name,update,expected,rewrite=text=>text)=>{
   add(`eligibility: ${name}`,rewrite(change(update)));
   cases.at(-1).expectedPermitted=expected;
@@ -101,6 +122,11 @@ eligibility('two unseen permits one draw',r=>unseen(r,2),['H','S','D']);
 eligibility('three unseen nonpair',r=>unseen(r,3),['H','S','D']);
 eligibility('pair needs three unseen to split',r=>{pair(r);unseen(r,2);},['H','S','D']);
 eligibility('pair with three unseen',r=>{pair(r);unseen(r,3);},['H','S','D','P']);
+for (const [double,maySplit] of [[true,true],[false,true],[true,false],[false,false]]) {
+  eligibility(`controlled pair ${double}/${maySplit}`,r=>{
+    pair(r);unseen(r,3);controlled(r,double,maySplit);
+  },['H','S',...(double ? ['D'] : []),...(maySplit ? ['P'] : [])]);
+}
 eligibility('natural 21 settles',r=>{r.state.cards=['A','T'];r.state.total=21;r.state.soft=true;},['S']);
 eligibility('three-card 21 settles',r=>{r.state.cards=['7','7','7'];r.state.total=21;},['S']);
 eligibility('split 21 settles',r=>{split(r);r.state.cards=['A','T'];r.state.total=21;r.state.soft=true;},['S']);
@@ -146,7 +172,7 @@ test('shared corpus agrees with existing Python admission and schema declaration
   assert.equal(oracle.eligibility_scope,'best_action action keys with four EV routines stubbed to zero');
   assert.deepEqual(oracle.permitted,cases.map(item=>item.status==='accepted' ? permittedActions(inspectRecord(item.bytes)) : null),
     'Eligibility parity only, not EV or mathematical validation');
-  assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,
+  assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,controlled_schema_version:2,
     rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,models:Object.fromEntries(RANKS.map(rank=>[rank,modelFor(rank)]))});
 });
 test('exact large integer counts survive inspection and input-first comparison',()=>{
@@ -157,7 +183,7 @@ test('exact large integer counts survive inspection and input-first comparison',
   assert.equal(display(right.state.shoe.counts[0]),'1'+'0'.repeat(400));
   const result=compareRecords(left,right);
   assert.deepEqual(result.inputs,[['state.shoe.counts.A',9007199254740993n,10n**400n]]);
-  assert.equal(modeledRows(left).length,39);
+  assert.equal(modeledRows(left).length,41);
 });
 test('comparison distinguishes absent actions, one-ULP answers and input order',()=>{
   const left=inspectRecord(fixture);
@@ -229,4 +255,36 @@ test('comparison derives each input eligibility without replacing recorded actio
   assert.deepEqual(compared.permitted,{left:['H','S','D'],right:['S']});
   assert.deepEqual(compared.evs.map(row=>row.action),['H','S','D']);
   assert.equal(right.decision.action,'H');
+});
+test('version 1 and declared true/true version 2 compare effective defaults in both directions',()=>{
+  const legacy=inspectRecord(fixture),declared=inspectRecord(change(r=>controlled(r)));
+  assert.equal(Object.hasOwn(legacy.state,'action_controls'),false);
+  for (const [left,right] of [[legacy,declared],[declared,legacy]]) {
+    const result=compareRecords(left,right);
+    assert.deepEqual(result.inputs,[]);
+    assert.deepEqual(result.metadata,[['schema.version',left.schema.version,right.schema.version]]);
+    assert.deepEqual(result.permitted,{left:['H','S','D'],right:['H','S','D']});
+  }
+});
+test('control differences are scalar modeled rows before answer differences',()=>{
+  const left=inspectRecord(change(r=>controlled(r,false,true)));
+  const right=inspectRecord(change(r=>controlled(r,true,false)));
+  assert.deepEqual(compareRecords(left,right).inputs,[
+    ['state.action_controls.can_double',false,true],['state.action_controls.can_split',true,false]
+  ]);
+  const rows=modeledRows(left);
+  assert.deepEqual(rows.slice(6,8),[['state.action_controls.can_double',false],['state.action_controls.can_split',true]]);
+});
+test('disabled absent actions are not omissions, but stored disabled answers remain visible',()=>{
+  const admitted=inspectRecord(change(r=>{controlled(r,false,false);delete r.decision.evs.D;}));
+  assert.deepEqual(recordedActionDifferences(admitted),{
+    permitted:['H','S'],omitted:[],unavailable:[],recommendation_unavailable:false
+  });
+  const altered=inspectRecord(change(r=>{
+    controlled(r,false,false);r.decision.action='D';r.decision.action_name='DOUBLE';
+  }));
+  assert.deepEqual(recordedActionDifferences(altered),{
+    permitted:['H','S'],omitted:[],unavailable:['D'],recommendation_unavailable:true
+  });
+  assert.equal(altered.decision.action,'D');assert.equal(altered.decision.evs.D,baseline.decision.evs.D);
 });

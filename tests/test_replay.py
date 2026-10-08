@@ -65,11 +65,13 @@ def test_fresh_origin_retains_counts_and_never_removes_visible_cards_again(monke
     original = record.best_action
     calls = []
 
-    def checked(cards, up, *, shoe, rules, is_split_hand, hand_count):
+    def checked(cards, up, *, shoe, rules, is_split_hand, hand_count,
+                can_double, can_split):
         calls.append((cards, up, shoe, rules, is_split_hand, hand_count))
         assert shoe == expected
         return original(cards, up, shoe=shoe, rules=rules,
-                        is_split_hand=is_split_hand, hand_count=hand_count)
+                        is_split_hand=is_split_hand, hand_count=hand_count,
+                        can_double=can_double, can_split=can_split)
 
     monkeypatch.setattr(record, 'best_action', checked)
     result = replay.replay_json(json.dumps(saved))
@@ -208,7 +210,7 @@ def test_invalid_fields_are_refused_before_calculation(monkeypatch, path, value)
 
 
 @pytest.mark.parametrize('path,value', [
-    (('schema', 'name'), 'other'), (('schema', 'version'), 2),
+    (('schema', 'name'), 'other'), (('schema', 'version'), 3),
     (('rules', 'peek'), False), (('rules', 'surrender'), True),
     (('rules', 'double_any_two'), False), (('rules', 'tens_are_pairs'), False),
     (('model', 'dealer_information'), 'known_hole'),
@@ -353,7 +355,8 @@ def test_legacy_cli_default_arguments_are_preserved_without_large_calculation(mo
     monkeypatch.setattr(cli, 'advise', advice)
     assert cli.main([]) == 0
     assert calls == [('8,8', 'T', STANDARD,
-                      {'shoe': None, 'is_split_hand': False, 'hand_count': 1})]
+                      {'shoe': None, 'is_split_hand': False, 'hand_count': 1,
+                       'can_double': True, 'can_split': True})]
     assert capsys.readouterr().out == 'legacy advice\n'
 
 
@@ -396,3 +399,88 @@ def test_replay_does_not_mutate_a_python_record():
     before = deepcopy(saved)
     replay.replay_json(json.dumps(saved))
     assert saved == before
+
+
+@pytest.mark.parametrize('can_double,can_split', [
+    (True, True), (False, True), (True, False), (False, False),
+])
+def test_controlled_replay_prices_once_and_preserves_saved_state(
+        monkeypatch, can_double, can_split):
+    counts = (1,) + (0,) * 8 + (5,)
+    saved = record.decision_record('T,T', '7', replace(STANDARD, max_hands=2),
+                                    shoe=counts, can_double=can_double,
+                                    can_split=can_split)
+    before = deepcopy(saved)
+    original = record.decision_record
+    calls = []
+
+    def checked(cards, up, rules, **state):
+        calls.append((cards, up, rules, state))
+        assert state['shoe'] == counts
+        assert state['can_double'] is can_double and state['can_split'] is can_split
+        return original(cards, up, rules, **state)
+
+    monkeypatch.setattr(record, 'decision_record', checked)
+    report = replay.replay_json(json.dumps(saved))
+    assert len(calls) == 1
+    assert report['status'] == 'agreement'
+    assert report['modeled_input']['state'] == before['state']
+    assert report['recorded'] == report['recomputed'] == saved['decision']
+    assert saved == before
+
+
+def test_declared_version_two_true_true_replays_without_mutating_version_one():
+    saved = _saved()
+    saved['schema']['version'] = 2
+    saved['state']['action_controls'] = {'can_split': True, 'can_double': True}
+    before = deepcopy(saved)
+    report = replay.replay_json(json.dumps(saved))
+    assert report['status'] == 'agreement'
+    assert report['modeled_input']['state'] == before['state']
+    assert saved == before
+    legacy = _saved()
+    assert 'action_controls' not in replay.replay_json(json.dumps(legacy))['modeled_input']['state']
+
+
+@pytest.mark.parametrize('controls', [
+    None, True, [], 0, 'false', {}, {'can_double': True},
+    {'can_double': True, 'can_split': True, 'unknown': False},
+    {'can_double': 0, 'can_split': True}, {'can_double': True, 'can_split': 1},
+    {'can_double': 'false', 'can_split': False},
+])
+def test_malformed_version_two_controls_refuse_before_pricing(monkeypatch, controls):
+    _forbid_calculation(monkeypatch)
+    saved = _saved()
+    saved['schema']['version'] = 2
+    saved['state']['action_controls'] = controls
+    assert replay.replay_json(json.dumps(saved))['status'] == 'invalid_input'
+
+
+def test_controls_missing_for_v2_extra_for_v1_and_duplicate_refuse_before_pricing(monkeypatch):
+    _forbid_calculation(monkeypatch)
+    missing = _saved()
+    missing['schema']['version'] = 2
+    assert replay.replay_json(json.dumps(missing))['status'] == 'invalid_input'
+    extra = _saved()
+    extra['state']['action_controls'] = {'can_double': True, 'can_split': True}
+    assert replay.replay_json(json.dumps(extra))['status'] == 'invalid_input'
+    extra['schema']['version'] = 2
+    duplicate = json.dumps(extra).replace(
+        '"can_double": true', '"can_double": true, "\\u0063an_double": false')
+    report = replay.replay_json(duplicate)
+    assert report['status'] == 'invalid_input'
+    assert 'duplicate' in report['error']['message']
+
+
+def test_saved_disabled_recommendation_remains_visible_comparison_data():
+    saved = record.decision_record('T,4', 'T', shoe=_shoe(('2', '3', '7', '8', '9', 'T')),
+                                    can_double=False)
+    saved['decision']['evs']['D'] = 99.0
+    saved['decision']['action'] = 'D'
+    saved['decision']['action_name'] = 'DOUBLE'
+    saved['decision']['margin'] = 88.0
+    report = replay.replay_json(json.dumps(saved))
+    assert report['status'] == 'differences'
+    assert report['recorded'] == saved['decision']
+    assert 'D' not in report['recomputed']['evs']
+    assert not report['comparison']['legal_actions']['matches']
