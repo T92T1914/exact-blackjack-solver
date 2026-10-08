@@ -50,3 +50,20 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 #composition-figure img{width:100%}
 .figure-wide{display:none}
 @container(min-width:560px){.figure-narrow{display:none}.figure-wide{display:block}}
+
+/* Imported quantitative values scroll locally and never widen the page. */
+.record-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-block:24px}
+.record-controls fieldset{min-width:0;border:1px solid var(--border);border-radius:7px;padding:16px}
+.record-controls legend{font-weight:700;padding-inline:6px}
+#record-inspector input[type=file]{display:block;width:100%;min-width:0;max-width:100%;font:inherit;color:var(--text);margin-bottom:16px}
+#record-inspector button,#record-inspector input::file-selector-button{font:inherit;color:var(--text);background:var(--control);border:1px solid var(--border);border-radius:6px;padding:9px 12px;min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#record-inspector button:hover,#record-inspector input::file-selector-button:hover{background:var(--hover)}
+#record-inspector input:focus-visible{outline:3px solid var(--focus);outline-offset:5px}
+#record-inspector p,#record-inspector h3,#record-inspector label,#record-inspector legend{overflow-wrap:anywhere}
+#record-inspector section{margin-top:30px;min-width:0}
+.record-table table{min-width:32rem;font-variant-numeric:tabular-nums}
+.record-table th,.record-table td{overflow-wrap:anywhere}
+.record-table th:first-child{min-width:13rem}
+.record-table td{font-family:Consolas,monospace}
+@media(max-width:700px){.record-controls{grid-template-columns:1fr}}
+@media(forced-colors:active){#record-inspector fieldset,#record-inspector button,#record-inspector input::file-selector-button{border-color:CanvasText}#record-inspector input:focus-visible{outline-color:Highlight}}

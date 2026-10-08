@@ -127,6 +127,81 @@ refused. Saved EVs, recommendations and margins are historical comparison
 data. Known action-code sets may differ from the current legal set, and a
 finite altered saved answer remains visible as a difference after calculation.
 
+## Inspect and compare local records in the browser
+
+The [project page](https://t92t1914.github.io/exact-blackjack-solver/) can inspect
+one or two local schema-v1 decision files. Export a record through an installed
+package, save the JSON output as UTF-8, then select it as record A. For example,
+the six unseen cards keep this example small:
+
+```text
+bj-advise T,4 T --unseen 2,3,7,8,9,T --json
+```
+
+The existing Python example above also creates a saved file without shell
+redirection encoding differences. The browser displays the complete dealt
+order, dealer upcard, total and softness, split state, retained counts, every
+rule and model declaration, schema/package labels and recorded answer. It
+keeps integer counts exact and shows raw finite binary-float answer values
+without display rounding. Supported recorded action codes include split `P`.
+
+Selecting record B shows changed modeled inputs before recorded answer
+differences. An action present in only one record is explicitly absent on the
+other side, with no numeric delta. A changed input pair does not identify a
+single cause, especially when several inputs changed. Matching supplied
+values and package labels do not authenticate origin or establish numerical
+correctness.
+
+The page derives actions permitted by the admitted modeled state separately
+from the supplied EV keys. It uses the exporter's default double/split buttons,
+the retained unseen counts, dealt order and declared split/rule state. A total
+of 21 permits stand only. Otherwise hit/double need a drawable card in addition
+to the hidden hole, and split needs two. Double also requires two dealt cards
+and permission after splitting. Frozen split aces, ace resplitting and the
+shared hand cap retain the engine's existing eligibility rules. The first
+dealt card remains the split rank. Counts are summed as exact integers without
+removing visible cards again. External table buttons are outside this model.
+
+All four action codes show their permitted status and supplied EV presence.
+A supplied unavailable action, an omitted permitted action or an unavailable
+recorded recommendation produces a warning. It does not reject the record or
+replace the saved answer. Finite altered recommendations, margins and action
+sets remain visible. The comparison shows each input's derived eligibility
+before the raw recorded answer differences.
+
+Eligibility does not establish that an action's EV can be calculated for the
+supplied shoe. Dealer draw exhaustion, floating-point range and computation
+resources remain separate engine questions. Browser admission/eligibility
+checks do not recompute EVs or validate their numerical correctness. Focused
+tests compare eligibility with the existing `best_action` branches while four
+valuation routines are stubbed to zero. That is action-key parity, not an
+independent numerical reference. Use `bj-advise --replay PATH --json` for
+installed recalculation and
+comparison with the engine. Browser inspection does not change the model or
+provide a general error bound for split valuation.
+
+Files and names remain in the current page session. Imports do not enter
+share links, URL/history parameters, uploads or browser storage. Clearing one
+or both records releases retained state. Reload clears all imports. Selecting
+a replacement immediately clears the old result. A failed replacement leaves
+that slot empty with an explanation, and an earlier slow read cannot restore
+a replaced or cleared record. Bundled example links retain their existing
+behavior. Local inspection also works when bundled example data cannot load.
+
+The browser uses the existing 65,536 UTF-8 byte and eight-container depth
+limits. It additionally refuses integer tokens longer than 4,300 decimal
+digits before conversion, matching ordinary Python 3.11 JSON parsing. A Python
+caller can configure a different integer parsing limit, so this is an explicit
+browser representation limit, not a solver count maximum. Supported supplied
+counts may exceed fresh-shoe maxima and floating-point arithmetic range. They
+remain exact integers in the viewer. Payouts and recorded answers must convert
+to finite binary floats. Integer-only fields reject floating tokens such as
+`1.0` even when they have the same numerical value.
+
+No-script delivery retains the static evidence and explains that local record
+inspection needs JavaScript. Browser file admission limits do not bound work
+or memory during installed engine recalculation.
+
 ## Resource ownership and evidence
 
 The production solver has no work, time or memory limit. Its process-wide
