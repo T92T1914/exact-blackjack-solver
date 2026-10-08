@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {inspectRecord,compareRecords,recordSlot,display,modeledRows,modelFor,MAX_RECORD_BYTES,
+import {inspectRecord,compareRecords,recordSlot,display,modeledRows,modelFor,permittedActions,recordedActionDifferences,MAX_RECORD_BYTES,
   MAX_RECORD_DEPTH,MAX_INTEGER_DIGITS,RANKS,RULE_FIELDS,ACTION_NAMES} from '../site/record-inspection.mjs';
 
 const fixture=await readFile(new URL('./fixtures/saved-decision-v1-7a38141.json',import.meta.url),'utf8');
@@ -89,8 +89,48 @@ add('byte limit exactly',fixture+' '.repeat(MAX_RECORD_BYTES-bytes(fixture).leng
 add('byte limit exceeded',fixture+' '.repeat(MAX_RECORD_BYTES-bytes(fixture).length+1),'invalid_input');
 add('UTF-8 byte limit distinct from character count',change(r=>{r.package.version='é'.repeat(33000);}),'invalid_input');
 
+const eligibility=(name,update,expected,rewrite=text=>text)=>{
+  add(`eligibility: ${name}`,rewrite(change(update)));
+  cases.at(-1).expectedPermitted=expected;
+};
+const unseen=(r,count)=>{r.state.shoe.counts=[0,count,0,0,0,0,0,0,0,0];};
+const pair=r=>{r.state.cards=['8','8'];r.state.total=16;};
+const split=r=>{r.state.is_split_hand=true;r.state.hand_count=2;};
+eligibility('one unseen reserves the hole',r=>unseen(r,1),['S']);
+eligibility('two unseen permits one draw',r=>unseen(r,2),['H','S','D']);
+eligibility('three unseen nonpair',r=>unseen(r,3),['H','S','D']);
+eligibility('pair needs three unseen to split',r=>{pair(r);unseen(r,2);},['H','S','D']);
+eligibility('pair with three unseen',r=>{pair(r);unseen(r,3);},['H','S','D','P']);
+eligibility('natural 21 settles',r=>{r.state.cards=['A','T'];r.state.total=21;r.state.soft=true;},['S']);
+eligibility('three-card 21 settles',r=>{r.state.cards=['7','7','7'];r.state.total=21;},['S']);
+eligibility('split 21 settles',r=>{split(r);r.state.cards=['A','T'];r.state.total=21;r.state.soft=true;},['S']);
+eligibility('three cards cannot double',r=>{r.state.cards=['T','2','2'];},['H','S']);
+eligibility('split double after split allowed',r=>split(r),['H','S','D']);
+eligibility('split double after split refused',r=>{split(r);r.rules.das=false;},['H','S']);
+eligibility('shared hand cap reached',r=>{split(r);pair(r);r.state.hand_count=4;},['H','S','D']);
+eligibility('one shared hand remains',r=>{split(r);pair(r);r.state.hand_count=3;},['H','S','D','P']);
+eligibility('split ace first card frozen',r=>{split(r);r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;},['S']);
+eligibility('split four drew ace unfrozen',r=>{split(r);r.state.cards=['4','A'];r.state.total=15;r.state.soft=true;},['H','S','D']);
+eligibility('split ace may hit',r=>{split(r);r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.rules.hit_split_aces=true;},['H','S','D']);
+const aces=r=>{split(r);r.state.cards=['A','A'];r.state.total=12;r.state.soft=true;};
+eligibility('frozen ace pair cannot resplit',r=>aces(r),['S']);
+eligibility('frozen ace pair may resplit',r=>{aces(r);r.rules.resplit_aces=true;},['S','P']);
+eligibility('frozen ace pair needs two initial draws',r=>{aces(r);r.rules.resplit_aces=true;unseen(r,2);},['S']);
+eligibility('unfrozen ace pair may hit double and resplit',r=>{aces(r);r.rules.resplit_aces=true;r.rules.hit_split_aces=true;},['H','S','D','P']);
+eligibility('unfrozen ace pair cannot resplit',r=>{aces(r);r.rules.hit_split_aces=true;},['H','S','D']);
+eligibility('unfrozen split ace three cards',r=>{split(r);r.state.cards=['A','2','3'];r.state.total=16;r.state.soft=true;r.rules.hit_split_aces=true;},['H','S']);
+eligibility('huge retained counts remain integer eligibility',r=>{pair(r);unseen(r,0);},['H','S','D','P'],
+  text=>text.replace('"counts":[0,0,','"counts":[0,'+'1'+'0'.repeat(400)+','));
+eligibility('exact hand allowance above Number range',r=>{split(r);pair(r);r.state.hand_count=3;},['H','S','D','P'],
+  text=>text.replace('"hand_count":3','"hand_count":9007199254740992').replace('"max_hands":4','"max_hands":9007199254740993'));
+eligibility('exact hand cap above Number range',r=>{split(r);pair(r);r.state.hand_count=3;},['H','S','D'],
+  text=>text.replace('"hand_count":3','"hand_count":9007199254740993').replace('"max_hands":4','"max_hands":9007199254740993'));
+
 for (const item of cases) test(`admission: ${item.name}`,()=>{
-  if (item.status==='accepted') inspectRecord(item.bytes);
+  if (item.status==='accepted') {
+    const admitted=inspectRecord(item.bytes);
+    if (item.expectedPermitted) assert.deepEqual(permittedActions(admitted),item.expectedPermitted);
+  }
   else assert.throws(()=>inspectRecord(item.bytes),error=>error.status===item.status);
 });
 test('shared corpus agrees with existing Python admission and schema declarations',()=>{
@@ -103,6 +143,9 @@ test('shared corpus agrees with existing Python admission and schema declaration
   assert.equal(result.status,0,result.stderr || String(result.error));
   const oracle=JSON.parse(result.stdout);
   assert.deepEqual(oracle.outcomes,cases.map(item=>item.pythonStatus));
+  assert.equal(oracle.eligibility_scope,'best_action action keys with four EV routines stubbed to zero');
+  assert.deepEqual(oracle.permitted,cases.map(item=>item.status==='accepted' ? permittedActions(inspectRecord(item.bytes)) : null),
+    'Eligibility parity only, not EV or mathematical validation');
   assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,
     rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,models:Object.fromEntries(RANKS.map(rank=>[rank,modelFor(rank)]))});
 });
@@ -172,4 +215,18 @@ test('parsing guards report the actual duplicate, depth and size boundaries',()=
   assert.throws(()=>inspectRecord(cases.find(item=>item.name==='depth nine refused before allocation').bytes),/container depth 8/);
   assert.throws(()=>inspectRecord(cases.find(item=>item.name==='byte limit exceeded').bytes),/65536 UTF-8 bytes/);
   assert.throws(()=>inspectRecord(cases.find(item=>item.name==='browser integer-token limit').bytes),/browser limit of 4300/);
+});
+test('unavailable and omitted supplied actions stay inspectable with explicit differences',()=>{
+  const admitted=inspectRecord(change(r=>{r.decision.evs={S:0,P:99};r.decision.action='P';r.decision.action_name='SPLIT';r.decision.margin=88;}));
+  assert.deepEqual(recordedActionDifferences(admitted),{permitted:['H','S','D'],omitted:['H','D'],unavailable:['P'],recommendation_unavailable:true});
+  assert.equal(admitted.decision.action,'P');assert.equal(admitted.decision.evs.P,99);assert.equal(admitted.decision.margin,88);
+  const ordinary=inspectRecord(fixture);
+  assert.deepEqual(recordedActionDifferences(ordinary),{permitted:['H','S','D'],omitted:[],unavailable:[],recommendation_unavailable:false});
+});
+test('comparison derives each input eligibility without replacing recorded action keys',()=>{
+  const left=inspectRecord(fixture),right=inspectRecord(change(r=>{unseen(r,1);}));
+  const compared=compareRecords(left,right);
+  assert.deepEqual(compared.permitted,{left:['H','S','D'],right:['S']});
+  assert.deepEqual(compared.evs.map(row=>row.action),['H','S','D']);
+  assert.equal(right.decision.action,'H');
 });

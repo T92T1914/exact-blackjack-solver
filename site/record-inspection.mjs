@@ -226,12 +226,35 @@ export function metadataRows(record) {
   return [['schema.name',record.schema.name],['schema.version',record.schema.version],
     ['package.name',record.package.name],['package.version',record.package.version]];
 }
+// For admitted records, match the exporter's default can_double/can_split=True.
+// This derives eligibility only and never evaluates an action's return.
+export function permittedActions(record) {
+  const {state,rules}=record,allowed=new Set(['S']);
+  if (state.total===21n) return ['S'];
+  const twoCards=state.cards.length===2,pair=twoCards && state.cards[0]===state.cards[1];
+  const unseen=state.shoe.counts.reduce((sum,count)=>sum+count,0n);
+  const frozenAce=state.is_split_hand && twoCards && state.cards[0]==='A' && !rules.hit_split_aces;
+  if (!frozenAce && unseen>=2n) {
+    allowed.add('H');
+    if (twoCards && (!state.is_split_hand || rules.das)) allowed.add('D');
+  }
+  const blockedAceResplit=state.is_split_hand && pair && state.cards[0]==='A' && !rules.resplit_aces;
+  if (pair && unseen>=3n && state.hand_count<rules.max_hands && !blockedAceResplit) allowed.add('P');
+  return Object.keys(ACTION_NAMES).filter(action=>allowed.has(action));
+}
+export function recordedActionDifferences(record) {
+  const permitted=permittedActions(record),recorded=Object.keys(record.decision.evs);
+  return {permitted,omitted:permitted.filter(action=>!recorded.includes(action)),
+    unavailable:recorded.filter(action=>!permitted.includes(action)),
+    recommendation_unavailable:!permitted.includes(record.decision.action)};
+}
 export function compareRecords(left,right) {
   const rightInputs=new Map(modeledRows(right)),rightMetadata=new Map(metadataRows(right));
   const changed=(rows,other)=>rows.filter(([key,value])=>!equal(value,other.get(key))).map(([key,value])=>[key,value,other.get(key)]);
   const delta=(a,b)=> { const value=b-a; return Number.isFinite(value) ? value : 'outside finite delta range'; };
   return {
     inputs:changed(modeledRows(left),rightInputs), metadata:changed(metadataRows(left),rightMetadata),
+    permitted:{left:permittedActions(left),right:permittedActions(right)},
     action:{left:left.decision.action,right:right.decision.action,matches:left.decision.action===right.decision.action},
     margin:{left:left.decision.margin,right:right.decision.margin,matches:left.decision.margin===right.decision.margin,delta:delta(left.decision.margin,right.decision.margin)},
     evs:Object.keys(ACTION_NAMES).filter(key=>Object.hasOwn(left.decision.evs,key) || Object.hasOwn(right.decision.evs,key)).map(action=>{

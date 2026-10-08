@@ -84,7 +84,26 @@ async function acceptedRecord(page,label,buffer,name=`record-${label}.json`) {
   await page.locator(`#record-result-${label}:visible`).waitFor();
   assert.match(await page.locator(`#record-status-${label}`).textContent(),/not been recomputed/);
 }
-async function assertCompleteRecord(page,label,buffer) {
+async function assertPermittedActions(page,label,permitted,saved) {
+  const result=page.locator(`#record-result-${label}`),name=`Record ${label.toUpperCase()}`;
+  const table=result.getByRole('region',{name:`${name} derived permitted actions beside supplied EV presence`,exact:true});
+  assert.equal(await table.locator('tbody tr').count(),4);
+  const names={H:'HIT',S:'STAND',D:'DOUBLE',P:'SPLIT'};
+  for (const action of Object.keys(names)) {
+    const row=table.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:`${action} (${names[action]})`,exact:true})});
+    assert.deepEqual(await row.locator('td').allTextContents(),[String(permitted.includes(action)),
+      Object.hasOwn(saved.decision.evs,action) ? String(saved.decision.evs[action]) : 'absent (no saved value)']);
+  }
+  const omitted=permitted.filter(action=>!Object.hasOwn(saved.decision.evs,action));
+  const unavailable=Object.keys(saved.decision.evs).filter(action=>!permitted.includes(action));
+  const note=result.locator('[data-action-set-status]');
+  assert.equal(await note.getAttribute('data-action-set-status'),omitted.length || unavailable.length ? 'differs' : 'matches');
+  if (omitted.length) assert.match(await note.textContent(),new RegExp('Permitted actions omitted from saved EVs: '+omitted.join(', ')));
+  if (unavailable.length) assert.match(await note.textContent(),new RegExp('Saved EVs include unavailable actions: '+unavailable.join(', ')));
+  if (!permitted.includes(saved.decision.action)) assert.match(await note.textContent(),/Recorded recommendation .* is unavailable/);
+  assert.match(await result.textContent(),/does not establish which buttons an external table offers/);
+}
+async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON.parse(buffer).decision.evs)) {
   const saved=JSON.parse(buffer),result=page.locator(`#record-result-${label}`);
   const expected=[...Object.entries(saved.state).filter(([key])=>key!=='shoe').map(([key,value])=>[`state.${key}`,value]),
     ['state.shoe.rank_order',saved.state.shoe.rank_order],
@@ -101,11 +120,13 @@ async function assertCompleteRecord(page,label,buffer) {
     assert.equal(await row.count(),1,key);
     assert.equal(await row.locator('td').textContent(),show(value),key);
   }
-  assert.equal(await result.locator('tbody tr').count(),expected.length+Object.keys(saved.decision.evs).length);
+  assert.equal(await result.locator('tbody tr').count(),expected.length+Object.keys(saved.decision.evs).length+4);
+  const values=result.getByRole('region',{name:`Record ${label.toUpperCase()} supplied action values in original wager units`,exact:true});
   for (const [action,value] of Object.entries(saved.decision.evs)) {
-    const row=result.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:new RegExp('^'+action+' \\(')})});
+    const row=values.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:new RegExp('^'+action+' \\(')})});
     assert.equal(await row.locator('td').textContent(),String(value));
   }
+  await assertPermittedActions(page,label,permitted,saved);
 }
 
 test('local file consumer shows complete records and compares inputs before answers',async t=>{
@@ -124,7 +145,12 @@ test('local file consumer shows complete records and compares inputs before answ
   const comparison=page.locator('#record-comparison');
   assert.equal(await comparison.isVisible(),true);
   assert.deepEqual(await comparison.locator('h3').allTextContents(),[
-    '1. Changed modeled inputs','2. Changed record labels','3. Recorded answer comparison']);
+    '1. Changed modeled inputs','2. Changed record labels','3. Permitted actions from modeled inputs','4. Recorded answer comparison']);
+  const eligibility=comparison.getByRole('region',{name:'Derived action eligibility for each modeled input',exact:true});
+  for (const [action,name] of Object.entries({H:'HIT',S:'STAND',D:'DOUBLE',P:'SPLIT'})) {
+    const row=eligibility.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:`${action} (${name})`,exact:true})});
+    assert.deepEqual(await row.locator('td').allTextContents(),[String(Object.hasOwn(JSON.parse(first).decision.evs,action)),String(Object.hasOwn(JSON.parse(second).decision.evs,action))]);
+  }
   assert.match(await comparison.textContent(),/does not identify a single cause/);
   for (const label of ['a','b']) {
     await page.locator(`#record-file-${label}`).focus();
@@ -171,25 +197,40 @@ test('constructed record differences retain split order, absence and raw precisi
   const page=await fixture(t);await ready(page);
   const split=alteredRecord(r=>{r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;r.decision.action='P';r.decision.action_name='SPLIT';r.decision.evs.P=99;r.decision.margin=80;});
   await acceptedRecord(page,'a',split);
-  await assertCompleteRecord(page,'a',split);
+  await assertCompleteRecord(page,'a',split,['S']);
   const reordered=JSON.parse(split);reordered.state.cards.reverse();delete reordered.decision.evs.D;
   reordered.decision.evs.H=-0.5916666666666667;
   await acceptedRecord(page,'b',Buffer.from(JSON.stringify(reordered)));
+  await assertPermittedActions(page,'b',['H','S','D'],reordered);
   const comparison=page.locator('#record-comparison');
+  const eligibility=comparison.getByRole('region',{name:'Derived action eligibility for each modeled input',exact:true});
+  for (const action of ['H','D']) {
+    const row=eligibility.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:new RegExp('^'+action+' \\(')})});
+    assert.deepEqual(await row.locator('td').allTextContents(),['false','true']);
+  }
   assert.match(await comparison.textContent(),/state.cards/);
-  const double=comparison.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:'D (DOUBLE)',exact:true})});
+  const values=comparison.getByRole('region',{name:'Union of recorded actions, with absence distinguished from zero',exact:true});
+  const double=values.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:'D (DOUBLE)',exact:true})});
   assert.deepEqual(await double.locator('td').allTextContents(),['-1.2000000000000002','absent','false','not available: action absent']);
-  const hit=comparison.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:'H (HIT)',exact:true})});
+  const hit=values.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:'H (HIT)',exact:true})});
   assert.deepEqual((await hit.locator('td').allTextContents()).slice(0,3),['-0.5916666666666668','-0.5916666666666667','false']);
   const labelOnly=JSON.parse(split);labelOnly.package.version='future <img src=x onerror=alert(1)>';
   await acceptedRecord(page,'b',Buffer.from(JSON.stringify(labelOnly)));
   assert.match(await comparison.textContent(),/All supplied modeled inputs agree/);
   assert.match(await comparison.textContent(),/future <img src=x onerror=alert\(1\)>/);
   assert.equal(await comparison.locator('img').count(),0);
+  await assertPermittedActions(page,'b',['S'],labelOnly);
   const huge=recordFixture.toString().replace('"counts": [\n        0','"counts": [\n        '+'1'+'0'.repeat(400));
   await acceptedRecord(page,'a',Buffer.from(huge));
   const count=page.locator('#record-result-a tbody tr').filter({has:page.getByRole('rowheader',{name:'state.shoe.counts.A',exact:true})});
   assert.equal(await count.locator('td').textContent(),'1'+'0'.repeat(400));
+  await assertPermittedActions(page,'a',['H','S','D'],JSON.parse(recordFixture));
+  const settled=JSON.parse(recordFixture);settled.state.cards=['A','T'];settled.state.total=21;settled.state.soft=true;
+  await acceptedRecord(page,'a',Buffer.from(JSON.stringify(settled)));
+  await assertCompleteRecord(page,'a',Buffer.from(JSON.stringify(settled)),['S']);
+  const oneUnseen=JSON.parse(recordFixture);oneUnseen.state.shoe.counts=[0,1,0,0,0,0,0,0,0,0];
+  await acceptedRecord(page,'a',Buffer.from(JSON.stringify(oneUnseen)));
+  await assertCompleteRecord(page,'a',Buffer.from(JSON.stringify(oneUnseen)),['S']);
 });
 
 test('imports stay out of URLs, requests and storage and reload releases them',async t=>{

@@ -1,4 +1,4 @@
-import {ACTION_NAMES,display,modeledRows,metadataRows,compareRecords,recordSlot} from './record-inspection.mjs';
+import {ACTION_NAMES,display,modeledRows,metadataRows,compareRecords,recordSlot,recordedActionDifferences} from './record-inspection.mjs';
 
 const element=(tag,text,className)=>{
   const node=document.createElement(tag);
@@ -24,10 +24,24 @@ function renderRecord(target,record,label) {
   target.replaceChildren();
   if (!record) { target.hidden=true;return; }
   target.hidden=false;
+  const eligibility=recordedActionDifferences(record);
+  const messages=[];
+  if (eligibility.omitted.length) messages.push(`Permitted actions omitted from saved EVs: ${eligibility.omitted.join(', ')}.`);
+  if (eligibility.unavailable.length) messages.push(`Saved EVs include unavailable actions: ${eligibility.unavailable.join(', ')}.`);
+  if (eligibility.recommendation_unavailable) messages.push(`Recorded recommendation ${record.decision.action} is unavailable in this modeled state.`);
+  const warning=element('p',messages.length ? messages.join(' ')+' Saved answers remain supplied values. No EVs were recomputed.' :
+    'Saved EV keys match the permitted action set for this modeled state. Numerical answers have not been recomputed.','fine');
+  warning.dataset.actionSetStatus=messages.length ? 'differs' : 'matches';warning.setAttribute('role','note');
   target.append(element('h3',`${label}: modeled inputs`),
     table(['Field','Supplied value'],modeledRows(record),`${label} complete modeled state, rules and model`),
     element('h3',`${label}: record metadata`),
     table(['Field','Supplied label'],metadataRows(record),`${label} schema and unauthenticated package labels`),
+    element('h3',`${label}: permitted actions from modeled inputs`),
+    element('p','Eligibility follows the supported saved-state model, including the exporter\'s default double/split buttons, retained counts and split rules. It does not establish which buttons an external table offers.','fine'),
+    table(['Action','Permitted by modeled state','Supplied raw EV'],Object.keys(ACTION_NAMES).map(action=>[
+      `${action} (${ACTION_NAMES[action]})`,eligibility.permitted.includes(action),
+      Object.hasOwn(record.decision.evs,action) ? record.decision.evs[action] : 'absent (no saved value)'
+    ]),`${label} derived permitted actions beside supplied EV presence`),warning,
     element('h3',`${label}: recorded answer`),
     table(['Field','Supplied value'],[
       ['decision.action',record.decision.action],['decision.action_name',record.decision.action_name],
@@ -53,7 +67,11 @@ function renderComparison(target,left,right) {
       'These supplied labels differ. Package labels are unauthenticated metadata and do not select or install an engine.' :
       'Supplied schema and package labels agree. Matching labels do not authenticate origin.'),
     ...(compared.metadata.length ? [table(['Changed label','Record A','Record B'],compared.metadata,'Record label changes')] : []),
-    element('h3','3. Recorded answer comparison'),
+    element('h3','3. Permitted actions from modeled inputs'),
+    table(['Action','Record A permitted','Record B permitted'],Object.keys(ACTION_NAMES).map(action=>[
+      `${action} (${ACTION_NAMES[action]})`,compared.permitted.left.includes(action),compared.permitted.right.includes(action)
+    ]),'Derived action eligibility for each modeled input'),
+    element('h3','4. Recorded answer comparison'),
     table(['Field','Record A','Record B','Equal supplied values','B minus A'],[
       ['Recommendation',compared.action.left,compared.action.right,compared.action.matches,'not numeric'],
       ['Raw margin',compared.margin.left,compared.margin.right,compared.margin.matches,compared.margin.delta]
@@ -62,7 +80,7 @@ function renderComparison(target,left,right) {
       compared.evs.map(row=>[`${row.action} (${ACTION_NAMES[row.action]})`,row.left===null ? 'absent' : row.left,
         row.right===null ? 'absent' : row.right,row.matches,row.delta===null ? 'not available: action absent' : row.delta]),
       'Union of recorded actions, with absence distinguished from zero'),
-    element('p','Numeric answers use exact finite binary-float equality with no display rounding or tolerance. Equality compares supplied values only. This page has not recomputed them or checked that the recorded action set is legal.','fine'));
+    element('p','Numeric answers use exact finite binary-float equality with no display rounding or tolerance. Equality compares supplied values only. Eligibility was derived from the modeled inputs. This page has not recomputed the answers or validated their numerical correctness.','fine'));
 }
 export function initRecordInspector(root=document.getElementById('record-inspector')) {
   if (!root) return;

@@ -152,10 +152,31 @@ single cause, especially when several inputs changed. Matching supplied
 values and package labels do not authenticate origin or establish numerical
 correctness.
 
-This page admits the supported representation and checks input consistency.
-It does not recalculate EVs or check the recorded action set against the
-engine. Finite altered saved recommendations, margins and action sets remain
-visible. Use `bj-advise --replay PATH --json` for installed recalculation and
+The page derives actions permitted by the admitted modeled state separately
+from the supplied EV keys. It uses the exporter's default double/split buttons,
+the retained unseen counts, dealt order and declared split/rule state. A total
+of 21 permits stand only. Otherwise hit/double need a drawable card in addition
+to the hidden hole, and split needs two. Double also requires two dealt cards
+and permission after splitting. Frozen split aces, ace resplitting and the
+shared hand cap retain the engine's existing eligibility rules. The first
+dealt card remains the split rank. Counts are summed as exact integers without
+removing visible cards again. External table buttons are outside this model.
+
+All four action codes show their permitted status and supplied EV presence.
+A supplied unavailable action, an omitted permitted action or an unavailable
+recorded recommendation produces a warning. It does not reject the record or
+replace the saved answer. Finite altered recommendations, margins and action
+sets remain visible. The comparison shows each input's derived eligibility
+before the raw recorded answer differences.
+
+Eligibility does not establish that an action's EV can be calculated for the
+supplied shoe. Dealer draw exhaustion, floating-point range and computation
+resources remain separate engine questions. Browser admission/eligibility
+checks do not recompute EVs or validate their numerical correctness. Focused
+tests compare eligibility with the existing `best_action` branches while four
+valuation routines are stubbed to zero. That is action-key parity, not an
+independent numerical reference. Use `bj-advise --replay PATH --json` for
+installed recalculation and
 comparison with the engine. Browser inspection does not change the model or
 provide a general error bound for split valuation.
 
