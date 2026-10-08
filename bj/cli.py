@@ -126,6 +126,22 @@ def _unseen_counts(text: str) -> Shoe:
     return normalize_shoe(counts)
 
 
+def _max_hands(text: str) -> int:
+    """Parse the existing positive rule cap without imposing an upper bound."""
+    digits = text.strip(' \t\r\n\v\f')
+    message = '--max-hands must be a positive ASCII decimal integer'
+    if not digits or any(char < '0' or char > '9' for char in digits):
+        raise argparse.ArgumentTypeError(message)
+    try:
+        cap = int(digits, 10)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            '--max-hands cannot be converted by this Python runtime') from exc
+    if cap < 1:
+        raise argparse.ArgumentTypeError(message)
+    return cap
+
+
 def table(rules: Rules = STANDARD) -> str:
     """The whole chart, derived cell by cell by the solver, as Markdown.
 
@@ -169,6 +185,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help='dealer hits soft 17 (default: stands)')
     parser.add_argument('--no-das', action='store_true',
                         help='no doubling after a split (default: allowed)')
+    parser.add_argument('--max-hands', type=_max_hands, default=None, metavar='N',
+                        help='maximum hands allowed in a round, including completed hands '
+                             f'(default: {STANDARD.max_hands}); distinct from --hand-count')
     unseen = parser.add_mutually_exclusive_group()
     unseen.add_argument('--unseen', type=_unseen_cards, metavar='CARDS',
                         help='explicit unseen cards, including the dealer hole, e.g. '
@@ -185,7 +204,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.replay is not None:
         if (args.cards is not None or args.upcard is not None or args.table
                 or args.decks is not None or args.h17 or args.no_das
-                or args.unseen is not None or args.split_hand or args.hand_count is not None):
+                or args.max_hands is not None or args.unseen is not None
+                or args.split_hand or args.hand_count is not None):
             parser.error('--replay cannot be combined with cards, upcard, --table or state options')
         result = replay_file(args.replay)
         print(json.dumps(result, indent=2, allow_nan=False) if args.json else _replay_text(result))
@@ -193,9 +213,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.cards = args.cards if args.cards is not None else '8,8'
     args.upcard = args.upcard if args.upcard is not None else 'T'
     args.decks = args.decks if args.decks is not None else STANDARD.decks
+    args.max_hands = args.max_hands if args.max_hands is not None else STANDARD.max_hands
     if args.decks < 1:
         parser.error('--decks must be at least 1')
-    rules = replace(STANDARD, decks=args.decks, s17=not args.h17, das=not args.no_das)
+    rules = replace(STANDARD, decks=args.decks, s17=not args.h17, das=not args.no_das,
+                    max_hands=args.max_hands)
     if args.table and (args.unseen is not None or args.split_hand or args.hand_count is not None):
         parser.error('--table cannot be combined with hand-specific state options')
     if args.table and args.json:
