@@ -1,0 +1,85 @@
+{
+  "schema": {
+    "name": "blackjack-decision",
+    "version": 1
+  },
+  "package": {
+    "name": "exact-blackjack-solver",
+    "version": "0.1.0"
+  },
+  "state": {
+    "cards": [
+      "T",
+      "4"
+    ],
+    "dealer_up": "T",
+    "total": 14,
+    "soft": false,
+    "is_split_hand": false,
+    "hand_count": 1,
+    "shoe": {
+      "rank_order": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "T"
+      ],
+      "counts": [
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
+      ],
+      "source": "supplied_unseen",
+      "includes_hidden_hole": true,
+      "visible_cards_already_removed": true
+    }
+  },
+  "rules": {
+    "decks": 6,
+    "s17": true,
+    "das": true,
+    "peek": true,
+    "surrender": false,
+    "resplit_aces": false,
+    "hit_split_aces": false,
+    "max_hands": 4,
+    "blackjack_payout": 1.5,
+    "double_any_two": true,
+    "tens_are_pairs": true,
+    "insurance_payout": 2.0
+  },
+  "decision": {
+    "action": "H",
+    "action_name": "HIT",
+    "evs": {
+      "S": -0.6666666666666665,
+      "H": -0.5916666666666668,
+      "D": -1.2000000000000002
+    },
+    "margin": 0.07499999999999973,
+    "units": "original_wager",
+    "whole_game_estimate": null
+  },
+  "model": {
+    "dealer_information": "hidden_hole_post_peek",
+    "hole_rank_excluded_by_peek": "A",
+    "ten_value_ranks": "collapsed_to_T",
+    "insurance_priced": false,
+    "hit_stand_double": "finite_enumeration_binary_floating_point",
+    "split": "independent_hands_greedy_shared_resplit_budget",
+    "split_error_bound": null
+  }
+}
