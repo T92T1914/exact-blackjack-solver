@@ -769,7 +769,8 @@ def _play(cards: Cards, cfg, dec, spl, max_extra, strategy):
                 best, soft = hard + 10, 1
             else:
                 best, soft = hard, 0
-            if best > 21:
+            if best >= 21:
+                # A completed 21 settles before either chart can act again.
                 break
 
             can_split = (nc == 2 and hc[0] == hc[1]
