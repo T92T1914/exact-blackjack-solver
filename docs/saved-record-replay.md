@@ -72,6 +72,40 @@ below. Python's integer conversion limit may reject a decimal token. No new
 count maximum, numerical work limit or cache limit is imposed, and large
 supported tallies can exceed arithmetic range or require substantial resources.
 
+## Select the round's hand cap
+
+Use `--max-hands N` for the maximum hands the rules allow in a round.
+`--hand-count` is the number already created, including completed hands.
+Omitting the cap keeps the existing default of four. For a two-hand limit:
+
+```text
+bj-advise T,T 7 --unseen-counts 1,0,0,0,0,0,0,0,0,5 --max-hands 2 --json
+bj-advise T,T 7 --unseen-counts 1,0,0,0,0,0,0,0,0,5 --max-hands 2 --split-hand --hand-count 2 --json
+```
+
+The first command describes an unsplit hand below the cap. The second
+describes a hand after splitting, at the cap, so SPLIT is unavailable.
+Both retain the supplied counts directly. Do not change the current hand
+count to imitate a different rule cap. Cards stay in dealt order, with the
+first card identifying a split hand's original rank.
+
+The cap must be a positive ASCII decimal integer. Surrounding ASCII
+whitespace and leading zeros are accepted. Zero, signs, fractions, exponents,
+underscores, Boolean words and non-ASCII digits or whitespace are rejected.
+A cap of one permits an unsplit hand and prevents splitting. A split hand
+requires at least two created hands and cannot fit that cap. Invalid input
+exits with status 2, an explanation on stderr and no record on stdout.
+
+Text advice, JSON records and `--table` use the selected cap. JSON keeps
+the complete rules and raw values. Save successful stdout as described above,
+then replay without overrides. Explicit `--max-hands` cannot accompany
+`--replay`, even when it equals the default. The saved record supplies its cap.
+
+No new upper cap or numerical-work bound is imposed. Python's integer
+conversion limit still applies. Larger supported caps can require more work,
+and the existing independent-hand and greedy resplit-budget approximations
+remain unchanged. No general split-error bound follows from selecting a cap.
+
 ## Public API and report
 
 ```python
