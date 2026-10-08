@@ -20,6 +20,7 @@ approximations, which also affect whole-game estimates. Re-running is determinis
 from __future__ import annotations
 
 import argparse
+import json
 from collections.abc import Sequence
 from dataclasses import replace
 from numbers import Integral
@@ -29,6 +30,7 @@ from .core import (ACTION_NAMES, RANKS, STANDARD, CardLike, Rules, Shoe, hand_to
                    normalize, normalize_hand, normalize_shoe)
 from .ev import best_action, derive_table, house_edge
 from .record import decision_json
+from .replay import EXIT_STATUSES, replay_file
 from .strategy import basic_action
 
 __all__ = ['advise', 'table', 'main']
@@ -127,17 +129,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         epilog=__doc__.split('\n\n', 1)[1],
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument('cards', nargs='?', default='8,8',
+    parser.add_argument('cards', nargs='?', default=None,
                         help='your cards, in dealt order: 8,8  T6  A,7  KQ  (default: 8,8)')
-    parser.add_argument('upcard', nargs='?', default='T',
+    parser.add_argument('upcard', nargs='?', default=None,
                         help="the dealer's upcard: 2-9, T (or K, Q, J, 10), A  (default: T)")
     parser.add_argument('--table', action='store_true',
                         help='print the full basic-strategy chart the solver derives '
                              '(Markdown; about a minute) instead of advising a hand')
     parser.add_argument('--json', action='store_true',
                         help='print a versioned decision record with complete state and raw EVs; '
-                             'no whole-game estimate')
-    parser.add_argument('--decks', type=int, default=STANDARD.decks, metavar='N',
+                             'with --replay, print the comparison report as JSON')
+    parser.add_argument('--replay', metavar='PATH',
+                        help='validate and recompute a saved decision record, '
+                             'then compare raw values')
+    parser.add_argument('--decks', type=int, default=None, metavar='N',
                         help=f'decks in the shoe (default: {STANDARD.decks})')
     parser.add_argument('--h17', action='store_true',
                         help='dealer hits soft 17 (default: stands)')
@@ -152,6 +157,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help='total hands created in this round, including completed hands '
                              '(default: 2 with --split-hand, otherwise 1)')
     args = parser.parse_args(argv)
+    if args.replay is not None:
+        if (args.cards is not None or args.upcard is not None or args.table
+                or args.decks is not None or args.h17 or args.no_das
+                or args.unseen is not None or args.split_hand or args.hand_count is not None):
+            parser.error('--replay cannot be combined with cards, upcard, --table or state options')
+        result = replay_file(args.replay)
+        print(json.dumps(result, indent=2, allow_nan=False) if args.json else _replay_text(result))
+        return EXIT_STATUSES[result['status']]
+    args.cards = args.cards if args.cards is not None else '8,8'
+    args.upcard = args.upcard if args.upcard is not None else 'T'
+    args.decks = args.decks if args.decks is not None else STANDARD.decks
     if args.decks < 1:
         parser.error('--decks must be at least 1')
     rules = replace(STANDARD, decks=args.decks, s17=not args.h17, das=not args.no_das)
@@ -180,3 +196,29 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error(str(exc))
     print(text)
     return 0
+
+
+def _replay_text(report):
+    """Display raw values so small margins and action changes remain visible."""
+    lines = [f"Replay: {report['status']}",
+             'Comparison: exact_binary_float (zero absolute and relative tolerance)']
+    package = report['recorded_package']
+    if package is not None:
+        lines.append(f"Package version: recorded {package['version']}, "
+                     f"current {report['current_package']['version']}, "
+                     f"matches={report['package_version_matches']}")
+    comparison = report['comparison']
+    if comparison is not None:
+        actions = comparison['legal_actions']
+        lines.append(f"Legal actions: recorded {actions['recorded']}, "
+                     f"recomputed {actions['recomputed']}, matches={actions['matches']}")
+        for code, values in comparison['evs'].items():
+            lines.append(f"{ACTION_NAMES[code]}: recorded {values['recorded']!r}, "
+                         f"recomputed {values['recomputed']!r}, matches={values['matches']}")
+        for label in ('recommendation', 'margin'):
+            values = comparison[label]
+            lines.append(f"{label.capitalize()}: recorded {values['recorded']!r}, "
+                         f"recomputed {values['recomputed']!r}, matches={values['matches']}")
+    if report['error'] is not None:
+        lines.append(f"{report['error']['type']}: {report['error']['message']}")
+    return '\n'.join(lines)

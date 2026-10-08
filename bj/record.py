@@ -23,6 +23,10 @@ __all__ = ['SCHEMA_VERSION', 'decision_record', 'decision_json']
 SCHEMA_VERSION = 1
 
 
+class _UnsupportedRules(ValueError):
+    """Well-typed rules outside the decision record's declared model."""
+
+
 def _rules_record(rules: Rules) -> dict[str, Any]:
     if not isinstance(rules, Rules):
         raise ValueError('rules must be a Rules instance')
@@ -47,14 +51,58 @@ def _rules_record(rules: Rules) -> dict[str, Any]:
         if not math.isfinite(values[name]) or values[name] < 0:
             raise ValueError(f'{name} must be finite and nonnegative')
     if not rules.peek:
-        raise ValueError('decision records model the post-peek game; peek must be True')
+        raise _UnsupportedRules('decision records model the post-peek game; peek must be True')
     if rules.surrender:
-        raise ValueError('decision records do not model surrender')
+        raise _UnsupportedRules('decision records do not model surrender')
     if not rules.double_any_two:
-        raise ValueError('decision records require doubling on any two-card hand')
+        raise _UnsupportedRules('decision records require doubling on any two-card hand')
     if not rules.tens_are_pairs:
-        raise ValueError('decision records collapse ten-value ranks and require tens_are_pairs')
+        raise _UnsupportedRules(
+            'decision records collapse ten-value ranks and require tens_are_pairs')
     return values
+
+
+def _record_inputs(cards, dealer_up, rules, shoe, is_split_hand, hand_count):
+    """Normalize the shared exporter/importer boundary without calculating EVs."""
+    if not isinstance(is_split_hand, bool):
+        raise ValueError('is_split_hand must be a boolean')
+    if hand_count is None:
+        hand_count = 2 if is_split_hand else 1
+    if (not isinstance(hand_count, Integral) or isinstance(hand_count, bool)
+            or not 1 <= hand_count <= rules.max_hands):
+        raise ValueError(f'hand_count must be an integer from 1 to {rules.max_hands}')
+    if is_split_hand and hand_count < 2:
+        raise ValueError('a split hand requires at least two hands in the round')
+    if not is_split_hand and hand_count != 1:
+        raise ValueError('hand_count above 1 requires a split hand')
+    hand = normalize_hand(cards)
+    up = normalize(dealer_up)
+    if len(hand) < 2:
+        raise ValueError('a hand needs at least two cards before it has a decision')
+    total, _soft = hand_total(hand)
+    if total > 21:
+        raise ValueError(f'hand {hand} is busted at {total}; there is no decision left')
+    if (is_split_hand and hand[0] == 'A' and len(hand) > 2
+            and not rules.hit_split_aces):
+        raise ValueError('a split ace receives only one card when hit_split_aces is False')
+    unseen = normalize_shoe(initial_shoe_for(hand, up, rules) if shoe is None else shoe)
+    if not sum(unseen):
+        raise ValueError('an unseen shoe must include the reserved dealer hole card')
+    excluded = 'T' if up == 'A' else 'A' if up == 'T' else None
+    if excluded is not None and sum(unseen) == unseen[RANKS.index(excluded)]:
+        raise ValueError(f'after the peek there is no possible hole card for upcard {up}')
+    return hand, up, unseen, int(hand_count)
+
+
+def _model_record(up):
+    return {
+        'dealer_information': 'hidden_hole_post_peek',
+        'hole_rank_excluded_by_peek': 'T' if up == 'A' else 'A' if up == 'T' else None,
+        'ten_value_ranks': 'collapsed_to_T', 'insurance_priced': False,
+        'hit_stand_double': 'finite_enumeration_binary_floating_point',
+        'split': 'independent_hands_greedy_shared_resplit_budget',
+        'split_error_bound': None,
+    }
 
 
 def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
@@ -75,26 +123,8 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
     The ordinary text interface remains independent of this stricter record.
     """
     rule_values = _rules_record(rules)
-    if not isinstance(is_split_hand, bool):
-        raise ValueError('is_split_hand must be a boolean')
-    if hand_count is None:
-        hand_count = 2 if is_split_hand else 1
-    if (not isinstance(hand_count, Integral) or isinstance(hand_count, bool)
-            or not 1 <= hand_count <= rules.max_hands):
-        raise ValueError(f'hand_count must be an integer from 1 to {rules.max_hands}')
-    if is_split_hand and hand_count < 2:
-        raise ValueError('a split hand requires at least two hands in the round')
-    if not is_split_hand and hand_count != 1:
-        raise ValueError('hand_count above 1 requires a split hand')
-    hand_count = int(hand_count)
-    hand = normalize_hand(cards)
-    up = normalize(dealer_up)
-    unseen = normalize_shoe(initial_shoe_for(hand, up, rules) if shoe is None else shoe)
-    if not sum(unseen):
-        raise ValueError('an unseen shoe must include the reserved dealer hole card')
-    excluded = 'T' if up == 'A' else 'A' if up == 'T' else None
-    if excluded is not None and sum(unseen) == unseen[RANKS.index(excluded)]:
-        raise ValueError(f'after the peek there is no possible hole card for upcard {up}')
+    hand, up, unseen, hand_count = _record_inputs(
+        cards, dealer_up, rules, shoe, is_split_hand, hand_count)
     action, evs, margin = best_action(hand, up, shoe=unseen, rules=rules,
                                     is_split_hand=is_split_hand, hand_count=hand_count)
     if not evs or action not in evs or any(key not in ACTION_NAMES for key in evs):
@@ -129,14 +159,7 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
             'margin': float(margin), 'units': 'original_wager',
             'whole_game_estimate': None,
         },
-        'model': {
-            'dealer_information': 'hidden_hole_post_peek',
-            'hole_rank_excluded_by_peek': excluded,
-            'ten_value_ranks': 'collapsed_to_T', 'insurance_priced': False,
-            'hit_stand_double': 'finite_enumeration_binary_floating_point',
-            'split': 'independent_hands_greedy_shared_resplit_budget',
-            'split_error_bound': None,
-        },
+        'model': _model_record(up),
     }
 
 
