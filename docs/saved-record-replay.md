@@ -127,6 +127,60 @@ refused. Saved EVs, recommendations and margins are historical comparison
 data. Known action-code sets may differ from the current legal set, and a
 finite altered saved answer remains visible as a difference after calculation.
 
+## Inspect and compare local records in the browser
+
+The [project page](https://t92t1914.github.io/exact-blackjack-solver/) can inspect
+one or two local schema-v1 decision files. Export a record through an installed
+package, save the JSON output as UTF-8, then select it as record A. For example,
+the six unseen cards keep this example small:
+
+```text
+bj-advise T,4 T --unseen 2,3,7,8,9,T --json
+```
+
+The existing Python example above also creates a saved file without shell
+redirection encoding differences. The browser displays the complete dealt
+order, dealer upcard, total and softness, split state, retained counts, every
+rule and model declaration, schema/package labels and recorded answer. It
+keeps integer counts exact and shows raw finite binary-float answer values
+without display rounding. Supported recorded action codes include split `P`.
+
+Selecting record B shows changed modeled inputs before recorded answer
+differences. An action present in only one record is explicitly absent on the
+other side, with no numeric delta. A changed input pair does not identify a
+single cause, especially when several inputs changed. Matching supplied
+values and package labels do not authenticate origin or establish numerical
+correctness.
+
+This page admits the supported representation and checks input consistency.
+It does not recalculate EVs or check the recorded action set against the
+engine. Finite altered saved recommendations, margins and action sets remain
+visible. Use `bj-advise --replay PATH --json` for installed recalculation and
+comparison with the engine. Browser inspection does not change the model or
+provide a general error bound for split valuation.
+
+Files and names remain in the current page session. Imports do not enter
+share links, URL/history parameters, uploads or browser storage. Clearing one
+or both records releases retained state. Reload clears all imports. Selecting
+a replacement immediately clears the old result. A failed replacement leaves
+that slot empty with an explanation, and an earlier slow read cannot restore
+a replaced or cleared record. Bundled example links retain their existing
+behavior. Local inspection also works when bundled example data cannot load.
+
+The browser uses the existing 65,536 UTF-8 byte and eight-container depth
+limits. It additionally refuses integer tokens longer than 4,300 decimal
+digits before conversion, matching ordinary Python 3.11 JSON parsing. A Python
+caller can configure a different integer parsing limit, so this is an explicit
+browser representation limit, not a solver count maximum. Supported supplied
+counts may exceed fresh-shoe maxima and floating-point arithmetic range. They
+remain exact integers in the viewer. Payouts and recorded answers must convert
+to finite binary floats. Integer-only fields reject floating tokens such as
+`1.0` even when they have the same numerical value.
+
+No-script delivery retains the static evidence and explains that local record
+inspection needs JavaScript. Browser file admission limits do not bound work
+or memory during installed engine recalculation.
+
 ## Resource ownership and evidence
 
 The production solver has no work, time or memory limit. Its process-wide

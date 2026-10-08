@@ -26,6 +26,8 @@ FILES = {
     "site/index.html": "index.html",
     "site/style.css": "style.css",
     "site/app.js": "app.js",
+    "site/record-inspection.mjs": "record-inspection.mjs",
+    "site/record-inspector-ui.mjs": "record-inspector-ui.mjs",
     "site/selection-state.mjs": "selection-state.mjs",
     "site/appearance.js": "appearance.js",
     "docs/visual-example-data.json": "data.json",

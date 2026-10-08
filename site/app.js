@@ -1,7 +1,9 @@
 import {bindSelection} from './selection-state.mjs';
+import {initRecordInspector} from './record-inspector-ui.mjs';
 const $ = id => document.getElementById(id);
 const project = document.body.dataset.project;
 const number = (value, digits=0) => value.toLocaleString('en-US', {maximumFractionDigits:digits, minimumFractionDigits:digits});
+initRecordInspector();
 function metrics(items) {
   $('metrics').replaceChildren(...items.map(([value,label]) => {
     const box=document.createElement('div');box.className='metric';

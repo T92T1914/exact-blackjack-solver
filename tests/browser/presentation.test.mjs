@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {before, after, test} from 'node:test';
 import {createServer} from 'node:http';
 import {readFile, mkdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium, webkit} from 'playwright';
@@ -74,6 +75,178 @@ async function capture(page, name, fullPage = true) {
   await mkdir(process.env.SOLVER_SCREENSHOT_DIR, {recursive:true});
   await page.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR, name+'.png'), fullPage});
 }
+
+const recordFixture=await readFile(new URL('../fixtures/saved-decision-v1-7a38141.json',import.meta.url));
+const suppliedRecord=(name,buffer)=>({name,mimeType:'application/json',buffer});
+const alteredRecord=update=>{const saved=JSON.parse(recordFixture);update(saved);return Buffer.from(JSON.stringify(saved));};
+async function acceptedRecord(page,label,buffer,name=`record-${label}.json`) {
+  await page.locator(`#record-file-${label}`).setInputFiles(suppliedRecord(name,buffer));
+  await page.locator(`#record-result-${label}:visible`).waitFor();
+  assert.match(await page.locator(`#record-status-${label}`).textContent(),/not been recomputed/);
+}
+async function assertCompleteRecord(page,label,buffer) {
+  const saved=JSON.parse(buffer),result=page.locator(`#record-result-${label}`);
+  const expected=[...Object.entries(saved.state).filter(([key])=>key!=='shoe').map(([key,value])=>[`state.${key}`,value]),
+    ['state.shoe.rank_order',saved.state.shoe.rank_order],
+    ...saved.state.shoe.rank_order.map((rank,i)=>[`state.shoe.counts.${rank}`,saved.state.shoe.counts[i]]),
+    ...Object.entries(saved.state.shoe).filter(([key])=>!['counts','rank_order'].includes(key)).map(([key,value])=>[`state.shoe.${key}`,value]),
+    ...Object.entries(saved.rules).map(([key,value])=>[`rules.${key}`,value]),
+    ...Object.entries(saved.model).map(([key,value])=>[`model.${key}`,value]),
+    ...Object.entries(saved.schema).map(([key,value])=>[`schema.${key}`,value]),
+    ...Object.entries(saved.package).map(([key,value])=>[`package.${key}`,value]),
+    ...Object.entries(saved.decision).filter(([key])=>key!=='evs').map(([key,value])=>[`decision.${key}`,value])];
+  const show=value=>Array.isArray(value) ? '['+value.join(', ')+']' : String(value);
+  for (const [key,value] of expected) {
+    const row=result.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:key,exact:true})});
+    assert.equal(await row.count(),1,key);
+    assert.equal(await row.locator('td').textContent(),show(value),key);
+  }
+  assert.equal(await result.locator('tbody tr').count(),expected.length+Object.keys(saved.decision.evs).length);
+  for (const [action,value] of Object.entries(saved.decision.evs)) {
+    const row=result.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:new RegExp('^'+action+' \\(')})});
+    assert.equal(await row.locator('td').textContent(),String(value));
+  }
+}
+
+test('local file consumer shows complete records and compares inputs before answers',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});
+  await ready(page);
+  assert.equal(Boolean(process.env.SOLVER_RECORD_A),Boolean(process.env.SOLVER_RECORD_B),'Provide both installed record files or neither');
+  const first=process.env.SOLVER_RECORD_A ? await readFile(process.env.SOLVER_RECORD_A) : recordFixture;
+  const second=process.env.SOLVER_RECORD_B ? await readFile(process.env.SOLVER_RECORD_B) : alteredRecord(r=>{r.state.cards.reverse();r.rules.s17=false;r.decision.evs.H=-0.5;});
+  console.log('Local file consumer inputs:',JSON.stringify({source:process.env.SOLVER_RECORD_A ? 'provided installed outputs' : 'retained and constructed test records',
+    sha256:[first,second].map(buffer=>createHash('sha256').update(buffer).digest('hex'))}));
+  await acceptedRecord(page,'a',first);
+  await assertCompleteRecord(page,'a',first);
+  assert.equal(await page.locator('#record-comparison').isVisible(),false);
+  await acceptedRecord(page,'b',second);
+  await assertCompleteRecord(page,'b',second);
+  const comparison=page.locator('#record-comparison');
+  assert.equal(await comparison.isVisible(),true);
+  assert.deepEqual(await comparison.locator('h3').allTextContents(),[
+    '1. Changed modeled inputs','2. Changed record labels','3. Recorded answer comparison']);
+  assert.match(await comparison.textContent(),/does not identify a single cause/);
+  for (const label of ['a','b']) {
+    await page.locator(`#record-file-${label}`).focus();
+    assert.equal(await page.locator(`#record-file-${label}`).evaluate(e=>document.activeElement===e),true);
+    assert.equal(await page.locator(`#record-file-${label}`).evaluate(e=>getComputedStyle(e).outlineStyle),'solid');
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator(`#record-clear-${label}`).evaluate(e=>document.activeElement===e),true);
+  }
+  await page.locator('#record-clear-b').click();
+  assert.equal(await comparison.isVisible(),false);
+  assert.equal(await page.locator('#record-result-b').isVisible(),false);
+  assert.equal(await page.locator('#record-result-a').isVisible(),true);
+  await acceptedRecord(page,'b',first);
+  assert.match(await comparison.textContent(),/All supplied modeled inputs agree/);
+  await page.locator('#record-clear-all').click();
+  for (const label of ['a','b']) {
+    assert.equal(await page.locator(`#record-result-${label}`).isVisible(),false);
+    assert.equal(await page.locator(`#record-file-${label}`).inputValue(),'');
+    assert.equal(await page.locator(`#record-name-${label}`).textContent(),'No local file retained.');
+  }
+});
+
+test('record replacement errors remove the old answer and allow recovery',async t=>{
+  const page=await fixture(t);await ready(page);
+  await acceptedRecord(page,'a',recordFixture);
+  for (const [name,buffer,message] of [
+    ['malformed.json',Buffer.from('{'),/invalid JSON/],
+    ['duplicate.json',Buffer.from('{"schema":{},"\\u0073chema":{}}'),/duplicate JSON key/],
+    ['future.json',alteredRecord(r=>{r.schema.version=2;}),/unsupported_record/],
+    ['float-count.json',Buffer.from(recordFixture.toString().replace('"counts": [\n        0','"counts": [\n        0.0')),/integer/],
+    ['invalid-utf8.json',Buffer.from([255]),/valid UTF-8/],
+    ['oversized.json',Buffer.alloc(65537,32),/65536 UTF-8 bytes/]
+  ]) {
+    await page.locator('#record-file-a').setInputFiles(suppliedRecord(name,buffer));
+    await page.waitForFunction(()=>document.querySelector('#record-status-a').classList.contains('error'));
+    assert.match(await page.locator('#record-status-a').textContent(),message);
+    assert.equal(await page.locator('#record-result-a').isVisible(),false);
+    assert.equal(await page.locator('#record-comparison').isVisible(),false);
+    await acceptedRecord(page,'a',recordFixture);
+  }
+});
+
+test('constructed record differences retain split order, absence and raw precision',async t=>{
+  const page=await fixture(t);await ready(page);
+  const split=alteredRecord(r=>{r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;r.decision.action='P';r.decision.action_name='SPLIT';r.decision.evs.P=99;r.decision.margin=80;});
+  await acceptedRecord(page,'a',split);
+  await assertCompleteRecord(page,'a',split);
+  const reordered=JSON.parse(split);reordered.state.cards.reverse();delete reordered.decision.evs.D;
+  reordered.decision.evs.H=-0.5916666666666667;
+  await acceptedRecord(page,'b',Buffer.from(JSON.stringify(reordered)));
+  const comparison=page.locator('#record-comparison');
+  assert.match(await comparison.textContent(),/state.cards/);
+  const double=comparison.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:'D (DOUBLE)',exact:true})});
+  assert.deepEqual(await double.locator('td').allTextContents(),['-1.2000000000000002','absent','false','not available: action absent']);
+  const hit=comparison.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:'H (HIT)',exact:true})});
+  assert.deepEqual((await hit.locator('td').allTextContents()).slice(0,3),['-0.5916666666666668','-0.5916666666666667','false']);
+  const labelOnly=JSON.parse(split);labelOnly.package.version='future <img src=x onerror=alert(1)>';
+  await acceptedRecord(page,'b',Buffer.from(JSON.stringify(labelOnly)));
+  assert.match(await comparison.textContent(),/All supplied modeled inputs agree/);
+  assert.match(await comparison.textContent(),/future <img src=x onerror=alert\(1\)>/);
+  assert.equal(await comparison.locator('img').count(),0);
+  const huge=recordFixture.toString().replace('"counts": [\n        0','"counts": [\n        '+'1'+'0'.repeat(400));
+  await acceptedRecord(page,'a',Buffer.from(huge));
+  const count=page.locator('#record-result-a tbody tr').filter({has:page.getByRole('rowheader',{name:'state.shoe.counts.A',exact:true})});
+  assert.equal(await count.locator('td').textContent(),'1'+'0'.repeat(400));
+});
+
+test('imports stay out of URLs, requests and storage and reload releases them',async t=>{
+  const page=await fixture(t);await ready(page);await page.waitForLoadState('networkidle');
+  const requests=[];page.on('request',request=>requests.push({url:request.url(),body:request.postData()}));
+  const beforeURL=page.url(),beforeLink=await page.locator('#example-link').getAttribute('href');
+  await page.evaluate(()=>{
+    window.recordStorageWrites=[];
+    const old=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(key,value){window.recordStorageWrites.push([key,value]);return old.call(this,key,value);};
+    window.recordIDBCalls=0;
+    const oldOpen=IDBFactory.prototype.open;
+    IDBFactory.prototype.open=function(...args){window.recordIDBCalls++;return oldOpen.apply(this,args);};
+  });
+  const secret='local-private-marker-47';
+  const selected=alteredRecord(r=>{r.package.version=secret;});
+  await acceptedRecord(page,'a',selected,secret+'.json');await acceptedRecord(page,'b',selected,secret+'-second.json');
+  assert.equal(page.url(),beforeURL);assert.equal(await page.locator('#example-link').getAttribute('href'),beforeLink);
+  assert.deepEqual(await page.evaluate(()=>window.recordStorageWrites),[]);
+  assert.equal(await page.evaluate(()=>window.recordIDBCalls),0);
+  assert.deepEqual(requests,[],'File imports trigger no requests');
+  await page.locator('#choice').selectOption('1');
+  assert.ok(!page.url().includes(secret));assert.ok(!(await page.locator('#example-link').getAttribute('href')).includes(secret));
+  await page.reload();await page.locator('#record-inspector:visible').waitFor();
+  assert.equal(await page.locator('#record-result-a').isVisible(),false);
+  assert.equal(await page.locator('#record-result-b').isVisible(),false);
+  assert.equal(await page.locator('#record-inspector').textContent().then(text=>text.includes(secret)),false);
+});
+
+test('local inspection works when bundled data is unavailable and no-script evidence stays usable',async t=>{
+  const page=await fixture(t);
+  await page.route('**/data.json',route=>route.fulfill({status:200,contentType:'application/json',body:'{}'}));
+  await page.goto(base+'/');await page.locator('#load-error:visible').waitFor();
+  await page.locator('#record-inspector:visible').waitFor();
+  await acceptedRecord(page,'a',recordFixture);await assertCompleteRecord(page,'a',recordFixture);
+  const noScript=await fixture(t,{javaScriptEnabled:false,viewport:{width:320,height:700}});
+  await noScript.goto(base+'/');
+  assert.equal(await noScript.locator('#record-inspector').isVisible(),false);
+  assert.match(await noScript.locator('noscript').allTextContents().then(parts=>parts.join(' ')),/Local saved-record inspection needs JavaScript/);
+  assert.equal(await noScript.locator('#composition-figure img:visible').count(),1);
+});
+
+for (const width of [320,390]) test(`imported records retain local scrolling and enlarged text at ${width}px`,async t=>{
+  const page=await fixture(t,{viewport:{width,height:844},colorScheme:'dark'});await ready(page);
+  await acceptedRecord(page,'a',recordFixture);await acceptedRecord(page,'b',alteredRecord(r=>{r.rules.s17=false;}));
+  for (const appearance of ['clair','obscur']) {
+    await page.locator('#appearance').selectOption(appearance);
+    const original=await page.locator('#record-inspector').textContent();
+    await page.addStyleTag({content:'#record-inspector{font-size:34px}#record-inspector .fine{font-size:28px}#record-inspector th{font-size:30px}#record-inspector h3{font-size:40px}#record-inspector h2{font-size:54px}'});
+    assert.equal(await page.locator('#record-inspector').textContent(),original);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    assert.ok(await page.locator('#record-inspector .table-wrap').first().evaluate(e=>e.scrollWidth>e.clientWidth));
+    await page.locator('#record-inspector .table-wrap').first().focus();
+    assert.equal(await page.locator('#record-inspector .table-wrap').first().evaluate(e=>document.activeElement===e),true);
+    await capture(page,`local-record-${appearance}-${width}`,false);
+  }
+});
 
 const phoneFonts = [
   {label:'',family:null},
