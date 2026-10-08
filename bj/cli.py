@@ -105,6 +105,27 @@ def _unseen_cards(text: str) -> Shoe:
     return tuple(cards.count(rank) for rank in RANKS)
 
 
+def _unseen_counts(text: str) -> Shoe:
+    """Admit decimal rank tallies without changing the caller's retained counts."""
+    parts = text.split(',')
+    if len(parts) != len(RANKS):
+        raise argparse.ArgumentTypeError(
+            '--unseen-counts needs exactly ten counts in A,2,3,4,5,6,7,8,9,T order')
+    counts = []
+    for rank, part in zip(RANKS, parts):
+        digits = part.strip(' \t\r\n\v\f')
+        if not digits or any(char < '0' or char > '9' for char in digits):
+            raise argparse.ArgumentTypeError(
+                f'--unseen-counts count for {rank} must be a nonnegative base-10 integer')
+        try:
+            counts.append(int(digits, 10))
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(
+                f'--unseen-counts count for {rank} cannot be converted '
+                'by this Python runtime') from exc
+    return normalize_shoe(counts)
+
+
 def table(rules: Rules = STANDARD) -> str:
     """The whole chart, derived cell by cell by the solver, as Markdown.
 
@@ -148,9 +169,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help='dealer hits soft 17 (default: stands)')
     parser.add_argument('--no-das', action='store_true',
                         help='no doubling after a split (default: allowed)')
-    parser.add_argument('--unseen', type=_unseen_cards, metavar='CARDS',
+    unseen = parser.add_mutually_exclusive_group()
+    unseen.add_argument('--unseen', type=_unseen_cards, metavar='CARDS',
                         help='explicit unseen cards, including the dealer hole, e.g. '
                              '2,3,7,8,9,T. Visible cards are already removed')
+    unseen.add_argument('--unseen-counts', dest='unseen', type=_unseen_counts, metavar='CSV',
+                        help='ten nonnegative decimal counts in A,2,3,4,5,6,7,8,9,T order; '
+                             'include the dealer hole and already exclude visible cards')
     parser.add_argument('--split-hand', action='store_true',
                         help='this hand came from splitting; first card is the split rank')
     parser.add_argument('--hand-count', type=int, default=None, metavar='N',
@@ -194,6 +219,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         # Unknown card, a busted hand, more cards than the shoe holds: the
         # solver refuses rather than guessing, and so does the command line.
         parser.error(str(exc))
+    except OverflowError as exc:
+        if args.table:
+            raise
+        parser.error(f'cannot calculate decision: arithmetic overflow ({exc})')
     print(text)
     return 0
 

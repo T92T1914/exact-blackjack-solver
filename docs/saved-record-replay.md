@@ -30,6 +30,48 @@ through the public API. Choose an unused filename. It never replaces an
 existing record. Its six unseen cards keep the calculation small. A large
 otherwise-supported shoe can require substantially more work and memory.
 
+## Create a record from retained counts
+
+Use `--unseen-counts` when you already have a rank tally:
+
+```text
+bj-advise T,4 T --unseen-counts 0,1,1,0,0,0,1,1,1,1 --json
+```
+
+Supply exactly ten nonnegative decimal integers in `A,2,3,4,5,6,7,8,9,T`
+order. Surrounding ASCII whitespace and leading zeros are accepted. Empty
+fields, signs, fractions, exponents, underscores, Boolean words, rank labels
+and non-ASCII digits are rejected. `--unseen` remains the physical-card-list
+alternative. The two options cannot be combined. Without `--json`, the command
+prints the existing text advice and retained rank counts.
+
+Counts include the dealer's reserved hidden hole and already exclude visible
+cards. The command passes them directly to the engine without another
+subtraction. Other unseen cards of a visible rank may remain counted. Zero is
+a valid count, but an all-zero tally or an impossible post-peek hole produces
+the existing state error. Validation cannot confirm your external bookkeeping.
+`--decks` does not rescale or clamp supplied counts to fresh-deck maxima.
+
+The existing rule and split options still apply. Keep cards in their dealt
+order: the first card of a split hand is its split rank. `--hand-count` includes
+completed hands in that round. Explicit-shoe advice and records compute one
+decision with no fresh-shoe whole-game estimate. Raw JSON values and the
+supported model remain unchanged. Counts cannot accompany `--table` or
+`--replay`.
+
+Save successful stdout as UTF-8 to a fresh file using byte-preserving capture
+or your shell's byte-preserving redirection, keeping stderr separate. Then run:
+
+```text
+bj-advise --replay saved-decision.json --json
+```
+
+Creation syntax/state errors and arithmetic overflow exit 2 with an explanation
+on stderr and no record on stdout. Replay retains its separate failure statuses
+below. Python's integer conversion limit may reject a decimal token. No new
+count maximum, numerical work limit or cache limit is imposed, and large
+supported tallies can exceed arithmetic range or require substantial resources.
+
 ## Public API and report
 
 ```python
