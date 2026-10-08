@@ -148,14 +148,25 @@ def _admit(saved):
     schema = _object(saved.get('schema'), ('name', 'version'), 'schema')
     name = _string(schema['name'], 'schema.name')
     version = _integer(schema['version'], 'schema.version')
-    if name != 'blackjack-decision' or version != record.SCHEMA_VERSION:
+    if name != 'blackjack-decision' or version not in (
+            record.SCHEMA_VERSION, record.CONTROLLED_SCHEMA_VERSION):
         raise _UnsupportedRecord(f'unsupported schema {name!r}, version {version}')
     _object(saved, ('schema', 'package', 'state', 'rules', 'decision', 'model'), 'record')
     package = _object(saved['package'], ('name', 'version'), 'package')
     _constant(package['name'], 'exact-blackjack-solver', 'package.name')
     _string(package['version'], 'package.version')
-    state = _object(saved['state'], ('cards', 'dealer_up', 'total', 'soft', 'is_split_hand',
-                                    'hand_count', 'shoe'), 'state')
+    state_keys = ('cards', 'dealer_up', 'total', 'soft', 'is_split_hand', 'hand_count', 'shoe')
+    if version == record.CONTROLLED_SCHEMA_VERSION:
+        state_keys += ('action_controls',)
+    state = _object(saved['state'], state_keys, 'state')
+    can_double = can_split = True
+    if version == record.CONTROLLED_SCHEMA_VERSION:
+        controls = _object(state['action_controls'], ('can_double', 'can_split'),
+                           'state.action_controls')
+        for key in ('can_double', 'can_split'):
+            if not isinstance(controls[key], bool):
+                raise _InvalidRecord(f'state.action_controls.{key} must be a boolean')
+        can_double, can_split = controls['can_double'], controls['can_split']
     cards, up = state['cards'], state['dealer_up']
     if (not isinstance(cards, list) or any(not isinstance(card, str) or card not in RANKS
                                          for card in cards)):
@@ -219,7 +230,7 @@ def _admit(saved):
         _number(value, f'decision.evs.{key}')
     if _number(decision['margin'], 'decision.margin') < 0:
         raise _InvalidRecord('decision.margin must be nonnegative')
-    return hand, up, unseen, rules, state['is_split_hand'], hand_count
+    return hand, up, unseen, rules, state['is_split_hand'], hand_count, can_double, can_split
 
 
 def _report(status, *, saved=None, recomputed=None, comparison=None, error=None):
@@ -264,7 +275,7 @@ def _compare(recorded, current):
 
 
 def replay_json(text: str | bytes) -> dict[str, Any]:
-    """Admit schema-v1 JSON, recalculate, and report exact numerical agreement.
+    """Admit schema-v1/v2 JSON, recalculate, and report exact numerical agreement.
 
     The report distinguishes invalid/unsupported input from differences and
     incomplete calculation. No tolerance is applied, including near ties.
@@ -275,11 +286,11 @@ def replay_json(text: str | bytes) -> dict[str, Any]:
     admitted = None
     try:
         saved = _parse(text)
-        hand, up, unseen, rules, is_split_hand, hand_count = _admit(saved)
+        hand, up, unseen, rules, is_split_hand, hand_count, can_double, can_split = _admit(saved)
         admitted = saved
         current = record.decision_record(
             hand, up, rules, shoe=unseen, is_split_hand=is_split_hand,
-            hand_count=hand_count)['decision']
+            hand_count=hand_count, can_double=can_double, can_split=can_split)['decision']
         comparison = _compare(saved['decision'], current)
         agrees = (comparison['legal_actions']['matches'] and comparison['evs_match']
                   and comparison['recommendation']['matches'] and comparison['margin']['matches'])

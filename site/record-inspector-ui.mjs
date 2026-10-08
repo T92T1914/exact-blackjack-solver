@@ -33,11 +33,14 @@ function renderRecord(target,record,label) {
     'Saved EV keys match the permitted action set for this modeled state. Numerical answers have not been recomputed.','fine');
   warning.dataset.actionSetStatus=messages.length ? 'differs' : 'matches';warning.setAttribute('role','note');
   target.append(element('h3',`${label}: modeled inputs`),
-    table(['Field','Supplied value'],modeledRows(record),`${label} complete modeled state, rules and model`),
+    element('p',record.schema.version===1n ?
+      'Version 1 has implicit current action defaults: can_double=true and can_split=true. These two effective values were not stored in the record.' :
+      'Version 2 stores the declared current action controls as booleans. They restrict the present choices and do not change continuation rules.','fine'),
+    table(['Field','Modeled value'],modeledRows(record),`${label} complete modeled state, rules and model`),
     element('h3',`${label}: record metadata`),
     table(['Field','Supplied label'],metadataRows(record),`${label} schema and unauthenticated package labels`),
     element('h3',`${label}: permitted actions from modeled inputs`),
-    element('p','Eligibility follows the supported saved-state model, including the exporter\'s default double/split buttons, retained counts and split rules. It does not establish which buttons an external table offers.','fine'),
+    element('p','Eligibility follows the supported saved-state model, including effective current action controls, retained counts and split rules. True intersects with existing eligibility. It does not establish which buttons an external table offers.','fine'),
     table(['Action','Permitted by modeled state','Supplied raw EV'],Object.keys(ACTION_NAMES).map(action=>[
       `${action} (${ACTION_NAMES[action]})`,eligibility.permitted.includes(action),
       Object.hasOwn(record.decision.evs,action) ? record.decision.evs[action] : 'absent (no saved value)'
@@ -60,7 +63,7 @@ function renderComparison(target,left,right) {
   target.append(element('h3','1. Changed modeled inputs'),
     element('p',compared.inputs.length ?
       'Inspect these changes before the answers. When several inputs change, their combined difference does not identify a single cause.' :
-      'All supplied modeled inputs agree, including dealt order, retained counts, rules and model declarations.'),
+      'All modeled inputs agree, including effective current action controls, dealt order, retained counts, rules and model declarations.'),
     ...(compared.inputs.length ? [table(['Changed field','Record A','Record B'],compared.inputs,'Modeled input changes, before answer differences')] : []),
     element('h3','2. Changed record labels'),
     element('p',compared.metadata.length ?

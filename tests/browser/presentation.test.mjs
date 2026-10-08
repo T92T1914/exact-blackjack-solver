@@ -9,14 +9,21 @@ import {chromium, webkit} from 'playwright';
 
 // An owned loopback server, headless sandbox and fresh temporary contexts only.
 // Never connect to an existing browser or fall back to a visible window.
-const root = fileURLToPath(new URL('../../_site/', import.meta.url));
+const root = process.env.SOLVER_SITE_DIR ? path.resolve(process.env.SOLVER_SITE_DIR) :
+  fileURLToPath(new URL('../../_site/', import.meta.url));
 const evidence = JSON.parse(await readFile(new URL('../../docs/visual-example-data.json', import.meta.url)));
 const originalSVG = await readFile(new URL('../../docs/blackjack-composition-example.svg', import.meta.url));
 const mime = {'.html':'text/html', '.css':'text/css', '.js':'text/javascript',
   '.mjs':'text/javascript', '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png'};
 let browser, server, base;
 before(async () => {
-  server = createServer(async (request, response) => {
+  const published = process.env.SOLVER_BROWSER_BASE_URL;
+  if (published && published !== 'https://t92t1914.github.io/exact-blackjack-solver/') {
+    throw Error('Unsupported published project URL');
+  }
+  if (published) base = published.slice(0,-1);
+  else {
+    server = createServer(async (request, response) => {
     const pathname = new URL(request.url, 'http://localhost').pathname;
     if (pathname === '/favicon.ico') { response.writeHead(204).end(); return; }
     const name = pathname === '/' ? 'index.html' : pathname.slice(1);
@@ -25,9 +32,10 @@ before(async () => {
       const bytes = await readFile(path.join(root, name));
       response.writeHead(200, {'Content-Type':mime[path.extname(name)] ?? 'text/plain'}).end(bytes);
     } catch (_) { response.writeHead(404).end(); }
-  });
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  base = `http://127.0.0.1:${server.address().port}`;
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    base = `http://127.0.0.1:${server.address().port}`;
+  }
   const channel = process.env.SOLVER_BROWSER_CHANNEL;
   if (channel && !['chrome','chromium'].includes(channel)) throw Error('Unsupported channel');
   const engine = process.env.SOLVER_BROWSER_ENGINE ?? 'chromium';
@@ -46,7 +54,8 @@ async function fixture(t, options = {}, blockedStorage = false) {
   const context = await browser.newContext({viewport:{width:1280,height:900}, ...options});
   const failures = [], external = [];
   await context.route('**/*', route => {
-    if (new URL(route.request().url()).origin !== base) {
+    const requested = new URL(route.request().url()),allowed = new URL(base+'/');
+    if (requested.origin !== allowed.origin || !requested.pathname.startsWith(allowed.pathname)) {
       external.push(route.request().url()); return route.abort();
     }
     return route.continue();
@@ -79,6 +88,21 @@ async function capture(page, name, fullPage = true) {
 const recordFixture=await readFile(new URL('../fixtures/saved-decision-v1-7a38141.json',import.meta.url));
 const suppliedRecord=(name,buffer)=>({name,mimeType:'application/json',buffer});
 const alteredRecord=update=>{const saved=JSON.parse(recordFixture);update(saved);return Buffer.from(JSON.stringify(saved));};
+const effectiveControls=saved=>saved.schema.version===1 ? {can_double:true,can_split:true} : saved.state.action_controls;
+const controlledRecord=(double,pair)=>alteredRecord(saved=>{
+  if (!double || !pair) {
+    saved.schema.version=2;saved.state.action_controls={can_double:double,can_split:pair};
+  }
+  if (!double) delete saved.decision.evs.D;
+  if (!pair) delete saved.decision.evs.P;
+});
+const controlCases=[['TT',true,true],['FT',false,true],['TF',true,false],['FF',false,false]];
+async function actualControlRecords() {
+  const paths=controlCases.map(([label])=>process.env[`SOLVER_RECORD_${label}`]);
+  assert.ok(paths.every(Boolean) || paths.every(value=>!value),'Provide all four installed control records or none');
+  return Promise.all(controlCases.map(async ([label,double,pair],i)=>({label,double,pair,
+    buffer:paths[i] ? await readFile(paths[i]) : controlledRecord(double,pair)})));
+}
 async function acceptedRecord(page,label,buffer,name=`record-${label}.json`) {
   await page.locator(`#record-file-${label}`).setInputFiles(suppliedRecord(name,buffer));
   await page.locator(`#record-result-${label}:visible`).waitFor();
@@ -105,7 +129,9 @@ async function assertPermittedActions(page,label,permitted,saved) {
 }
 async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON.parse(buffer).decision.evs)) {
   const saved=JSON.parse(buffer),result=page.locator(`#record-result-${label}`);
-  const expected=[...Object.entries(saved.state).filter(([key])=>key!=='shoe').map(([key,value])=>[`state.${key}`,value]),
+  const controls=effectiveControls(saved);
+  const expected=[...Object.entries(saved.state).filter(([key])=>!['shoe','action_controls'].includes(key)).map(([key,value])=>[`state.${key}`,value]),
+    ['state.action_controls.can_double',controls.can_double],['state.action_controls.can_split',controls.can_split],
     ['state.shoe.rank_order',saved.state.shoe.rank_order],
     ...saved.state.shoe.rank_order.map((rank,i)=>[`state.shoe.counts.${rank}`,saved.state.shoe.counts[i]]),
     ...Object.entries(saved.state.shoe).filter(([key])=>!['counts','rank_order'].includes(key)).map(([key,value])=>[`state.shoe.${key}`,value]),
@@ -127,6 +153,7 @@ async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON
     assert.equal(await row.locator('td').textContent(),String(value));
   }
   await assertPermittedActions(page,label,permitted,saved);
+  assert.match(await result.textContent(),saved.schema.version===1 ? /implicit current action defaults/ : /stores the declared current action controls/);
 }
 
 test('local file consumer shows complete records and compares inputs before answers',async t=>{
@@ -164,7 +191,7 @@ test('local file consumer shows complete records and compares inputs before answ
   assert.equal(await page.locator('#record-result-b').isVisible(),false);
   assert.equal(await page.locator('#record-result-a').isVisible(),true);
   await acceptedRecord(page,'b',first);
-  assert.match(await comparison.textContent(),/All supplied modeled inputs agree/);
+  assert.match(await comparison.textContent(),/All modeled inputs agree/);
   await page.locator('#record-clear-all').click();
   for (const label of ['a','b']) {
     assert.equal(await page.locator(`#record-result-${label}`).isVisible(),false);
@@ -179,7 +206,8 @@ test('record replacement errors remove the old answer and allow recovery',async 
   for (const [name,buffer,message] of [
     ['malformed.json',Buffer.from('{'),/invalid JSON/],
     ['duplicate.json',Buffer.from('{"schema":{},"\\u0073chema":{}}'),/duplicate JSON key/],
-    ['future.json',alteredRecord(r=>{r.schema.version=2;}),/unsupported_record/],
+    ['future.json',alteredRecord(r=>{r.schema.version=3;}),/unsupported_record/],
+    ['missing-controls.json',alteredRecord(r=>{r.schema.version=2;}),/action_controls/],
     ['float-count.json',Buffer.from(recordFixture.toString().replace('"counts": [\n        0','"counts": [\n        0.0')),/integer/],
     ['invalid-utf8.json',Buffer.from([255]),/valid UTF-8/],
     ['oversized.json',Buffer.alloc(65537,32),/65536 UTF-8 bytes/]
@@ -191,6 +219,63 @@ test('record replacement errors remove the old answer and allow recovery',async 
     assert.equal(await page.locator('#record-comparison').isVisible(),false);
     await acceptedRecord(page,'a',recordFixture);
   }
+});
+
+test('all four current controls retain complete inputs and match current action presence',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  const records=await actualControlRecords();
+  console.log('Current control inputs:',JSON.stringify(records.map(({label,buffer})=>({
+    label,source:process.env[`SOLVER_RECORD_${label}`] ? 'provided installed output' : 'constructed representation',
+    sha256:createHash('sha256').update(buffer).digest('hex')
+  }))));
+  for (const {label,double,pair,buffer} of records) {
+    const saved=JSON.parse(buffer);
+    assert.deepEqual(effectiveControls(saved),{can_double:double,can_split:pair});
+    assert.equal(saved.schema.version,double && pair ? 1 : 2);
+    // Both the installed tiny pair and the fallback nonpair have two cards,
+    // no split state, and enough retained cards. Assert those prerequisites
+    // before forming the independent expected current-control action set.
+    assert.equal(saved.state.cards.length,2);assert.notEqual(saved.state.total,21);
+    assert.equal(saved.state.is_split_hand,false);assert.equal(saved.state.hand_count,1);
+    assert.ok(saved.state.shoe.counts.reduce((sum,n)=>sum+n,0)>=3);
+    assert.ok(saved.rules.max_hands>1);
+    const mayPair=saved.state.cards[0]===saved.state.cards[1];
+    const expected=['H','S',...(double ? ['D'] : []),...(pair && mayPair ? ['P'] : [])];
+    assert.deepEqual(Object.keys(saved.decision.evs).sort(),[...expected].sort());
+    await acceptedRecord(page,'a',buffer,`controls-${label}.json`);
+    await assertCompleteRecord(page,'a',buffer,expected);
+    assert.equal(await page.locator('#record-result-a [data-action-set-status]').getAttribute('data-action-set-status'),'matches');
+    await page.locator('#record-file-a').focus();await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#record-clear-a').evaluate(e=>document.activeElement===e),true);
+  }
+  await acceptedRecord(page,'a',records[1].buffer);await acceptedRecord(page,'b',records[2].buffer);
+  const changed=page.locator('#record-comparison').getByRole('region',{name:'Modeled input changes, before answer differences',exact:true});
+  for (const [key,left,right] of [['can_double','false','true'],['can_split','true','false']]) {
+    const row=changed.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:`state.action_controls.${key}`,exact:true})});
+    assert.deepEqual(await row.locator('td').allTextContents(),[left,right]);
+  }
+});
+
+test('mixed version true defaults compare in both directions and disabled saved actions warn',async t=>{
+  const page=await fixture(t);await ready(page);
+  const declared=alteredRecord(r=>{r.schema.version=2;r.state.action_controls={can_split:true,can_double:true};});
+  for (const [a,b] of [[recordFixture,declared],[declared,recordFixture]]) {
+    await acceptedRecord(page,'a',a);await acceptedRecord(page,'b',b);
+    await assertCompleteRecord(page,'a',a);await assertCompleteRecord(page,'b',b);
+    const comparison=page.locator('#record-comparison');
+    assert.match(await comparison.textContent(),/All modeled inputs agree/);
+    assert.equal(await comparison.getByRole('region',{name:'Modeled input changes, before answer differences',exact:true}).count(),0);
+    const metadata=comparison.getByRole('region',{name:'Record label changes',exact:true});
+    assert.equal(await metadata.locator('tbody tr').count(),1);
+    assert.equal(await metadata.getByRole('rowheader',{name:'schema.version',exact:true}).count(),1);
+  }
+  const altered=alteredRecord(r=>{
+    r.schema.version=2;r.state.action_controls={can_double:false,can_split:false};
+    r.decision.action='D';r.decision.action_name='DOUBLE';
+  });
+  await acceptedRecord(page,'a',altered);await assertCompleteRecord(page,'a',altered,['H','S']);
+  assert.match(await page.locator('#record-result-a [data-action-set-status]').textContent(),/Saved EVs include unavailable actions: D/);
+  assert.match(await page.locator('#record-result-a [data-action-set-status]').textContent(),/Recorded recommendation D is unavailable/);
 });
 
 test('constructed record differences retain split order, absence and raw precision',async t=>{
@@ -216,7 +301,7 @@ test('constructed record differences retain split order, absence and raw precisi
   assert.deepEqual((await hit.locator('td').allTextContents()).slice(0,3),['-0.5916666666666668','-0.5916666666666667','false']);
   const labelOnly=JSON.parse(split);labelOnly.package.version='future <img src=x onerror=alert(1)>';
   await acceptedRecord(page,'b',Buffer.from(JSON.stringify(labelOnly)));
-  assert.match(await comparison.textContent(),/All supplied modeled inputs agree/);
+  assert.match(await comparison.textContent(),/All modeled inputs agree/);
   assert.match(await comparison.textContent(),/future <img src=x onerror=alert\(1\)>/);
   assert.equal(await comparison.locator('img').count(),0);
   await assertPermittedActions(page,'b',['S'],labelOnly);
@@ -246,8 +331,9 @@ test('imports stay out of URLs, requests and storage and reload releases them',a
     IDBFactory.prototype.open=function(...args){window.recordIDBCalls++;return oldOpen.apply(this,args);};
   });
   const secret='local-private-marker-47';
-  const selected=alteredRecord(r=>{r.package.version=secret;});
-  await acceptedRecord(page,'a',selected,secret+'.json');await acceptedRecord(page,'b',selected,secret+'-second.json');
+  const selected=JSON.parse(controlledRecord(false,false));selected.package.version=secret;
+  const selectedBytes=Buffer.from(JSON.stringify(selected));
+  await acceptedRecord(page,'a',selectedBytes,secret+'.json');await acceptedRecord(page,'b',selectedBytes,secret+'-second.json');
   assert.equal(page.url(),beforeURL);assert.equal(await page.locator('#example-link').getAttribute('href'),beforeLink);
   assert.deepEqual(await page.evaluate(()=>window.recordStorageWrites),[]);
   assert.equal(await page.evaluate(()=>window.recordIDBCalls),0);
@@ -275,7 +361,9 @@ test('local inspection works when bundled data is unavailable and no-script evid
 
 for (const width of [320,390]) test(`imported records retain local scrolling and enlarged text at ${width}px`,async t=>{
   const page=await fixture(t,{viewport:{width,height:844},colorScheme:'dark'});await ready(page);
-  await acceptedRecord(page,'a',recordFixture);await acceptedRecord(page,'b',alteredRecord(r=>{r.rules.s17=false;}));
+  const records=await actualControlRecords();
+  await acceptedRecord(page,'a',records[1].buffer);await acceptedRecord(page,'b',records[3].buffer);
+  await assertCompleteRecord(page,'a',records[1].buffer);await assertCompleteRecord(page,'b',records[3].buffer);
   for (const appearance of ['clair','obscur']) {
     await page.locator('#appearance').selectOption(appearance);
     const original=await page.locator('#record-inspector').textContent();

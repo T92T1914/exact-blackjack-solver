@@ -106,6 +106,54 @@ conversion limit still applies. Larger supported caps can require more work,
 and the existing independent-hand and greedy resplit-budget approximations
 remain unchanged. No general split-error bound follows from selecting a cap.
 
+## Restrict the current choices
+
+Use `--no-double` or `--no-split` when the current decision must exclude that
+alternative. They can be combined or repeated. For a small retained pair:
+
+```text
+bj-advise T,T 7 --unseen-counts 1,0,0,0,0,0,0,0,0,5 --max-hands 2 --no-double --no-split --json
+```
+
+The controls restrict only the present alternatives. They do not change the
+rules, later continuation policy or split approximation. In particular,
+`--no-das` is the separate rule about doubling after splitting. Existing cards,
+retained counts, hand cap and split-state inputs keep their meaning. Neither
+disable can accompany `--table` or `--replay`; replay takes its controls from
+the saved state and refuses overrides before reading the file.
+
+The public `advise`, `decision_record` and `decision_json` wrappers accept
+keyword-only `can_double` and `can_split`, both defaulting to `True`. They
+require genuine booleans. For example:
+
+```python
+from bj.record import decision_json
+
+text = decision_json("T,T", "7", shoe=(1, 0, 0, 0, 0, 0, 0, 0, 0, 5),
+                     can_double=False, can_split=False)
+```
+
+True still intersects with the hand's existing eligibility. It cannot restore
+double after a hit, split at the cap, frozen split-ace draws or another choice
+at 21. The recommendation and margin use only the remaining alternatives.
+Restricted text advice names the disabled choices and computes no fresh-shoe
+whole-game estimate, even without explicit counts.
+
+Default and explicit true/true exports retain version 1 bytes and contain no
+control field. Disabling either choice produces version 2, with this state
+field after `hand_count` and before `shoe`:
+
+```json
+"action_controls": {"can_double": false, "can_split": false}
+```
+
+Version 2 requires exactly those two boolean keys. Readers also accept an
+explicit true/true version 2 declaration. Replay preserves the stored state
+and recomputes once with effective controls, passing retained counts directly
+without another visible-card subtraction. Version 1 implies true/true without
+adding fields to the saved state. These declarations do not establish which
+buttons an external table offers or authenticate the record.
+
 ## Public API and report
 
 ```python
@@ -140,8 +188,8 @@ existing engine's action selection, including its tie behavior, without a
 new ranking or tolerance policy.
 
 `recorded_package`, `current_package` and `package_version_matches` describe
-the version labels. A different package-version label does not make schema
-version 1 unsupported and does not fetch or install that version. Neither
+the version labels. A different package-version label does not make either
+supported schema version unsupported and does not fetch or install that version. Neither
 matching labels nor agreement authenticate a record's origin. Recalculation
 by the same engine is a reproducibility check. Independent mathematical
 validation remains a separate question.
@@ -174,7 +222,7 @@ command's mapping.
 
 ## Admission and retained counts
 
-Supported replay is the `blackjack-decision` schema, version 1. The importer
+Supported replay is the `blackjack-decision` schema, versions 1 and 2. The importer
 requires every declared field and rejects unknown fields at every object,
 duplicate JSON keys, nonfinite values, Boolean numeric parameters and
 inconsistent derived hand totals or softness. Cards must be normalized ranks
@@ -206,7 +254,7 @@ finite altered saved answer remains visible as a difference after calculation.
 ## Inspect and compare local records in the browser
 
 The [project page](https://t92t1914.github.io/exact-blackjack-solver/) can inspect
-one or two local schema-v1 decision files. Export a record through an installed
+one or two local version 1 or version 2 decision files. Export a record through an installed
 package, save the JSON output as UTF-8, then select it as record A. For example,
 the six unseen cards keep this example small:
 
@@ -229,7 +277,11 @@ values and package labels do not authenticate origin or establish numerical
 correctness.
 
 The page derives actions permitted by the admitted modeled state separately
-from the supplied EV keys. It uses the exporter's default double/split buttons,
+from the supplied EV keys. It displays both effective current action controls,
+distinguishing implicit version 1 defaults from stored version 2 booleans.
+Version 1 and declared true/true version 2 have equal control inputs in either
+comparison direction, with their schema difference shown as metadata.
+It uses those effective controls,
 the retained unseen counts, dealt order and declared split/rule state. A total
 of 21 permits stand only. Otherwise hit/double need a drawable card in addition
 to the hidden hole, and split needs two. Double also requires two dealt cards
@@ -239,6 +291,7 @@ dealt card remains the split rank. Counts are summed as exact integers without
 removing visible cards again. External table buttons are outside this model.
 
 All four action codes show their permitted status and supplied EV presence.
+A deliberately disabled action absent from EVs is not an omission.
 A supplied unavailable action, an omitted permitted action or an unavailable
 recorded recommendation produces a warning. It does not reject the record or
 replace the saved answer. Finite altered recommendations, margins and action
