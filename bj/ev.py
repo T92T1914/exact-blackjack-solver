@@ -511,10 +511,11 @@ def _split_hand_outcomes(rank_i: int, up: str, shoe: Shoe, slots: int,
         total, soft = _two_card_state(rank_i, i)
 
         # Option A: play the two-card hand out, spending no extra hand.
-        if is_ace and not hit_split_aces:
-            # Split aces get one card and the hand is over.  A,T here is 21
-            # and pays 1:1 - a hand born of a split is never a natural
-            # (core.is_blackjack encodes the same rule).  Nothing to compare.
+        if total == 21 or (is_ace and not hit_split_aces):
+            # A completed 21 is closed, including a split ten that drew an
+            # ace or a split ace whose table otherwise permits hitting it.
+            # Other split aces also stop after one card when hitting is off.
+            # A split 21 pays 1:1, never the natural premium.
             play_value = _stand_ev(total, up, sub, s17)
         else:
             play_value = _stand_ev(total, up, sub, s17)
@@ -821,6 +822,9 @@ def _strategy_play_ev(cards: tuple[str, ...], up: str, shoe: Shoe,
     total, soft = hand_total(cards)
     if total > 21:
         return -1.0
+    if total == 21:
+        # The hand is closed before a chart can request another action.
+        return _stand_ev(total, up, shoe, rules.s17)
     action = _strategy_action(strategy, cards, up, rules, can_double, False,
                               is_split_hand)
     if action == STAND:
