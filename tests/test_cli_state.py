@@ -7,9 +7,10 @@ from fractions import Fraction
 import pytest
 
 from bj import chart, cli, record
-from bj.core import STANDARD
+from bj.core import RANKS, STANDARD
 from bj.ev import best_action
 from bj.replay import replay_file
+from test_ev_physical_reference import physical_reference
 
 
 def test_physical_reference_case_has_the_declared_shoe_and_values(capsys):
@@ -897,6 +898,317 @@ def test_ace_table_rules_keep_existing_dispatch_refusals(monkeypatch, capsys, op
     _forbid_input_work(monkeypatch)
     with pytest.raises(SystemExit) as exc:
         cli.main(['--table', '--resplit-aces', '--hit-split-aces', *options])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == '' and '--table cannot be combined' in captured.err
+
+
+PAYOUT_COUNTS = (0, 0, 0, 0, 0, 0, 0, 0, 1, 0)
+PAYOUT_CSV = '0,0,0,0,0,0,0,0,1,0'
+
+
+@pytest.mark.parametrize('token,expected', [
+    ('0', 0.0), ('1.5', 1.5), ('1.2', 1.2), ('1.25', 1.25),
+    ('+01.250', 1.25), ('.5', 0.5), ('1.', 1.0), ('125e-2', 1.25),
+    ('0e10', 0.0), (' \t\r\n\v\f1.25 \t\r\n\v\f', 1.25),
+    ('1E+2', 100.0), ('1e308', 1e308), ('5e-324', 5e-324),
+    ('1e-9999', 0.0), ('-0.0', -0.0), ('-1e-9999', -0.0),
+])
+def test_payout_ascii_grammar_forwards_the_converted_float_without_work(
+        capsys, monkeypatch, token, expected):
+    _forbid_input_work(monkeypatch)
+    observed = []
+
+    def forwarded(cards, up, rules, **state):
+        observed.append((cards, up, rules, state))
+        return 'payout dispatch'
+
+    monkeypatch.setattr(cli, 'decision_json', forwarded)
+    assert cli.main(['A,T', '9', '--blackjack-payout=' + token, '--json']) == 0
+    captured = capsys.readouterr()
+    assert captured.out == 'payout dispatch\n' and captured.err == ''
+    assert len(observed) == 1
+    cards, up, rules, state = observed[0]
+    assert (cards, up) == ('A,T', '9')
+    assert rules == replace(STANDARD, blackjack_payout=expected)
+    assert rules.blackjack_payout.hex() == expected.hex()
+    assert state == {'shoe': None, 'is_split_hand': False, 'hand_count': 1,
+                     'can_double': True, 'can_split': True}
+    assert STANDARD.blackjack_payout.hex() == (1.5).hex()
+
+
+@pytest.mark.parametrize('token', [
+    '', ' \t\r\n\v\f', '3:2', '6:5', '3/2', '1+0.5', '1_5', '1,5',
+    'True', 'false', 'NaN', 'nan', 'inf', '+Infinity', '-inf', '0x1.8p0',
+    '1 2', '1\t.5', '1\n.5', '.', '+', '1e', '1e+', '1.2.3',
+    '\u0661.5', '\uff11.5', '\u22120', '\uff0b1', '\u00a01.5',
+    '1.5\u00a0', '\u20031.5', '\u00851.5', '-1', '-.5', '-1e-300',
+    '-5e-324', '1e309', '-1e309', '9' * 400,
+])
+@pytest.mark.parametrize('json_flags', [[], ['--json']])
+def test_payout_syntax_and_value_refusals_precede_every_input_work(
+        capsys, monkeypatch, token, json_flags):
+    _forbid_input_work(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(['A,T', '9', '--blackjack-payout=' + token, *json_flags])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ''
+    assert '--blackjack-payout' in captured.err
+    assert 'finite nonnegative ASCII decimal or scientific number' in captured.err
+    assert 'usage:' in captured.err and 'Traceback' not in captured.err
+
+
+@pytest.mark.parametrize('error', [ValueError, OverflowError])
+def test_payout_conversion_exceptions_are_argparse_refusals(capsys, monkeypatch, error):
+    _forbid_input_work(monkeypatch)
+
+    def unavailable(token):
+        raise error('conversion unavailable')
+
+    monkeypatch.setattr(cli, 'float', unavailable, raising=False)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(['A,T', '9', '--blackjack-payout=1.25', '--json'])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == '' and '--blackjack-payout' in captured.err
+    assert 'finite nonnegative' in captured.err and 'Traceback' not in captured.err
+
+
+@pytest.mark.parametrize('token,payout', [
+    ('1.5', 1.5), ('1.2', 1.2), ('1.25', 1.25),
+    ('0', 0.0), ('-0.0', -0.0), ('-1e-9999', -0.0),
+])
+def test_declared_natural_payout_is_the_complete_raw_settlement(capsys, token, payout):
+    rules = replace(STANDARD, blackjack_payout=payout)
+    assert cli.main(['A,T', '9', '--unseen-counts', PAYOUT_CSV,
+                     '--blackjack-payout=' + token, '--json']) == 0
+    captured = capsys.readouterr()
+    saved = json.loads(captured.out)
+    assert captured.err == ''
+    assert saved == record.decision_record('A,T', '9', rules, shoe=PAYOUT_COUNTS)
+    assert captured.out == record.decision_json(
+        'A,T', '9', rules, shoe=PAYOUT_COUNTS) + '\n'
+    assert saved['schema']['version'] == 1 and 'action_controls' not in saved['state']
+    assert saved['state']['shoe']['counts'] == list(PAYOUT_COUNTS)
+    assert saved['decision']['evs'] == {'S': payout}
+    assert saved['decision']['action'] == 'S'
+    assert saved['decision']['action_name'] == 'STAND'
+    assert saved['decision']['margin'] == 0.0
+    assert saved['rules']['blackjack_payout'].hex() == payout.hex()
+    assert saved['decision']['evs']['S'].hex() == payout.hex()
+    assert best_action('A,T', '9', PAYOUT_COUNTS, rules) == ('S', {'S': payout}, 0.0)
+    if payout.hex() == (-0.0).hex():
+        assert '"blackjack_payout": -0.0' in captured.out
+        assert '"S": -0.0' in captured.out
+
+
+@pytest.mark.parametrize('json_flags', [[], ['--json']])
+def test_payout_omission_and_explicit_default_keep_existing_output_bytes(
+        capsys, monkeypatch, json_flags):
+    def forbidden(*args, **kwargs):
+        pytest.fail('retained payout advice reached a whole-game estimate')
+
+    monkeypatch.setattr(cli, 'house_edge', forbidden)
+    args = ['A,T', '9', '--unseen-counts', PAYOUT_CSV, *json_flags]
+    assert cli.main(args) == 0
+    omitted = capsys.readouterr()
+    assert cli.main([*args, '--blackjack-payout=1.5']) == 0
+    explicit = capsys.readouterr()
+    expected = (record.decision_json('A,T', '9', shoe=PAYOUT_COUNTS) if json_flags
+                else cli.advise('A,T', '9', shoe=PAYOUT_COUNTS)) + '\n'
+    assert omitted.out == explicit.out == expected
+    assert omitted.err == explicit.err == ''
+    assert chart.describe_rules(STANDARD) == DEFAULT_CAPTION
+
+
+def test_custom_payout_v2_keeps_retained_counts_and_physical_reference(capsys):
+    rules = replace(STANDARD, blackjack_payout=1.25)
+    args = ['T,4', 'T', '--blackjack-payout=1.25', '--no-double', '--no-split']
+    saved = _json_advice(capsys, [*args, '--unseen-counts', TINY_CSV])
+    physical = _json_advice(capsys, [*args, '--unseen', '2,3,7,8,9,T'])
+    expected = record.decision_record(
+        'T,4', 'T', rules, shoe=TINY_COUNTS, can_double=False, can_split=False)
+    assert saved == physical == expected
+    assert saved['schema']['version'] == 2
+    assert list(saved['state']) == [
+        'cards', 'dealer_up', 'total', 'soft', 'is_split_hand', 'hand_count',
+        'action_controls', 'shoe',
+    ]
+    assert saved['state']['action_controls'] == {'can_double': False, 'can_split': False}
+    assert saved['state']['shoe']['counts'] == list(TINY_COUNTS)
+    assert saved['state']['shoe']['rank_order'] == list(RANKS)
+    assert saved['state']['shoe']['source'] == 'supplied_unseen'
+    assert saved['state']['cards'] == ['T', '4']
+    assert saved['decision']['whole_game_estimate'] is None
+    assert saved['model']['dealer_information'] == 'hidden_hole_post_peek'
+    reference = physical_reference(('T', '4'), 'T', ('2', '3', '7', '8', '9', 'T'))
+    assert saved['decision']['evs'] == pytest.approx(
+        {key: float(reference[key]) for key in ('S', 'H')}, rel=0, abs=1e-12)
+    assert reference['H'] == Fraction(-71, 120)
+    action, values, margin = best_action(
+        'T,4', 'T', TINY_COUNTS, rules, can_double=False, can_split=False)
+    assert (saved['decision']['action'], saved['decision']['evs'],
+            saved['decision']['margin']) == (action, values, margin)
+
+
+def test_custom_payout_text_forwards_rules_and_counts_without_whole_game_work(
+        capsys, monkeypatch):
+    def forbidden(*args, **kwargs):
+        pytest.fail('retained payout advice reached a whole-game estimate')
+
+    monkeypatch.setattr(cli, 'house_edge', forbidden)
+    rules = replace(STANDARD, decks=1, s17=False, das=False, max_hands=2,
+                    blackjack_payout=1.25, resplit_aces=True, hit_split_aces=True)
+    args = ['T,4', 'T', '--unseen-counts', TINY_CSV, '--blackjack-payout=1.25',
+            '--decks', '1', '--h17', '--no-das', '--max-hands', '2',
+            '--resplit-aces', '--hit-split-aces', '--no-double', '--no-split']
+    assert cli.main(args) == 0
+    captured = capsys.readouterr()
+    assert captured.err == ''
+    assert captured.out == cli.advise(
+        'T,4', 'T', rules, shoe=TINY_COUNTS, can_double=False, can_split=False) + '\n'
+    assert 'A=0, 2=1, 3=1, 4=0, 5=0, 6=0, 7=1, 8=1, 9=1, T=1' in captured.out
+    assert 'Current action restrictions: DOUBLE, SPLIT\n' in captured.out
+    assert 'No whole-game estimate is computed.' in captured.out
+
+
+def test_custom_payout_does_not_turn_split_twenty_one_into_a_natural(capsys):
+    rules = replace(STANDARD, blackjack_payout=1.25)
+    saved = _json_advice(capsys, ['A,T', 'T', '--unseen', '9', '--split-hand',
+                                 '--hand-count', '2', '--blackjack-payout=1.25'])
+    assert saved == record.decision_record(
+        'A,T', 'T', rules, shoe=PAYOUT_COUNTS, is_split_hand=True, hand_count=2)
+    assert saved['state']['is_split_hand'] is True
+    assert saved['state']['cards'] == ['A', 'T']
+    assert saved['state']['hand_count'] == 2
+    assert saved['decision']['evs'] == {'S': 1.0}
+    assert saved['decision']['action'] == 'S' and saved['decision']['margin'] == 0.0
+
+
+@pytest.mark.parametrize('cards', ['A,7', '7,A'])
+def test_payout_keeps_dealt_order_first_split_rank_and_other_rules(capsys, cards):
+    rules = replace(STANDARD, max_hands=2, das=False, blackjack_payout=1.25)
+    saved = _json_advice(capsys, [cards, 'T', '--unseen-counts', TINY_CSV,
+                                 '--split-hand', '--max-hands', '2', '--no-das',
+                                 '--blackjack-payout=1.25'])
+    assert saved == record.decision_record(
+        cards, 'T', rules, shoe=TINY_COUNTS, is_split_hand=True, hand_count=2)
+    assert saved['state']['cards'] == cards.split(',')
+    assert saved['state']['shoe']['counts'] == list(TINY_COUNTS)
+    assert set(saved['decision']['evs']) == ({'S'} if cards == 'A,7' else {'S', 'H'})
+
+
+@pytest.mark.parametrize('cards,up,csv,token,split,controlled', [
+    ('A,T', '9', PAYOUT_CSV, '1.2', False, False),
+    ('A,T', '9', PAYOUT_CSV, '-0.0', False, False),
+    ('T,4', 'T', TINY_CSV, '1.25', False, True),
+    ('A,T', 'T', PAYOUT_CSV, '1.25', True, False),
+])
+def test_declared_payout_saved_stdout_replays_once_without_rule_overrides(
+        capsys, monkeypatch, tmp_path, cards, up, csv, token, split, controlled):
+    flags = (['--split-hand', '--hand-count', '2'] if split else [])
+    if controlled:
+        flags += ['--no-double', '--no-split']
+    assert cli.main([cards, up, '--unseen-counts', csv,
+                     '--blackjack-payout=' + token, *flags, '--json']) == 0
+    created = capsys.readouterr()
+    assert created.err == ''
+    saved = json.loads(created.out)
+    path = tmp_path / 'declared-payout.json'
+    with path.open('x', encoding='utf-8', newline='') as stream:
+        stream.write(created.out)
+    before = (path.read_bytes(), path.stat().st_mtime_ns)
+    original = record.best_action
+    observed = []
+
+    def observed_decision(hand, dealer, *, shoe, rules, is_split_hand, hand_count,
+                          can_double, can_split):
+        observed.append((tuple(hand), dealer, shoe, rules, is_split_hand, hand_count,
+                         can_double, can_split))
+        return original(hand, dealer, shoe=shoe, rules=rules, is_split_hand=is_split_hand,
+                        hand_count=hand_count, can_double=can_double, can_split=can_split)
+
+    monkeypatch.setattr(record, 'best_action', observed_decision)
+    assert cli.main(['--replay', str(path), '--json']) == 0
+    replayed_output = capsys.readouterr()
+    assert replayed_output.err == ''
+    replayed = json.loads(replayed_output.out)
+    assert len(observed) == 1
+    assert observed == [(
+        tuple(saved['state']['cards']), saved['state']['dealer_up'],
+        tuple(saved['state']['shoe']['counts']),
+        replace(STANDARD, blackjack_payout=float(token)), split, 2 if split else 1,
+        not controlled, not controlled,
+    )]
+    assert replayed['status'] == 'agreement' and replayed['error'] is None
+    assert replayed['modeled_input']['rules'] == saved['rules']
+    assert replayed['modeled_input']['state'] == saved['state']
+    assert replayed['modeled_input']['model'] == saved['model']
+    assert replayed['recorded'] == replayed['recomputed'] == saved['decision']
+    assert replayed['comparison']['evs_match']
+    assert replayed['comparison']['recommendation']['matches']
+    assert replayed['comparison']['margin']['matches']
+    assert (path.read_bytes(), path.stat().st_mtime_ns) == before
+    if token == '-0.0':
+        assert replayed['modeled_input']['rules']['blackjack_payout'].hex() == (-0.0).hex()
+        assert replayed['recorded']['evs']['S'].hex() == (-0.0).hex()
+        assert replayed['recomputed']['evs']['S'].hex() == (-0.0).hex()
+
+
+@pytest.mark.parametrize('token', ['1.5', '1.2', '0', '-0.0', '-1e-9999', '1e308'])
+@pytest.mark.parametrize('json_flags', [[], ['--json']])
+def test_explicit_payout_replay_conflict_is_pre_read_even_when_default(
+        capsys, monkeypatch, token, json_flags):
+    _forbid_input_work(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(['--replay', 'not-read-payout.json',
+                  '--blackjack-payout=' + token, *json_flags])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ''
+    assert '--replay cannot be combined' in captured.err and 'Traceback' not in captured.err
+
+
+@pytest.mark.parametrize('token,payout,caption', [
+    (None, 1.5, '3:2'), ('1.5', 1.5, '3:2'), ('1.2', 1.2, '6:5'),
+    ('1.25', 1.25, '1.25:1'), ('0', 0.0, '0:1'), ('-0.0', -0.0, '-0:1'),
+])
+def test_payout_table_dispatch_keeps_existing_caption_without_chart_work(
+        capsys, monkeypatch, token, payout, caption):
+    observed = []
+
+    def empty_chart(rules):
+        observed.append(rules)
+        return {'hard': {}, 'soft': {}, 'pairs': {}}
+
+    monkeypatch.setattr(cli, 'derive_table', empty_chart)
+    flags = [] if token is None else ['--blackjack-payout=' + token]
+    assert cli.main(['--table', *flags]) == 0
+    captured = capsys.readouterr()
+    expected = replace(STANDARD, blackjack_payout=payout)
+    assert observed == [expected] and captured.err == ''
+    assert observed[0].blackjack_payout.hex() == payout.hex()
+    expected_caption = DEFAULT_CAPTION.rsplit('3:2', 1)[0] + caption
+    assert chart.describe_rules(expected) == expected_caption
+    assert captured.out.splitlines()[0] == (
+        'Basic strategy derived by the solver (split approximations apply): '
+        + expected_caption + '.')
+    assert captured.out == cli.render_chart(
+        {'hard': {}, 'soft': {}, 'pairs': {}},
+        title=('Basic strategy derived by the solver (split approximations apply): '
+               + expected_caption + '.')) + '\n'
+
+
+@pytest.mark.parametrize('options', [
+    ['--json'], ['--unseen', '9'], ['--unseen-counts', PAYOUT_CSV],
+    ['--split-hand'], ['--hand-count', '1'], ['--no-double'], ['--no-split'],
+])
+def test_payout_table_preserves_existing_state_and_json_refusals(
+        capsys, monkeypatch, options):
+    _forbid_input_work(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(['--table', '--blackjack-payout=1.25', *options])
     assert exc.value.code == 2
     captured = capsys.readouterr()
     assert captured.out == '' and '--table cannot be combined' in captured.err
