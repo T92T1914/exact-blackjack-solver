@@ -6,7 +6,7 @@ from fractions import Fraction
 
 import pytest
 
-from bj import cli, record
+from bj import chart, cli, record
 from bj.core import STANDARD
 from bj.ev import best_action
 from bj.replay import replay_file
@@ -619,3 +619,284 @@ def test_controls_keep_existing_split_rule_and_direct_count_options(capsys):
     assert actual == physical == expected
     assert actual['state']['cards'] == ['8', '8']
     assert set(actual['decision']['evs']) == {'H', 'S'}
+
+
+ACE_COUNTS = (0, 0, 0, 0, 0, 0, 0, 0, 1, 2)
+ACE_CSV = '0,0,0,0,0,0,0,0,1,2'
+ACE_STATE = ['--split-hand', '--hand-count', '2', '--max-hands', '3']
+ACE_PAIRS = [
+    (False, False, {'S'}), (True, False, {'S', 'P'}),
+    (False, True, {'S', 'H', 'D'}), (True, True, {'S', 'H', 'D', 'P'}),
+]
+DEFAULT_CAPTION = (
+    '6 decks, dealer stands on soft 17, double after split, dealer peeks, '
+    'no surrender, up to 4 hands, split aces get one card, blackjack pays 3:2'
+)
+
+
+def _ace_flags(resplit, hit):
+    return (['--resplit-aces'] if resplit else []) + (['--hit-split-aces'] if hit else [])
+
+
+@pytest.mark.parametrize('resplit,hit,actions', ACE_PAIRS)
+def test_ace_rules_create_complete_v1_and_replay_saved_stdout_once(
+        capsys, monkeypatch, tmp_path, resplit, hit, actions):
+    flags = _ace_flags(resplit, hit)
+    rules = replace(STANDARD, max_hands=3, resplit_aces=resplit, hit_split_aces=hit)
+    assert cli.main(['A,A', 'T', '--unseen-counts', ACE_CSV,
+                     *ACE_STATE, *flags, '--json']) == 0
+    created = capsys.readouterr()
+    assert created.err == ''
+    saved = json.loads(created.out)
+    expected = record.decision_record('A,A', 'T', rules, shoe=ACE_COUNTS,
+                                      is_split_hand=True, hand_count=2)
+    physical = _json_advice(capsys, ['A,A', 'T', '--unseen', '9,T,T', *ACE_STATE, *flags])
+    assert saved == physical == expected
+    assert created.out == record.decision_json(
+        'A,A', 'T', rules, shoe=ACE_COUNTS, is_split_hand=True, hand_count=2) + '\n'
+    assert saved['rules']['resplit_aces'] is resplit
+    assert saved['rules']['hit_split_aces'] is hit
+    assert saved['schema']['version'] == 1 and 'action_controls' not in saved['state']
+    assert saved['state']['shoe']['counts'] == list(ACE_COUNTS)
+    assert saved['state']['shoe']['source'] == 'supplied_unseen'
+    assert saved['state']['cards'] == ['A', 'A'] and saved['state']['hand_count'] == 2
+    assert set(saved['decision']['evs']) == actions
+    action, values, margin = best_action(
+        'A,A', 'T', shoe=ACE_COUNTS, rules=rules, is_split_hand=True, hand_count=2)
+    assert (saved['decision']['action'], saved['decision']['evs'],
+            saved['decision']['margin']) == (action, values, margin)
+    assert saved['decision']['whole_game_estimate'] is None
+    assert saved['model']['split_error_bound'] is None
+
+    path = tmp_path / 'ace-rules.json'
+    with path.open('x', encoding='utf-8', newline='') as stream:
+        stream.write(created.out)
+    before = (path.read_bytes(), path.stat().st_mtime_ns)
+    original = record.best_action
+    observed = []
+
+    def observed_decision(cards, up, *, shoe, rules, is_split_hand, hand_count,
+                          can_double, can_split):
+        observed.append((tuple(cards), up, shoe, rules, is_split_hand, hand_count,
+                         can_double, can_split))
+        return original(cards, up, shoe=shoe, rules=rules, is_split_hand=is_split_hand,
+                        hand_count=hand_count, can_double=can_double, can_split=can_split)
+
+    monkeypatch.setattr(record, 'best_action', observed_decision)
+    assert cli.main(['--replay', str(path), '--json']) == 0
+    captured = capsys.readouterr()
+    assert captured.err == ''
+    replayed = json.loads(captured.out)
+    assert observed == [(('A', 'A'), 'T', ACE_COUNTS, rules, True, 2, True, True)]
+    assert replayed['status'] == 'agreement' and replayed['error'] is None
+    assert replayed['modeled_input']['rules'] == saved['rules']
+    assert replayed['modeled_input']['state'] == saved['state']
+    assert replayed['modeled_input']['model'] == saved['model']
+    assert replayed['recorded'] == replayed['recomputed'] == saved['decision']
+    assert replayed['comparison']['evs_match']
+    assert replayed['comparison']['recommendation']['matches']
+    assert replayed['comparison']['margin']['matches']
+    assert (path.read_bytes(), path.stat().st_mtime_ns) == before
+
+
+def test_ace_defaults_keep_existing_text_json_and_caption_bytes(capsys, monkeypatch):
+    def forbidden(*args, **kwargs):
+        pytest.fail('retained ace advice reached a whole-game estimate')
+
+    monkeypatch.setattr(cli, 'house_edge', forbidden)
+    rules = replace(STANDARD, max_hands=3)
+    args = ['A,A', 'T', '--unseen-counts', ACE_CSV, *ACE_STATE]
+    assert cli.main(args) == 0
+    actual = capsys.readouterr()
+    assert actual.err == ''
+    assert actual.out == cli.advise(
+        'A,A', 'T', rules, shoe=ACE_COUNTS, is_split_hand=True, hand_count=2) + '\n'
+    assert cli.main([*args, '--json']) == 0
+    actual = capsys.readouterr()
+    assert actual.err == ''
+    assert actual.out == record.decision_json(
+        'A,A', 'T', rules, shoe=ACE_COUNTS, is_split_hand=True, hand_count=2) + '\n'
+    assert chart.describe_rules(STANDARD) == DEFAULT_CAPTION
+
+
+def test_ace_rule_permissions_keep_combined_current_controls_v2(
+        capsys, monkeypatch, tmp_path):
+    def forbidden(*args, **kwargs):
+        pytest.fail('constrained ace advice reached a whole-game estimate')
+
+    monkeypatch.setattr(cli, 'house_edge', forbidden)
+    rules = replace(STANDARD, max_hands=3, resplit_aces=True, hit_split_aces=True)
+    args = ['A,A', 'T', '--unseen-counts', ACE_CSV, *ACE_STATE,
+            '--resplit-aces', '--hit-split-aces', '--no-double', '--no-split']
+    assert cli.main([*args, '--json']) == 0
+    created = capsys.readouterr()
+    assert created.err == ''
+    saved = json.loads(created.out)
+    assert saved == record.decision_record(
+        'A,A', 'T', rules, shoe=ACE_COUNTS, is_split_hand=True, hand_count=2,
+        can_double=False, can_split=False)
+    assert saved['schema']['version'] == 2
+    assert list(saved['state']) == [
+        'cards', 'dealer_up', 'total', 'soft', 'is_split_hand', 'hand_count',
+        'action_controls', 'shoe',
+    ]
+    assert list(saved['state']['action_controls']) == ['can_double', 'can_split']
+    assert saved['state']['action_controls']['can_double'] is False
+    assert saved['state']['action_controls']['can_split'] is False
+    assert set(saved['decision']['evs']) == {'S', 'H'}
+    assert cli.main(args) == 0
+    captured = capsys.readouterr()
+    assert captured.err == ''
+    assert captured.out == cli.advise(
+        'A,A', 'T', rules, shoe=ACE_COUNTS, is_split_hand=True, hand_count=2,
+        can_double=False, can_split=False) + '\n'
+    assert 'Current action restrictions: DOUBLE, SPLIT\n' in captured.out
+    path = tmp_path / 'constrained-aces.json'
+    with path.open('x', encoding='utf-8', newline='') as stream:
+        stream.write(created.out)
+    before = (path.read_bytes(), path.stat().st_mtime_ns)
+    assert cli.main(['--replay', str(path), '--json']) == 0
+    replayed = json.loads(capsys.readouterr().out)
+    assert replayed['status'] == 'agreement'
+    assert replayed['modeled_input']['state'] == saved['state']
+    assert replayed['modeled_input']['rules'] == saved['rules']
+    assert replayed['recorded'] == replayed['recomputed'] == saved['decision']
+    assert (path.read_bytes(), path.stat().st_mtime_ns) == before
+
+
+@pytest.mark.parametrize('options,cap,csv,actions', [
+    (['--no-das'], 3, ACE_CSV, {'S', 'H', 'P'}),
+    (['--no-double'], 3, ACE_CSV, {'S', 'H', 'P'}),
+    (['--no-split'], 3, ACE_CSV, {'S', 'H', 'D'}),
+    ([], 2, ACE_CSV, {'S', 'H', 'D'}),
+    ([], 3, '0,0,0,0,0,0,0,0,1,1', {'S', 'H', 'D'}),
+])
+def test_ace_permissions_still_intersect_other_eligibility(capsys, options, cap, csv, actions):
+    actual = _json_advice(capsys, ['A,A', 'T', '--unseen-counts', csv,
+                                  '--split-hand', '--hand-count', '2', '--max-hands', str(cap),
+                                  '--resplit-aces', '--hit-split-aces', *options])
+    assert actual['rules']['resplit_aces'] is True
+    assert actual['rules']['hit_split_aces'] is True
+    assert actual['rules']['max_hands'] == cap
+    assert set(actual['decision']['evs']) == actions
+
+
+def test_ace_rule_flags_keep_first_split_rank_and_dealt_order(capsys):
+    results = {}
+    rules = replace(STANDARD, max_hands=3, resplit_aces=True)
+    for cards in ('A,7', '7,A'):
+        actual = _json_advice(capsys, [cards, 'T', '--unseen-counts', TINY_CSV,
+                                      *ACE_STATE, '--resplit-aces'])
+        assert actual == record.decision_record(cards, 'T', rules, shoe=TINY_COUNTS,
+                                               is_split_hand=True, hand_count=2)
+        assert actual['state']['cards'] == cards.split(',')
+        results[cards] = set(actual['decision']['evs'])
+    assert results == {'A,7': {'S'}, '7,A': {'S', 'H', 'D'}}
+
+
+def test_hit_enabled_three_card_split_ace_uses_existing_validation(capsys, monkeypatch):
+    args = ['A,5,5', '6', '--unseen-counts', '0,0,0,0,0,0,0,0,0,2', *ACE_STATE, '--h17']
+    actual = _json_advice(capsys, [*args, '--hit-split-aces'])
+    assert actual == record.decision_record(
+        'A,5,5', '6', replace(STANDARD, max_hands=3, s17=False, hit_split_aces=True),
+        shoe=(0,) * 9 + (2,), is_split_hand=True, hand_count=2)
+    assert actual['state']['cards'] == ['A', '5', '5']
+    assert set(actual['decision']['evs']) == {'S'}
+
+    def forbidden(*args, **kwargs):
+        pytest.fail('invalid three-card split ace reached the engine')
+
+    monkeypatch.setattr(record, 'best_action', forbidden)
+    with pytest.raises(SystemExit) as exc:
+        cli.main([*args, '--json'])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ''
+    assert 'a split ace receives only one card when hit_split_aces is False' in captured.err
+
+
+@pytest.mark.parametrize('split,payout', [(False, 1.5), (True, 1.0)])
+def test_enabled_ace_rules_do_not_reopen_twenty_one_or_make_a_split_natural(
+        capsys, split, payout):
+    flags = ACE_STATE if split else ['--max-hands', '3']
+    actual = _json_advice(capsys, ['A,T', 'T', '--unseen-counts', ACE_CSV, *flags,
+                                  '--resplit-aces', '--hit-split-aces'])
+    assert actual['state']['is_split_hand'] is split
+    assert actual['decision']['evs'] == {'S': payout}
+    assert actual['decision']['action'] == 'S' and actual['decision']['margin'] == 0.0
+
+
+@pytest.mark.parametrize('flag', ['--resplit-aces', '--hit-split-aces'])
+def test_repeated_ace_enable_keeps_the_same_raw_record(capsys, flag):
+    args = ['A,A', 'T', '--unseen-counts', ACE_CSV, *ACE_STATE, flag, '--json']
+    assert cli.main(args) == 0
+    once = capsys.readouterr()
+    assert cli.main([*args, flag]) == 0
+    repeated = capsys.readouterr()
+    assert once == repeated and once.err == ''
+
+
+@pytest.mark.parametrize('options', [
+    ['--resplit-aces=false'], ['--hit-split-aces=True'], ['--resplit-aces=0'],
+    ['--hit-split-aces=1'], ['--no-resplit-aces'], ['--no-hit-split-aces'],
+])
+def test_ace_enables_refuse_values_and_inverse_syntax_before_work(
+        monkeypatch, capsys, options):
+    _forbid_input_work(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(['A,A', 'T', '--json', *options])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == '' and 'usage:' in captured.err
+    assert 'Traceback' not in captured.err
+
+
+@pytest.mark.parametrize('flag', ['--resplit-aces', '--hit-split-aces'])
+@pytest.mark.parametrize('json_flag', [[], ['--json']])
+def test_replay_refuses_ace_rule_overrides_before_reading(monkeypatch, capsys, flag, json_flag):
+    _forbid_input_work(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(['--replay', 'not-read-aces.json', flag, *json_flag])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ''
+    assert ('--replay cannot be combined with cards, upcard, --table or state options'
+            in captured.err)
+
+
+@pytest.mark.parametrize('resplit,hit,actions', ACE_PAIRS)
+def test_table_ace_rules_forward_and_caption_without_chart_work(
+        monkeypatch, capsys, resplit, hit, actions):
+    observed = []
+
+    def empty_chart(rules):
+        observed.append(rules)
+        return {'hard': {}, 'soft': {}, 'pairs': {}}
+
+    monkeypatch.setattr(cli, 'derive_table', empty_chart)
+    assert cli.main(['--table', '--decks', '1', '--h17', '--no-das', '--max-hands', '3',
+                     *_ace_flags(resplit, hit)]) == 0
+    captured = capsys.readouterr()
+    rules = replace(STANDARD, decks=1, s17=False, das=False, max_hands=3,
+                    resplit_aces=resplit, hit_split_aces=hit)
+    assert observed == [rules] and captured.err == ''
+    phrase = 'ace resplitting allowed, ' if resplit else ''
+    hitting = 'split aces may be hit' if hit else 'split aces get one card'
+    caption = ('1 deck, dealer hits on soft 17, no double after split, dealer peeks, '
+               f'no surrender, up to 3 hands, {phrase}{hitting}, blackjack pays 3:2')
+    assert chart.describe_rules(rules) == caption
+    assert captured.out.splitlines()[0] == (
+        'Basic strategy derived by the solver (split approximations apply): ' + caption + '.')
+
+
+@pytest.mark.parametrize('options', [
+    ['--json'], ['--unseen', '9'], ['--split-hand'], ['--hand-count', '1'],
+    ['--no-double'], ['--no-split'],
+])
+def test_ace_table_rules_keep_existing_dispatch_refusals(monkeypatch, capsys, options):
+    _forbid_input_work(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(['--table', '--resplit-aces', '--hit-split-aces', *options])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == '' and '--table cannot be combined' in captured.err
