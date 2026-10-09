@@ -183,12 +183,22 @@ def table(rules: Rules = STANDARD) -> str:
     composition of each total (bj.ev.derive_table).  This is the text the
     README's chart section holds; tests/test_chart.py parses that section
     back and checks it against derive_table, so the README cannot drift.
+
+    Values use the existing post-peek model and offer no surrender action.
+    The title describes that model; unsupported requested flags get a note.
     """
-    return render_chart(
+    scope_mismatch = not rules.peek or rules.surrender
+    modeled_rules = replace(rules, peek=True, surrender=False) if scope_mismatch else rules
+    chart = render_chart(
         derive_table(rules),
         title=('Basic strategy derived by the solver (split approximations apply): '
-               f'{describe_rules(rules)}.'),
+               f'{describe_rules(modeled_rules)}.'),
     )
+    if scope_mismatch:
+        chart += ('\n\nModel scope: the derived chart uses post-peek values and no '
+                  'surrender action. The requested peek and surrender flags do not '
+                  'change that model.')
+    return chart
 
 
 def main(argv: Sequence[str] | None = None) -> int:
