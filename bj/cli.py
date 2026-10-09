@@ -198,6 +198,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help='dealer hits soft 17 (default: stands)')
     parser.add_argument('--no-das', action='store_true',
                         help='no doubling after a split (default: allowed)')
+    parser.add_argument('--resplit-aces', action='store_true',
+                        help='declare that aces may be resplit (default: not allowed)')
+    parser.add_argument('--hit-split-aces', action='store_true',
+                        help='declare that split aces may receive more cards '
+                             '(default: one card only)')
     parser.add_argument('--no-double', action='store_true',
                         help='exclude the current DOUBLE alternative, without changing rules')
     parser.add_argument('--no-split', action='store_true',
@@ -221,6 +226,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.replay is not None:
         if (args.cards is not None or args.upcard is not None or args.table
                 or args.decks is not None or args.h17 or args.no_das
+                or args.resplit_aces or args.hit_split_aces
                 or args.no_double or args.no_split
                 or args.max_hands is not None or args.unseen is not None
                 or args.split_hand or args.hand_count is not None):
@@ -235,7 +241,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.decks < 1:
         parser.error('--decks must be at least 1')
     rules = replace(STANDARD, decks=args.decks, s17=not args.h17, das=not args.no_das,
-                    max_hands=args.max_hands)
+                    max_hands=args.max_hands, resplit_aces=args.resplit_aces,
+                    hit_split_aces=args.hit_split_aces)
     if args.table and (args.unseen is not None or args.split_hand or args.hand_count is not None
                        or args.no_double or args.no_split):
         parser.error('--table cannot be combined with hand-specific state options')

@@ -106,6 +106,41 @@ conversion limit still applies. Larger supported caps can require more work,
 and the existing independent-hand and greedy resplit-budget approximations
 remain unchanged. No general split-error bound follows from selecting a cap.
 
+## Declare the split-ace rules
+
+Use `--resplit-aces` when your declared rules allow ace resplitting and
+`--hit-split-aces` when a split ace may receive more cards. Both default to
+false, are independent, and can be combined or repeated. They take no value.
+For a small split pair with three retained unseen cards:
+
+```text
+bj-advise A,A T --split-hand --hand-count 2 --max-hands 3 --unseen-counts 0,0,0,0,0,0,0,0,1,2 --resplit-aces --hit-split-aces --json
+```
+
+These are table and continuation rules, distinct from the current
+`--no-double` and `--no-split` exclusions below. They cannot restore an
+alternative blocked by doubling-after-split rules, the hand cap, remaining
+cards or completed 21. Keep dealt order: the first card identifies the split
+rank. Without hitting enabled, a split ace receives one card and a split-ace
+hand with more than two cards is invalid. A split 21 does not become a natural.
+
+The flags work with text advice, JSON and `--table`. The chart caption names
+enabled ace resplitting and the selected hitting rule. Supplied counts still
+include the reserved hole and already exclude visible cards. Choosing a flag
+declares your rules; it does not verify permissions at an external table.
+
+Save successful stdout as described above and replay without either flag:
+
+```text
+bj-advise --replay saved-decision.json --json
+```
+
+Replay takes both rules from the saved record and refuses overrides before
+reading it. Ace flags alone retain version 1. Current-choice exclusions still
+produce version 2. Default outputs, raw values and the existing independent-hand
+and greedy shared-budget split approximation remain unchanged. No general
+split-error bound, whole-round optimality or numerical-work limit is added.
+
 ## Restrict the current choices
 
 Use `--no-double` or `--no-split` when the current decision must exclude that

@@ -66,6 +66,7 @@ def describe_rules(rules: Rules) -> str:
         'dealer peeks' if rules.peek else 'no peek',
         'surrender' if rules.surrender else 'no surrender',
         f'up to {rules.max_hands} hands',
+        *(('ace resplitting allowed',) if rules.resplit_aces else ()),
         'split aces may be hit' if rules.hit_split_aces else 'split aces get one card',
         f'blackjack pays {payout}',
     ))
