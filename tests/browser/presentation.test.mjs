@@ -579,7 +579,7 @@ for (const mode of ['clair','obscur']) test(`joint report ${mode} preserves ever
   const page = await fixture(t);
   await ready(page);
   await page.locator('#joint-reference a').click();
-  assert.equal(new URL(page.url()).pathname, '/joint-split.html');
+  assert.equal(page.url(), new URL('joint-split.html', base+'/').href);
   await page.locator('#appearance').selectOption(mode);
   assert.equal(await page.locator('#conditions tbody tr').count(), 48);
   assert.equal(await page.locator('#changes tbody tr').count(), 1);
