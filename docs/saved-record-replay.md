@@ -141,6 +141,48 @@ produce version 2. Default outputs, raw values and the existing independent-hand
 and greedy shared-budget split approximation remain unchanged. No general
 split-error bound, whole-round optimality or numerical-work limit is added.
 
+## Declare the natural payout
+
+Use `--blackjack-payout N` for the net payout per original wager on an
+unsplit two-card natural. `1.5` means 3:2 and `1.2` means 6:5. The stake is
+not included in N. Omitting the option keeps the existing 1.5 default.
+Declare a 6:5 natural with one retained unseen card:
+
+```text
+bj-advise A,T 9 --unseen-counts 0,0,0,0,0,0,0,0,1,0 --blackjack-payout 1.2 --json
+```
+
+Decimal and scientific spellings such as `1.25`, `.5`, `1.` and `125e-2`
+are accepted, with optional signs and surrounding ASCII whitespace. Ratios
+such as `3:2`, fractions, expressions, underscores, Boolean words, Unicode
+digits or whitespace, embedded whitespace, NaN and infinity are rejected.
+The converted value must be finite and not less than zero. Invalid input
+exits 2 with an explanation on stderr and no record on stdout.
+
+Conversion uses binary floating point, not exact decimal arithmetic.
+Underflow can become zero. Signed zero is retained, including a negative
+tiny spelling that underflows to it. Use equals syntax for negative
+spellings, for example `--blackjack-payout=-0.0` or
+`--blackjack-payout=-1e-9999`. Replay's numeric equality treats both zero
+signs as equal, so agreement does not prove bitwise identity.
+
+Text, JSON and the existing chart caption use the declared payout. A split
+21 receives ordinary settlement, not the natural premium. Current-choice
+exclusions still select version 2 independently of payout. Retained counts
+are passed once, without another visible-card subtraction.
+
+Save successful stdout as described above, then replay without an override:
+
+```text
+bj-advise --replay saved-decision.json --json
+```
+
+Every explicit payout conflicts with replay before file reading, even 1.5
+or signed zero. The saved record supplies its rules. No upper payout cap or
+new work limit is imposed. Large finite values can exceed downstream
+arithmetic range. Insurance, unsupported rules and split approximations
+remain unchanged.
+
 ## Restrict the current choices
 
 Use `--no-double` or `--no-split` when the current decision must exclude that

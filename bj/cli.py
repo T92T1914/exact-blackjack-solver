@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import re
 from collections.abc import Sequence
 from dataclasses import replace
 from numbers import Integral
@@ -155,6 +157,24 @@ def _max_hands(text: str) -> int:
     return cap
 
 
+def _blackjack_payout(text: str) -> float:
+    """Admit a declared net natural payout through the existing float boundary."""
+    token = text.strip(' \t\r\n\v\f')
+    pattern = (r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)'
+               r'(?:[eE][+-]?[0-9]+)?')
+    message = ('--blackjack-payout must be a finite nonnegative ASCII '
+               'decimal or scientific number')
+    if re.fullmatch(pattern, token) is None:
+        raise argparse.ArgumentTypeError(message)
+    try:
+        payout = float(token)
+    except (ValueError, OverflowError) as exc:
+        raise argparse.ArgumentTypeError(message) from exc
+    if not math.isfinite(payout) or payout < 0:
+        raise argparse.ArgumentTypeError(message)
+    return payout
+
+
 def table(rules: Rules = STANDARD) -> str:
     """The whole chart, derived cell by cell by the solver, as Markdown.
 
@@ -198,6 +218,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help='dealer hits soft 17 (default: stands)')
     parser.add_argument('--no-das', action='store_true',
                         help='no doubling after a split (default: allowed)')
+    parser.add_argument('--blackjack-payout', type=_blackjack_payout,
+                        default=None, metavar='N',
+                        help='net natural payout per original wager: 1.5 = 3:2, '
+                             '1.2 = 6:5 '
+                             f'(default: {STANDARD.blackjack_payout})')
     parser.add_argument('--resplit-aces', action='store_true',
                         help='declare that aces may be resplit (default: not allowed)')
     parser.add_argument('--hit-split-aces', action='store_true',
@@ -226,6 +251,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.replay is not None:
         if (args.cards is not None or args.upcard is not None or args.table
                 or args.decks is not None or args.h17 or args.no_das
+                or args.blackjack_payout is not None
                 or args.resplit_aces or args.hit_split_aces
                 or args.no_double or args.no_split
                 or args.max_hands is not None or args.unseen is not None
@@ -238,11 +264,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.upcard = args.upcard if args.upcard is not None else 'T'
     args.decks = args.decks if args.decks is not None else STANDARD.decks
     args.max_hands = args.max_hands if args.max_hands is not None else STANDARD.max_hands
+    args.blackjack_payout = (args.blackjack_payout if args.blackjack_payout is not None
+                             else STANDARD.blackjack_payout)
     if args.decks < 1:
         parser.error('--decks must be at least 1')
     rules = replace(STANDARD, decks=args.decks, s17=not args.h17, das=not args.no_das,
                     max_hands=args.max_hands, resplit_aces=args.resplit_aces,
-                    hit_split_aces=args.hit_split_aces)
+                    hit_split_aces=args.hit_split_aces, blackjack_payout=args.blackjack_payout)
     if args.table and (args.unseen is not None or args.split_hand or args.hand_count is not None
                        or args.no_double or args.no_split):
         parser.error('--table cannot be combined with hand-specific state options')
