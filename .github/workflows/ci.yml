@@ -31,3 +31,33 @@ jobs:
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
+
+  installed-calculation:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Calculate, cancel and reuse through an external wheel installation
+        shell: python
+        run: |
+          import os, pathlib, subprocess, sys
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'solver-installed-calculation'
+          root.mkdir()
+          subprocess.run([sys.executable, '-m', 'pip', 'wheel', '.', '--no-deps',
+                          '--wheel-dir', str(root / 'wheels')], check=True, timeout=90)
+          subprocess.run([sys.executable, '-m', 'venv', str(root / 'venv')],
+                         check=True, timeout=60)
+          python = root / 'venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+          wheel, = (root / 'wheels').glob('*.whl')
+          subprocess.run([str(python), '-I', '-m', 'pip', 'install', str(wheel)],
+                         check=True, timeout=90)
+          helper = pathlib.Path('tools/installed_calculation_smoke.py').resolve()
+          subprocess.run([str(python), '-I', '-B', str(helper), str(root / 'journey')],
+                         cwd=root, check=True, timeout=90)
