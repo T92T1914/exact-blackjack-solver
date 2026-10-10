@@ -153,7 +153,7 @@ def _admit(saved):
     if name != 'blackjack-decision' or version not in (
             record.SCHEMA_VERSION, record.CONTROLLED_SCHEMA_VERSION,
             record.COMMON_SCHEMA_VERSION, record.SURRENDER_SCHEMA_VERSION,
-            record.RESPLIT_SCHEMA_VERSION):
+            record.RESPLIT_SCHEMA_VERSION, record.ACE_RESPLIT_SCHEMA_VERSION):
         raise _UnsupportedRecord(f'unsupported schema {name!r}, version {version}')
     _object(saved, ('schema', 'package', 'state', 'rules', 'decision', 'model'), 'record')
     package = _object(saved['package'], ('name', 'version'), 'package')
@@ -262,9 +262,24 @@ def _admit(saved):
         if source != 'supplied_unseen':
             raise _UnsupportedRecord('bounded-resplit records require supplied_unseen counts')
         declarations = record._resplit_model_record(up, max_states)
+    elif version == record.ACE_RESPLIT_SCHEMA_VERSION:
+        from . import bounded_ace_resplit
+        if not isinstance(saved['model'], dict):
+            raise _InvalidRecord('model must be an object')
+        max_states = _integer(saved['model'].get('enumeration_state_limit'),
+                              'model.enumeration_state_limit')
+        try:
+            bounded_ace_resplit.validate(hand, rules, unseen, state['is_split_hand'],
+                                         hand_count, max_states)
+        except ValueError as exc:
+            raise _UnsupportedRecord(str(exc)) from exc
+        if source != 'supplied_unseen':
+            raise _UnsupportedRecord('bounded-ace-resplit records require supplied_unseen counts')
+        declarations = record._ace_resplit_model_record(up, max_states)
     model = _object(saved['model'], declarations.keys(), 'model')
     for key, expected in declarations.items():
-        if version == record.RESPLIT_SCHEMA_VERSION and key == 'split_cooperative_seconds':
+        if version in (record.RESPLIT_SCHEMA_VERSION, record.ACE_RESPLIT_SCHEMA_VERSION) and (
+                key == 'split_cooperative_seconds'):
             if _number(model[key], f'model.{key}') != expected:
                 raise _UnsupportedRecord(f'model.{key} must be {expected!r}')
             continue
@@ -365,6 +380,10 @@ def replay_json(text: str | bytes) -> dict[str, Any]:
             current = record.bounded_resplit_record(
                 hand, up, rules, shoe=unseen, can_double=can_double, can_split=can_split,
                 max_states=saved['model']['enumeration_state_limit'])['decision']
+        elif saved['schema']['version'] == record.ACE_RESPLIT_SCHEMA_VERSION:
+            current = record.bounded_ace_resplit_record(
+                hand, up, rules, shoe=unseen, can_double=can_double, can_split=can_split,
+                max_states=saved['model']['enumeration_state_limit'])['decision']
         else:
             current = record.decision_record(
                 hand, up, rules, shoe=unseen, is_split_hand=is_split_hand,
@@ -385,7 +404,8 @@ def replay_json(text: str | bytes) -> dict[str, Any]:
     except (ValueError, OverflowError) as exc:
         return _failure('calculation_error', exc, admitted)
     except ArithmeticError as exc:
-        if admitted is not None and admitted['schema']['version'] == record.RESPLIT_SCHEMA_VERSION:
+        if admitted is not None and admitted['schema']['version'] in (
+                record.RESPLIT_SCHEMA_VERSION, record.ACE_RESPLIT_SCHEMA_VERSION):
             return _failure('calculation_error', exc, admitted)
         raise
 

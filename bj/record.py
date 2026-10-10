@@ -2,7 +2,8 @@
 
 The record owns normalized copies of the visible cards, remaining rank counts
 and rules. Ordinary records retain the existing post-peek game. Explicit
-bounded records identify their two-hand, bounded-resplit or late-surrender model.
+bounded records identify their two-hand, non-ace resplit, ace resplit or
+late-surrender model.
 No whole-game estimate, timestamp, filename or environment identifier is added.
 """
 from __future__ import annotations
@@ -20,15 +21,17 @@ from .core import (ACTION_NAMES, RANKS, STANDARD, CardLike, Rules, Shoe, hand_to
 from .ev import best_action, initial_shoe_for
 
 __all__ = ['SCHEMA_VERSION', 'CONTROLLED_SCHEMA_VERSION', 'COMMON_SCHEMA_VERSION',
-           'SURRENDER_SCHEMA_VERSION', 'RESPLIT_SCHEMA_VERSION', 'decision_record',
+           'SURRENDER_SCHEMA_VERSION', 'RESPLIT_SCHEMA_VERSION', 'ACE_RESPLIT_SCHEMA_VERSION',
+           'decision_record',
            'decision_json', 'common_shoe_record', 'late_surrender_record',
-           'bounded_resplit_record']
+           'bounded_resplit_record', 'bounded_ace_resplit_record']
 
 SCHEMA_VERSION = 1
 CONTROLLED_SCHEMA_VERSION = 2
 COMMON_SCHEMA_VERSION = 3
 SURRENDER_SCHEMA_VERSION = 4
 RESPLIT_SCHEMA_VERSION = 5
+ACE_RESPLIT_SCHEMA_VERSION = 6
 
 
 class _UnsupportedRules(ValueError):
@@ -148,6 +151,12 @@ def _surrender_model_record(up, max_states):
 
 def _resplit_model_record(up, max_states):
     from .bounded_resplit import model_record
+
+    return model_record(up, max_states)
+
+
+def _ace_resplit_model_record(up, max_states):
+    from .bounded_ace_resplit import model_record
 
     return model_record(up, max_states)
 
@@ -346,6 +355,47 @@ def bounded_resplit_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
     return _bounded_resplit_record(cards, dealer_up, rules, shoe=shoe,
                                    can_double=can_double, can_split=can_split,
                                    max_states=max_states)[0]
+
+
+def _bounded_ace_resplit_record(cards, dealer_up, rules, *, shoe, can_double=True,
+                                can_split=True, max_states=100_000):
+    from . import bounded_ace_resplit
+
+    if shoe is None:
+        raise ValueError('bounded-ace-resplit records require explicit retained unseen counts')
+    for name, value in (('can_double', can_double), ('can_split', can_split)):
+        if type(value) is not bool:
+            raise ValueError(f'{name} must be a boolean')
+    rule_values = _rules_record(rules)
+    hand, up, unseen, hand_count = _record_inputs(cards, dealer_up, rules, shoe, False, 1)
+    bounded_ace_resplit.validate(hand, rules, unseen, False, hand_count, max_states)
+    action, evs, margin, work = bounded_ace_resplit.decide(
+        hand, up, unseen, rules, can_double=can_double, can_split=can_split,
+        max_states=max_states)
+    document = _decision_document(
+        hand, up, unseen, rule_values, False, hand_count, can_double, can_split,
+        action, evs, margin, ACE_RESPLIT_SCHEMA_VERSION, _ace_resplit_model_record(up, max_states),
+        False)
+    return document, work
+
+
+def bounded_ace_resplit_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
+                               rules: Rules, *, shoe: Shoe, can_double: bool = True,
+                               can_split: bool = True,
+                               max_states: int = 100_000) -> dict[str, Any]:
+    """Record original A,A with at most three one-card common-shoe ace hands.
+
+    Require max_hands=3, resplit_aces=True, hit_split_aces=False and 3..20 supplied
+    counts including the concealed hole. An eligible child may stand or spend
+    the round's single extra resplit slot. Every offered original S/H/D/P value
+    completes under one state cap. Any unavailable continuation withholds the
+    whole record. Root S/H/D retains the accepted last-draw convention. Direct
+    use has no owned wall or memory supervisor; joint work is cooperative up to
+    ten seconds. Successful values are unrounded binary floating point.
+    """
+    return _bounded_ace_resplit_record(cards, dealer_up, rules, shoe=shoe,
+                                       can_double=can_double, can_split=can_split,
+                                       max_states=max_states)[0]
 
 
 def decision_json(cards: str | Sequence[CardLike], dealer_up: CardLike,

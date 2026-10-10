@@ -180,6 +180,13 @@ export function resplitModelFor(up,maxStates) {
     split_cooperative_seconds:10,enumeration_state_limit:maxStates};
 }
 
+export function aceResplitModelFor(up,maxStates) {
+  return {...resplitModelFor(up,maxStates),name:'common_shoe_bounded_ace_resplit',
+    split:'common_shoe_sequential_up_to_three_one_extra_ace_resplit_binary_float_v1',
+    split_eligibility:'matching_A_A_after_mandatory_card_with_shared_slot',
+    split_aces:'one_card_optional_resplit_no_hit_no_double_no_natural_premium'};
+}
+
 export function recordActionNames(record) {
   return record.schema.version===4n ? SURRENDER_ACTION_NAMES : ACTION_NAMES;
 }
@@ -193,8 +200,8 @@ export function inspectRecord(input) {
   if (!object(saved)) invalid('record must be an object');
   const schema=fields(saved.schema,['name','version'],'schema');
   string(schema.name,'schema.name'); integer(schema.version,'schema.version');
-  if (schema.name!=='blackjack-decision' || ![1n,2n,3n,4n,5n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1, 2, 3, 4 and 5');
-  const surrender=schema.version===4n,resplit=schema.version===5n;
+  if (schema.name!=='blackjack-decision' || ![1n,2n,3n,4n,5n,6n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1, 2, 3, 4, 5 and 6');
+  const surrender=schema.version===4n,resplit=schema.version===5n,aceResplit=schema.version===6n;
   fields(saved,['schema','package','state','rules','decision','model'],'record');
   const pkg=fields(saved.package,['name','version'],'package');
   constant(pkg.name,'exact-blackjack-solver','package.name'); string(pkg.version,'package.version');
@@ -235,6 +242,8 @@ export function inspectRecord(input) {
     unsupported('late-surrender model requires max_hands=1, no resplits and no hittable split aces');
   if (resplit && (rules.max_hands!==3n || rules.resplit_aces || rules.hit_split_aces))
     unsupported('bounded-resplit model requires max_hands=3 and no split-ace extensions');
+  if (aceResplit && (rules.max_hands!==3n || !rules.resplit_aces || rules.hit_split_aces))
+    unsupported('bounded ace resplit model requires max_hands=3, optional ace resplitting and one-card split aces');
   if (state.hand_count<1n || state.hand_count>rules.max_hands) invalid('state.hand_count must be from 1 to rules.max_hands');
   if (state.is_split_hand ? state.hand_count<2n : state.hand_count!==1n) invalid('split state and state.hand_count disagree');
   if (state.cards.length<2) invalid('a hand needs at least two cards before it has a decision');
@@ -287,10 +296,22 @@ export function inspectRecord(input) {
     if (count<3n || count>20n) unsupported('bounded-resplit model requires 3 to 20 unseen cards including the hole');
     if (shoe.source!=='supplied_unseen') unsupported('bounded-resplit records require supplied_unseen counts');
   }
+  if (aceResplit) {
+    if (!object(saved.model)) invalid('model must be an object');
+    maxStates=integer(saved.model.enumeration_state_limit,'model.enumeration_state_limit');
+    if (maxStates<1n || maxStates>100000n) unsupported('bounded ace resplit enumeration state limit must be from 1 through 100000');
+    if (state.cards.length!==2 || state.cards.some(rank=>rank!=='A'))
+      unsupported('bounded ace resplit model requires an original A,A pair');
+    if (state.is_split_hand || state.hand_count!==1n)
+      unsupported('bounded ace resplit model requires one original unsplit hand');
+    if (count<3n || count>20n) unsupported('bounded ace resplit model requires 3 to 20 unseen cards including the hole');
+    if (shoe.source!=='supplied_unseen') unsupported('bounded ace resplit records require supplied_unseen counts');
+  }
   const declarations=surrender ? surrenderModelFor(state.dealer_up,maxStates) :
-    resplit ? resplitModelFor(state.dealer_up,maxStates) : modelFor(state.dealer_up,maxStates);
+    resplit ? resplitModelFor(state.dealer_up,maxStates) :
+    aceResplit ? aceResplitModelFor(state.dealer_up,maxStates) : modelFor(state.dealer_up,maxStates);
   const model=fields(saved.model,Object.keys(declarations),'model');
-  if (resplit) model.split_cooperative_seconds=finite(model.split_cooperative_seconds,'model.split_cooperative_seconds');
+  if (resplit || aceResplit) model.split_cooperative_seconds=finite(model.split_cooperative_seconds,'model.split_cooperative_seconds');
   for (const [key,expected] of Object.entries(declarations)) constant(model[key],expected,`model.${key}`,key==='hole_rank_excluded_by_peek');
   const decision=fields(saved.decision,['action','action_name','evs','margin','units','whole_game_estimate'],'decision');
   constant(decision.units,'original_wager','decision.units'); constant(decision.whole_game_estimate,null,'decision.whole_game_estimate');
