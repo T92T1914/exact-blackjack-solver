@@ -1,0 +1,13 @@
+{
+  "schema": {"name": "solver-calculation-request", "version": 1},
+  "rules": {},
+  "input": {
+    "cards": ["T", "4"],
+    "dealer_up": "T",
+    "unseen_counts": [0, 1, 1, 0, 0, 0, 1, 1, 1, 1],
+    "is_split_hand": false,
+    "hand_count": 1,
+    "can_double": true,
+    "can_split": true
+  }
+}
