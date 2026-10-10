@@ -30,6 +30,8 @@ FILES = {
     "site/record-inspector-ui.mjs": "record-inspector-ui.mjs",
     "site/selection-state.mjs": "selection-state.mjs",
     "site/appearance.js": "appearance.js",
+    "examples/bounded-resplit-request.json": "bounded-resplit-request.json",
+    "docs/bounded-resplit-calculation.md": "bounded-resplit-calculation.md",
     "docs/visual-example-data.json": "data.json",
     "docs/blackjack-composition-example.svg": "example.svg",
     "docs/blackjack-composition-clair.png": "composition-clair.png",

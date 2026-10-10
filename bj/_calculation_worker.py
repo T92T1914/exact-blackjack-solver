@@ -31,7 +31,8 @@ def main():
             return 6
         common = request['schema']['version'] == 2
         surrender = request['schema']['version'] == 3
-        bounded = common or surrender
+        resplit = request['schema']['version'] == 4
+        bounded = common or surrender or resplit
         result = {'status': 'worker_failed', 'decision': None, 'error': None,
                   'request_sha256': payload['request_sha256'], 'policy': payload['policy']}
         if bounded:
@@ -49,6 +50,11 @@ def main():
                     shoe=tuple(inputs['unseen_counts']), can_double=inputs['can_double'],
                     can_surrender=inputs['can_surrender'],
                     max_states=request['limits']['max_states'])
+            elif resplit:
+                result['decision'], result['work'] = record._bounded_resplit_record(
+                    inputs['cards'], inputs['dealer_up'], Rules(**request['rules']),
+                    shoe=tuple(inputs['unseen_counts']), can_double=inputs['can_double'],
+                    can_split=inputs['can_split'], max_states=request['limits']['max_states'])
             else:
                 result['decision'] = record.decision_record(
                     inputs['cards'], inputs['dealer_up'], Rules(**request['rules']),
@@ -65,7 +71,9 @@ def main():
         except (ValueError, OverflowError) as exc:
             result['status'], result['error'] = 'calculation_error', _error(exc)
         except Exception as exc:
-            result['status'], result['error'] = 'worker_failed', _error(exc)
+            status = ('calculation_error' if resplit and isinstance(exc, ArithmeticError)
+                      else 'worker_failed')
+            result['status'], result['error'] = status, _error(exc)
         output = _json_bytes(result)
         if len(output) > 65536:
             return 6

@@ -161,6 +161,25 @@ export function surrenderModelFor(up,maxStates) {
     player_last_draw:'stand_then_require_dealer_settlement',enumeration_state_limit:maxStates};
 }
 
+export function resplitModelFor(up,maxStates) {
+  return {name:'common_shoe_bounded_resplit',version:1n,
+    dealer_information:'hidden_hole_post_peek',
+    hole_rank_excluded_by_peek:up==='A' ? 'T' : up==='T' ? 'A' : null,
+    ten_value_ranks:'collapsed_to_T',insurance_priced:false,
+    hit_stand_double:'finite_enumeration_binary_floating_point',
+    player_last_draw:'stand_then_require_dealer_settlement',
+    split:'common_shoe_sequential_up_to_three_one_extra_resplit_binary_float_v1',
+    split_max_hands:3n,split_max_extra_resplits:1n,
+    split_deal_order:'finish_active_child_before_dealing_next_pending',
+    split_child_order:'new_sibling_before_older_pending',
+    split_eligibility:'matching_two_card_active_hand_before_hit_or_double',
+    split_aces:'excluded_non_ace_initial_pair',
+    split_twenty_one:'ordinary_wager_no_natural_premium',
+    split_objective:'combined_settlement_all_completed_wagers',
+    split_exhaustion:'refuse_any_unavailable_continuation',
+    split_cooperative_seconds:10,enumeration_state_limit:maxStates};
+}
+
 export function recordActionNames(record) {
   return record.schema.version===4n ? SURRENDER_ACTION_NAMES : ACTION_NAMES;
 }
@@ -174,8 +193,8 @@ export function inspectRecord(input) {
   if (!object(saved)) invalid('record must be an object');
   const schema=fields(saved.schema,['name','version'],'schema');
   string(schema.name,'schema.name'); integer(schema.version,'schema.version');
-  if (schema.name!=='blackjack-decision' || ![1n,2n,3n,4n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1, 2, 3 and 4');
-  const surrender=schema.version===4n;
+  if (schema.name!=='blackjack-decision' || ![1n,2n,3n,4n,5n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1, 2, 3, 4 and 5');
+  const surrender=schema.version===4n,resplit=schema.version===5n;
   fields(saved,['schema','package','state','rules','decision','model'],'record');
   const pkg=fields(saved.package,['name','version'],'package');
   constant(pkg.name,'exact-blackjack-solver','package.name'); string(pkg.version,'package.version');
@@ -214,6 +233,8 @@ export function inspectRecord(input) {
   if (!rules.tens_are_pairs) unsupported('records collapse ten-value ranks and require tens_are_pairs');
   if (surrender && (rules.max_hands!==1n || rules.resplit_aces || rules.hit_split_aces))
     unsupported('late-surrender model requires max_hands=1, no resplits and no hittable split aces');
+  if (resplit && (rules.max_hands!==3n || rules.resplit_aces || rules.hit_split_aces))
+    unsupported('bounded-resplit model requires max_hands=3 and no split-ace extensions');
   if (state.hand_count<1n || state.hand_count>rules.max_hands) invalid('state.hand_count must be from 1 to rules.max_hands');
   if (state.is_split_hand ? state.hand_count<2n : state.hand_count!==1n) invalid('split state and state.hand_count disagree');
   if (state.cards.length<2) invalid('a hand needs at least two cards before it has a decision');
@@ -255,8 +276,21 @@ export function inspectRecord(input) {
     if (count<3n || count>20n) unsupported('late-surrender model requires 3 to 20 unseen cards including the hole');
     if (shoe.source!=='supplied_unseen') unsupported('late-surrender records require supplied_unseen counts');
   }
-  const declarations=surrender ? surrenderModelFor(state.dealer_up,maxStates) : modelFor(state.dealer_up,maxStates);
+  if (resplit) {
+    if (!object(saved.model)) invalid('model must be an object');
+    maxStates=integer(saved.model.enumeration_state_limit,'model.enumeration_state_limit');
+    if (maxStates<1n || maxStates>100000n) unsupported('bounded-resplit enumeration state limit must be from 1 through 100000');
+    if (state.cards.length!==2 || state.cards[0]!==state.cards[1] || state.cards[0]==='A')
+      unsupported('bounded-resplit model requires an initial non-ace two-card pair');
+    if (state.is_split_hand || state.hand_count!==1n)
+      unsupported('bounded-resplit model requires one original unsplit hand');
+    if (count<3n || count>20n) unsupported('bounded-resplit model requires 3 to 20 unseen cards including the hole');
+    if (shoe.source!=='supplied_unseen') unsupported('bounded-resplit records require supplied_unseen counts');
+  }
+  const declarations=surrender ? surrenderModelFor(state.dealer_up,maxStates) :
+    resplit ? resplitModelFor(state.dealer_up,maxStates) : modelFor(state.dealer_up,maxStates);
   const model=fields(saved.model,Object.keys(declarations),'model');
+  if (resplit) model.split_cooperative_seconds=finite(model.split_cooperative_seconds,'model.split_cooperative_seconds');
   for (const [key,expected] of Object.entries(declarations)) constant(model[key],expected,`model.${key}`,key==='hole_rank_excluded_by_peek');
   const decision=fields(saved.decision,['action','action_name','evs','margin','units','whole_game_estimate'],'decision');
   constant(decision.units,'original_wager','decision.units'); constant(decision.whole_game_estimate,null,'decision.whole_game_estimate');

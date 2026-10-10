@@ -5,7 +5,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inspectRecord,compareRecords,recordSlot,display,modeledRows,modelFor,permittedActions,recordedActionDifferences,MAX_RECORD_BYTES,
   MAX_RECORD_DEPTH,MAX_INTEGER_DIGITS,RANKS,RULE_FIELDS,ACTION_NAMES,SURRENDER_ACTION_NAMES,
-  surrenderModelFor,recordActionNames,actionControls} from '../site/record-inspection.mjs';
+  surrenderModelFor,resplitModelFor,recordActionNames,actionControls} from '../site/record-inspection.mjs';
 
 const fixture=await readFile(new URL('./fixtures/saved-decision-v1-7a38141.json',import.meta.url),'utf8');
 const baseline=JSON.parse(fixture);
@@ -31,7 +31,7 @@ add('fresh origin consistent',change(r=>{r.state.shoe.source='fresh_minus_visibl
 add('split dealt ace order',change(r=>{r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('split non-ace first order',change(r=>{r.state.cards=['4','A'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('changed supported rule',change(r=>{r.rules.s17=false;}));
-add('schema future',change(r=>{r.schema.version=5;}),'unsupported_record');
+add('schema future',change(r=>{r.schema.version=6;}),'unsupported_record');
 add('schema name future',change(r=>{r.schema.name='different';}),'unsupported_record');
 add('float schema version',fixture.replace('"version": 1','"version": 1.0'),'invalid_input');
 add('exponent schema version',fixture.replace('"version": 1','"version": 1e0'),'invalid_input');
@@ -181,6 +181,67 @@ add('late version 4 fractional model version',surrenderText().replace('"name":"p
 add('late version 4 fractional draw count',surrenderText().replace('"surrender_draws":0','"surrender_draws":0.0'),'invalid_input');
 add('late version 4 Boolean state cap',surrenderText(r=>{r.model.enumeration_state_limit=true;}),'invalid_input');
 add('late version 4 oversized state cap',surrenderText(r=>{r.model.enumeration_state_limit=100001;}),'unsupported_record');
+const resplitText=update=>{
+  const saved=structuredClone(baseline);
+  saved.schema.version=5;
+  Object.assign(saved.state,{cards:['8','8'],dealer_up:'6',total:16,soft:false,
+    action_controls:{can_double:true,can_split:true}});
+  saved.state.shoe.counts=[0,0,0,0,0,0,0,8,0,0];
+  Object.assign(saved.rules,{max_hands:3,surrender:false,resplit_aces:false,hit_split_aces:false});
+  saved.model=resplitModelFor('6',100000n);
+  saved.decision={action:'P',action_name:'SPLIT',evs:{S:1,H:-1,D:-2,P:3},
+    margin:2,units:'original_wager',whole_game_estimate:null};
+  if (update) update(saved);
+  return JSON.stringify(saved,(_,value)=>typeof value==='bigint' ? Number(value) : value);
+};
+add('resplit version 5 complete record',resplitText());
+for (const [double,pair] of [[true,true],[false,true],[true,false],[false,false]]) {
+  add(`resplit version 5 controls ${double}/${pair}`,resplitText(r=>{
+    r.state.action_controls={can_double:double,can_split:pair};
+    if (!double) delete r.decision.evs.D;
+    if (!pair) {delete r.decision.evs.P;r.decision.action='S';r.decision.action_name='STAND';}
+  }));
+}
+add('resplit version 5 altered finite answer',resplitText(r=>{r.decision.evs.P=0;r.decision.margin=99;}));
+add('resplit version 5 stored unavailable P',resplitText(r=>{r.state.action_controls.can_split=false;}));
+add('resplit version 5 omitted permitted P',resplitText(r=>{
+  delete r.decision.evs.P;r.decision.action='S';r.decision.action_name='STAND';
+}));
+add('resplit version 5 missing controls',resplitText(r=>{delete r.state.action_controls;}),'invalid_input');
+add('resplit version 5 surrender control forbidden',resplitText(r=>{r.state.action_controls.can_surrender=false;}),'invalid_input');
+add('resplit version 5 R action forbidden',resplitText(r=>{r.decision.evs.R=-0.5;}),'invalid_input');
+for (const key of ['can_double','can_split']) {
+  add(`resplit version 5 nonboolean ${key}`,resplitText(r=>{r.state.action_controls[key]=1;}),'invalid_input');
+}
+for (const [key,value] of [['max_hands',2],['resplit_aces',true],['hit_split_aces',true],['surrender',true]]) {
+  add(`resplit version 5 unsupported rule ${key}`,resplitText(r=>{r.rules[key]=value;}),'unsupported_record');
+}
+add('resplit version 5 nonpair',resplitText(r=>{r.state.cards=['8','9'];r.state.total=17;}),'unsupported_record');
+add('resplit version 5 original aces excluded',resplitText(r=>{r.state.cards=['A','A'];r.state.total=12;r.state.soft=true;}),'unsupported_record');
+add('resplit version 5 split continuation excluded',resplitText(r=>{r.state.is_split_hand=true;r.state.hand_count=2;}),'unsupported_record');
+add('resplit version 5 fewer than three unseen',resplitText(r=>{r.state.shoe.counts[7]=2;}),'unsupported_record');
+add('resplit version 5 more than twenty unseen',resplitText(r=>{r.state.shoe.counts[7]=21;}),'unsupported_record');
+add('resplit version 5 fresh origin',resplitText(r=>{
+  r.rules.decks=1;r.state.shoe.source='fresh_minus_visible';r.state.shoe.counts=[4,4,4,4,4,3,4,2,4,16];
+}),'unsupported_record');
+add('resplit version 5 missing declaration',resplitText(r=>{delete r.model.split_child_order;}),'invalid_input');
+add('resplit version 5 unknown declaration',resplitText(r=>{r.model.extra=true;}),'invalid_input');
+for (const key of ['name','dealer_information','player_last_draw','split','split_deal_order','split_child_order',
+  'split_eligibility','split_aces','split_twenty_one','split_objective','split_exhaustion']) {
+  add(`resplit version 5 changed declaration ${key}`,resplitText(r=>{r.model[key]='different';}),'unsupported_record');
+}
+for (const [key,value] of [['version',2],['split_max_hands',4],['split_max_extra_resplits',2],
+  ['split_cooperative_seconds',9],['enumeration_state_limit',100001]]) {
+  add(`resplit version 5 unsupported ${key}`,resplitText(r=>{r.model[key]=value;}),'unsupported_record');
+}
+add('resplit version 5 numeric cooperative ten',resplitText().replace('"split_cooperative_seconds":10',
+  '"split_cooperative_seconds":10.0'));
+add('resplit version 5 Boolean cooperative seconds',resplitText(r=>{r.model.split_cooperative_seconds=true;}),'invalid_input');
+add('resplit version 5 Boolean state cap',resplitText(r=>{r.model.enumeration_state_limit=true;}),'invalid_input');
+add('resplit version 5 fractional model version',resplitText().replace('"name":"common_shoe_bounded_resplit","version":1',
+  '"name":"common_shoe_bounded_resplit","version":1.0'),'invalid_input');
+add('resplit version 5 fractional hand cap',resplitText().replace('"split_max_hands":3','"split_max_hands":3.0'),'invalid_input');
+add('resplit version 5 wrong derived hole exclusion',resplitText(r=>{r.model.hole_rank_excluded_by_peek='T';}),'invalid_input');
 for (const version of [1,2,3]) {
   const create=version===3 ? commonText : change;
   add(`legacy version ${version} forbids R`,create(r=>{
@@ -264,9 +325,10 @@ test('shared corpus agrees with existing Python admission and schema declaration
     'Eligibility parity only, not EV or mathematical validation');
   const plain=value=>JSON.parse(JSON.stringify(value,(_,item)=>typeof item==='bigint' ? Number(item) : item));
   assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,controlled_schema_version:2,common_schema_version:3,
-    surrender_schema_version:4,rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,surrender_actions:SURRENDER_ACTION_NAMES,
+    surrender_schema_version:4,resplit_schema_version:5,rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,surrender_actions:SURRENDER_ACTION_NAMES,
     models:Object.fromEntries(RANKS.map(rank=>[rank,modelFor(rank)])),
-    surrender_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(surrenderModelFor(rank,100000n))]))});
+    surrender_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(surrenderModelFor(rank,100000n))])),
+    resplit_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(resplitModelFor(rank,100000n))]))});
 });
 test('exact large integer counts survive inspection and input-first comparison',()=>{
   const left=inspectRecord(cases.find(item=>item.name==='unsafe exact integer count').bytes);
@@ -461,4 +523,68 @@ test('late supplied near-equal answers remain passive comparison data',()=>{
   assert.equal(compared.action.matches,false);
   assert.equal(compared.evs.find(row=>row.action==='R').matches,false);
   assert.equal(compared.evs.find(row=>row.action==='R').delta,2**-54);
+});
+
+test('resplit and previous families expose complete identities in either comparison order',()=>{
+  const resplit=inspectRecord(resplitText());
+  assert.deepEqual(recordActionNames(resplit),ACTION_NAMES);
+  assert.deepEqual(permittedActions(resplit),['H','S','D','P']);
+  assert.equal(actionControls(resplit).can_surrender,false);
+  assert.equal(new Map(modeledRows(resplit)).get('state.action_controls.can_surrender'),undefined);
+  for (const previous of [inspectRecord(fixture),inspectRecord(commonText()),inspectRecord(surrenderText())]) {
+    for (const [left,right] of [[previous,resplit],[resplit,previous]]) {
+      const compared=compareRecords(left,right);
+      assert.equal(compared.model_compatible,false);
+      for (const field of ['split','split_max_hands','split_max_extra_resplits','split_child_order',
+        'split_deal_order','split_eligibility','split_twenty_one','split_objective','split_exhaustion']) {
+        const modeled=new Map(modeledRows(resplit));
+        assert.equal(modeled.has(`model.${field}`),true,field);
+        assert.equal(modeled.get(`model.${field}`),resplit.model[field],field);
+        // Different families may share an identical strict exhaustion clause.
+        // Changed-input rows contain actual differences, not all declarations.
+        assert.equal(compared.inputs.some(([key])=>key===`model.${field}`),
+          left.model[field]!==right.model[field],field);
+      }
+      if (previous.schema.version===4n) {
+        const r=compared.evs.find(row=>row.action==='R');
+        assert.equal(left===resplit ? r.left : r.right,null);
+        assert.equal(r.delta,null);
+        const p=compared.evs.find(row=>row.action==='P');
+        assert.equal(left===resplit ? p.right : p.left,null);
+        assert.equal(p.delta,null);
+      }
+    }
+  }
+});
+
+test('resplit current permissions and cap differences stay separate from saved answers',()=>{
+  const offered=inspectRecord(resplitText());
+  const disabled=inspectRecord(resplitText(r=>{
+    r.state.action_controls.can_split=false;delete r.decision.evs.P;
+    r.decision.action='S';r.decision.action_name='STAND';r.model.enumeration_state_limit=99;
+  }));
+  for (const [left,right] of [[offered,disabled],[disabled,offered]]) {
+    const compared=compareRecords(left,right);
+    assert.equal(compared.model_compatible,true);
+    assert.ok(compared.inputs.some(([key])=>key==='state.action_controls.can_split'));
+    assert.ok(compared.inputs.some(([key])=>key==='model.enumeration_state_limit'));
+    assert.equal(compared.evs.find(row=>row.action==='P').delta,null);
+  }
+  assert.deepEqual(recordedActionDifferences(disabled),{
+    permitted:['H','S','D'],omitted:[],unavailable:[],recommendation_unavailable:false
+  });
+  const stored=inspectRecord(resplitText(r=>{r.state.action_controls.can_split=false;}));
+  assert.deepEqual(recordedActionDifferences(stored),{
+    permitted:['H','S','D'],omitted:[],unavailable:['P'],recommendation_unavailable:true
+  });
+  const tied=inspectRecord(resplitText(r=>{
+    r.decision.evs.P=1;r.decision.action='S';r.decision.action_name='STAND';r.decision.margin=0;
+  }));
+  const changed=inspectRecord(resplitText(r=>{
+    r.decision.evs.P=1.0000000000000002;r.decision.margin=2**-52;
+  }));
+  const compared=compareRecords(tied,changed);
+  assert.deepEqual(compared.inputs,[]);
+  assert.equal(compared.action.matches,false);
+  assert.equal(compared.evs.find(row=>row.action==='P').delta,2**-52);
 });

@@ -26,6 +26,7 @@ EXIT_STATUSES = {'completed': 0, 'invalid_request': 2, 'unsupported_policy': 3,
 REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 1}
 COMMON_REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 2}
 SURRENDER_REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 3}
+RESPLIT_REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 4}
 INPUT_KEYS = ('cards', 'dealer_up', 'unseen_counts', 'is_split_hand', 'hand_count',
               'can_double', 'can_split')
 SURRENDER_INPUT_KEYS = INPUT_KEYS + ('can_surrender',)
@@ -45,8 +46,10 @@ def _normalise(value):
     schema = replay._object(value.get('schema'), ('name', 'version'), 'request.schema')
     common = type(schema['version']) is int and schema['version'] == 2
     surrender = type(schema['version']) is int and schema['version'] == 3
-    bounded = common or surrender
-    selected_schema = (SURRENDER_REQUEST_SCHEMA if surrender else
+    resplit = type(schema['version']) is int and schema['version'] == 4
+    bounded = common or surrender or resplit
+    selected_schema = (RESPLIT_REQUEST_SCHEMA if resplit else
+                       SURRENDER_REQUEST_SCHEMA if surrender else
                        COMMON_REQUEST_SCHEMA if common else REQUEST_SCHEMA)
     keys = ('schema', 'rules', 'input', 'model', 'limits') if bounded else (
         'schema', 'rules', 'input')
@@ -109,6 +112,16 @@ def _normalise(value):
         late_surrender.validate(cards, rules, unseen, inputs['is_split_hand'], hand_count,
                                 limits['max_states'], can_split=inputs['can_split'])
         captured.update(model=dict(late_surrender.MODEL), limits=dict(limits))
+    elif resplit:
+        from . import bounded_resplit
+        model = replay._object(value['model'], ('name', 'version'), 'request.model')
+        for key, expected in bounded_resplit.MODEL.items():
+            if type(model[key]) is not type(expected) or model[key] != expected:
+                raise ValueError('unsupported bounded-resplit calculation model')
+        limits = replay._object(value['limits'], ('max_states',), 'request.limits')
+        bounded_resplit.validate(cards, rules, unseen, inputs['is_split_hand'], hand_count,
+                                 limits['max_states'])
+        captured.update(model=dict(bounded_resplit.MODEL), limits=dict(limits))
     return captured
 
 
@@ -121,6 +134,13 @@ def _request_policy(policy, captured):
             'name': 'whole_request_uncached_enumeration_states',
             'max_states': captured['limits']['max_states'],
             'includes': 'root_draw_hit_double_distribution_dealer'}}
+    if captured['schema']['version'] == 4:
+        return {**policy, 'algorithmic_work_limit': {
+            'name': 'whole_request_uncached_enumeration_states',
+            'max_states': captured['limits']['max_states'],
+            'includes': ('root_draw_hit_double_distribution_dealer_and_'
+                         'resplit_draw_play_settle_dealer'),
+            'split_cooperative_seconds': 10.0}}
     return {**policy, 'algorithmic_work_limit': {
         'name': 'whole_request_uncached_enumeration_states',
         'max_states': captured['limits']['max_states'],
@@ -180,10 +200,14 @@ def _validated_decision(raw, captured, digest, returncode, policy):
     message = replay._parse(raw)
     common = captured['schema']['version'] == 2
     surrender = captured['schema']['version'] == 3
-    bounded = common or surrender
+    resplit = captured['schema']['version'] == 4
+    bounded = common or surrender or resplit
     if surrender:
         from . import late_surrender
-    work_families = late_surrender.ROOT_FAMILIES if surrender else None
+    if resplit:
+        from . import bounded_resplit
+    work_families = (bounded_resplit.FAMILIES if resplit else
+                     late_surrender.ROOT_FAMILIES if surrender else None)
     keys = ('status', 'decision', 'error', 'request_sha256', 'policy')
     if bounded:
         keys += ('work',)
@@ -225,10 +249,13 @@ def _validated_decision(raw, captured, digest, returncode, policy):
     if surrender:
         actual += (decision['state']['action_controls']['can_surrender'],)
         expected += (inputs['can_surrender'],)
-    expected_version = (record.SURRENDER_SCHEMA_VERSION if surrender else
+    expected_version = (record.RESPLIT_SCHEMA_VERSION if resplit else
+                        record.SURRENDER_SCHEMA_VERSION if surrender else
                         record.COMMON_SCHEMA_VERSION if common else
                         1 if can_double and can_split else 2)
-    expected_model = (record._surrender_model_record(up, captured['limits']['max_states'])
+    expected_model = (record._resplit_model_record(up, captured['limits']['max_states'])
+                      if resplit else record._surrender_model_record(
+                          up, captured['limits']['max_states'])
                       if surrender else record._common_model_record(
                           up, captured['limits']['max_states']) if common else None)
     if (actual != expected or decision['state']['shoe']['source'] != 'supplied_unseen'
@@ -237,6 +264,14 @@ def _validated_decision(raw, captured, digest, returncode, policy):
             or bounded and decision['model'] != expected_model):
         raise ValueError('completed decision differs from the captured request/package')
     answer = decision['decision']
+    if resplit:
+        offered = {'S', 'H'} | ({'D'} if inputs['can_double'] else set()) | (
+            {'P'} if inputs['can_split'] else set())
+        if set(answer['evs']) != offered:
+            raise ValueError('completed bounded-resplit decision lacks its exact offered values')
+        action, margin = bounded_resplit.rank(answer['evs'])
+        if answer['action'] != action or answer['margin'] != margin:
+            raise ValueError('bounded-resplit decision contradicts its canonical ranking')
     if surrender:
         offered = {'S', 'H'} | ({'D'} if inputs['can_double'] else set()) | (
             {'R'} if inputs['can_surrender'] else set())
@@ -351,7 +386,7 @@ def _run(request_path, output, policy, cancellation):
                     result['stdout'], captured, receipt['request_sha256'],
                     result['worker']['returncode'], policy)
                 receipt['status'], receipt['error'] = status, error
-                if captured['schema']['version'] in (2, 3):
+                if captured['schema']['version'] in (2, 3, 4):
                     receipt['work'] = work
             except (ValueError, TypeError, KeyError, OverflowError) as exc:
                 receipt['status'], receipt['error'] = 'worker_failed', _error(exc)
