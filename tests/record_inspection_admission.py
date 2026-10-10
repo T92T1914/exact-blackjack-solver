@@ -45,6 +45,7 @@ def main():
             "max_depth": replay.MAX_RECORD_DEPTH,
             "schema_version": record.SCHEMA_VERSION,
             "controlled_schema_version": record.CONTROLLED_SCHEMA_VERSION,
+            "common_schema_version": record.COMMON_SCHEMA_VERSION,
             "rule_fields": [field.name for field in fields(Rules)],
             "ranks": list(RANKS),
             "actions": ACTION_NAMES,

@@ -153,7 +153,8 @@ async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON
     assert.equal(await row.locator('td').textContent(),String(value));
   }
   await assertPermittedActions(page,label,permitted,saved);
-  assert.match(await result.textContent(),saved.schema.version===1 ? /implicit current action defaults/ : /stores the declared current action controls/);
+  assert.match(await result.textContent(),saved.schema.version===1 ? /implicit current action defaults/ :
+    saved.schema.version===2 ? /stores the declared current action controls/ : /bounded common-shoe model/);
 }
 
 test('local file consumer shows complete records and compares inputs before answers',async t=>{
@@ -206,7 +207,7 @@ test('record replacement errors remove the old answer and allow recovery',async 
   for (const [name,buffer,message] of [
     ['malformed.json',Buffer.from('{'),/invalid JSON/],
     ['duplicate.json',Buffer.from('{"schema":{},"\\u0073chema":{}}'),/duplicate JSON key/],
-    ['future.json',alteredRecord(r=>{r.schema.version=3;}),/unsupported_record/],
+    ['future.json',alteredRecord(r=>{r.schema.version=4;}),/unsupported_record/],
     ['missing-controls.json',alteredRecord(r=>{r.schema.version=2;}),/action_controls/],
     ['float-count.json',Buffer.from(recordFixture.toString().replace('"counts": [\n        0','"counts": [\n        0.0')),/integer/],
     ['invalid-utf8.json',Buffer.from([255]),/valid UTF-8/],
@@ -218,6 +219,46 @@ test('record replacement errors remove the old answer and allow recovery',async 
     assert.equal(await page.locator('#record-result-a').isVisible(),false);
     assert.equal(await page.locator('#record-comparison').isVisible(),false);
     await acceptedRecord(page,'a',recordFixture);
+  }
+});
+
+test('common records expose model coverage and incompatibility before answers',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  const constructed=JSON.parse(recordFixture);
+  constructed.schema.version=3;
+  Object.assign(constructed.state,{cards:['T','T'],dealer_up:'7',total:20,soft:false,
+    action_controls:{can_double:true,can_split:true}});
+  constructed.state.shoe.counts=[1,...Array(8).fill(0),5];constructed.rules.max_hands=2;
+  Object.assign(constructed.model,{hole_rank_excluded_by_peek:null,
+    split:'common_shoe_sequential_two_hand_no_resplit_binary_float_v1',split_hands:2,
+    split_deal_order:'finish_first_before_dealing_second',
+    split_aces:'one_card_no_double_no_natural_premium',
+    split_exhaustion:'refuse_any_unavailable_continuation',enumeration_state_limit:100000});
+  constructed.decision={action:'P',action_name:'SPLIT',evs:{S:1,H:-2/3,D:-4/3,P:2},
+    margin:1,units:'original_wager',whole_game_estimate:null};
+  const common=process.env.SOLVER_RECORD_COMMON ? await readFile(process.env.SOLVER_RECORD_COMMON) :
+    Buffer.from(JSON.stringify(constructed));
+  const legacy=process.env.SOLVER_RECORD_APPROX ? await readFile(process.env.SOLVER_RECORD_APPROX) : recordFixture;
+  console.log('Common inspection inputs:',JSON.stringify({source:process.env.SOLVER_RECORD_COMMON ?
+    'provided installed common output' : 'constructed admission fixture',
+    sha256:[common,legacy].map(buffer=>createHash('sha256').update(buffer).digest('hex'))}));
+  for (const [first,second] of [[legacy,common],[common,legacy]]) {
+    await acceptedRecord(page,'a',first);await assertCompleteRecord(page,'a',first);
+    await acceptedRecord(page,'b',second);await assertCompleteRecord(page,'b',second);
+    const comparison=page.locator('#record-comparison');
+    assert.match(await comparison.textContent(),/different mathematical split models/);
+    const model=comparison.getByRole('rowheader',{name:'model.split',exact:true});
+    const limit=comparison.getByRole('rowheader',{name:'model.enumeration_state_limit',exact:true});
+    assert.equal(await model.count(),1);assert.equal(await limit.count(),1);
+    const cells=await limit.locator('..').locator('td').allTextContents();
+    assert.deepEqual(cells,first===common ? [String(JSON.parse(common).model.enumeration_state_limit),
+      'absent (not declared by this model)'] : ['absent (not declared by this model)',
+      String(JSON.parse(common).model.enumeration_state_limit)]);
+    const order=await comparison.evaluate(node=>{
+      const text=node.textContent;return text.indexOf('different mathematical split models')<text.indexOf('4. Recorded answer comparison');
+    });
+    assert.equal(order,true);
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   }
 });
 

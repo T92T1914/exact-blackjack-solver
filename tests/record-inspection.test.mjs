@@ -30,7 +30,7 @@ add('fresh origin consistent',change(r=>{r.state.shoe.source='fresh_minus_visibl
 add('split dealt ace order',change(r=>{r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('split non-ace first order',change(r=>{r.state.cards=['4','A'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('changed supported rule',change(r=>{r.rules.s17=false;}));
-add('schema future',change(r=>{r.schema.version=3;}),'unsupported_record');
+add('schema future',change(r=>{r.schema.version=4;}),'unsupported_record');
 add('schema name future',change(r=>{r.schema.name='different';}),'unsupported_record');
 add('float schema version',fixture.replace('"version": 1','"version": 1.0'),'invalid_input');
 add('exponent schema version',fixture.replace('"version": 1','"version": 1e0'),'invalid_input');
@@ -102,6 +102,30 @@ add('version 1 excludes controls',change(r=>{r.state.action_controls={can_double
 add('version 2 missing controls',change(r=>{r.schema.version=2;}),'invalid_input');
 add('version 2 missing control key',change(r=>{controlled(r);delete r.state.action_controls.can_split;}),'invalid_input');
 add('version 2 unknown control key',change(r=>{controlled(r);r.state.action_controls.extra=true;}),'invalid_input');
+const commonText=update=>{
+  const saved=structuredClone(baseline);
+  saved.schema.version=3;saved.state.action_controls={can_double:true,can_split:true};
+  Object.assign(saved.state,{cards:['T','T'],dealer_up:'7',total:20,soft:false});
+  saved.state.shoe.counts=[1,...Array(8).fill(0),5];
+  saved.rules.max_hands=2;
+  saved.model=modelFor('7',100000n);
+  saved.decision={action:'P',action_name:'SPLIT',evs:{S:1,H:-2/3,D:-4/3,P:2},
+    margin:1,units:'original_wager',whole_game_estimate:null};
+  if (update) update(saved);
+  return JSON.stringify(saved,(_,value)=>typeof value==='bigint' ? Number(value) : value);
+};
+add('common version 3 complete record',commonText());
+add('common version 3 missing controls',commonText(r=>{delete r.state.action_controls;}),'invalid_input');
+add('common version 3 approximate identity',commonText(r=>{r.model.split=modelFor('7').split;}),'unsupported_record');
+add('common version 3 unknown field',commonText(r=>{r.model.unknown=true;}),'invalid_input');
+add('common version 3 nonpair',commonText(r=>{r.state.cards=['T','9'];r.state.total=19;}),'unsupported_record');
+add('common version 3 resplits',commonText(r=>{r.rules.resplit_aces=true;}),'unsupported_record');
+add('common version 3 hittable aces',commonText(r=>{r.rules.hit_split_aces=true;}),'unsupported_record');
+add('common version 3 hand cap',commonText(r=>{r.rules.max_hands=4;}),'unsupported_record');
+add('common version 3 too many cards',commonText(r=>{r.state.shoe.counts=[1,...Array(8).fill(0),20];}),'unsupported_record');
+add('common version 3 Boolean state cap',commonText(r=>{r.model.enumeration_state_limit=true;}),'invalid_input');
+add('common version 3 large state cap',commonText(r=>{r.model.enumeration_state_limit=100001;}),'unsupported_record');
+add('common version 3 fractional state cap',commonText().replace('"enumeration_state_limit":100000','"enumeration_state_limit":100000.0'),'invalid_input');
 for (const value of [null,[],true,0,'false']) {
   add(`version 2 invalid control object ${JSON.stringify(value)}`,change(r=>{controlled(r);r.state.action_controls=value;}),'invalid_input');
 }
@@ -172,7 +196,7 @@ test('shared corpus agrees with existing Python admission and schema declaration
   assert.equal(oracle.eligibility_scope,'best_action action keys with four EV routines stubbed to zero');
   assert.deepEqual(oracle.permitted,cases.map(item=>item.status==='accepted' ? permittedActions(inspectRecord(item.bytes)) : null),
     'Eligibility parity only, not EV or mathematical validation');
-  assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,controlled_schema_version:2,
+  assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,controlled_schema_version:2,common_schema_version:3,
     rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,models:Object.fromEntries(RANKS.map(rank=>[rank,modelFor(rank)]))});
 });
 test('exact large integer counts survive inspection and input-first comparison',()=>{
@@ -199,6 +223,19 @@ test('metadata-only change does not become a modeled input change',()=>{
   const result=compareRecords(inspectRecord(fixture),inspectRecord(change(r=>{r.package.version='future';})));
   assert.deepEqual(result.inputs,[]);assert.deepEqual(result.metadata,[['package.version','0.1.0','future']]);
   assert.ok(result.evs.every(row=>row.matches));
+});
+test('old and common model fields compare as a union in both directions',()=>{
+  const legacy=inspectRecord(fixture),common=inspectRecord(commonText());
+  for (const [left,right] of [[legacy,common],[common,legacy]]) {
+    const result=compareRecords(left,right);
+    assert.equal(result.model_compatible,false);
+    const limit=result.inputs.find(([key])=>key==='model.enumeration_state_limit');
+    assert.ok(limit);
+    assert.deepEqual(limit.slice(1),left===common ? [100000n,undefined] : [undefined,100000n]);
+    assert.ok(result.inputs.some(([key])=>key==='model.split'));
+    assert.equal(modeledRows(common).filter(([key])=>key.startsWith('model.')).length,12);
+  }
+  assert.equal(compareRecords(common,inspectRecord(commonText())).model_compatible,true);
 });
 test('signed zeros compare by numerical equality and overflowing deltas are explicit',()=>{
   const left=inspectRecord(change(r=>{r.decision.margin=0;r.decision.evs.H=-1e308;}));

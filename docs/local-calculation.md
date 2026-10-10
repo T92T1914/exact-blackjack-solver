@@ -23,6 +23,11 @@ archive route requires network access and pip's normal build backend and
 dependency installation support. It does not require Git or a development
 checkout. The archive also contains the small request example and this guide.
 
+Version 1 requests retain the existing numerical model. For an initial pair
+with two split hands sharing one depleted shoe, explicitly select the
+[version 2 common-shoe request](common-shoe-calculation.md). That separate
+domain adds a whole-request enumeration cap and produces schema 3 records.
+
 ## Supply modeled inputs
 
 Save the following as `request.json`, or save the
@@ -112,9 +117,11 @@ parent observes a monotonic deadline and initiates retirement when it expires.
 Ordinary operating-system startup calls and subsequent cleanup are not a
 promise of exact command duration. Cleanup has a separate five-second
 allowance, and unresolved cleanup is visible rather than reported as success.
-Each worker stream is bounded to 65,536 bytes. No production enumeration-state
-or algorithmic-work cap is implemented. Caches belong to the disposable worker
-and retire with it. Parent/shared caches are not cleared.
+Each worker stream is bounded to 65,536 bytes. Version 1 requests have no
+enumeration-state or algorithmic-work cap. Explicit version 2 common-shoe
+requests add the [shared state cap](common-shoe-calculation.md#actual-work-and-operational-limits).
+Caches belong to the disposable worker and retire with it. Parent/shared
+caches are not cleared.
 
 ## Completion, cancellation and failure
 
@@ -129,8 +136,8 @@ An attempt contains `request-source.json`, `request.json` and `attempt.json`.
 The initial capture is not a completed result. Received worker streams are
 retained when present. Success publishes the complete `result` directory with:
 
-- `result/decision.json`, an unchanged V1 or V2 decision format suitable for
-  existing consumers.
+- `result/decision.json`, a V1 or V2 decision for legacy requests, or an explicit
+  V3 common-shoe decision, suitable for the supported replay and inspector.
 - `result/receipt.json`, the completed attempt, request identity, applied policy,
   worker exit, retirement observations and decision byte count/digest.
 
@@ -165,7 +172,7 @@ the completed files. Inspect their receipt rather than rerunning blindly.
 | `completed` | 0 | Complete valid record, ordinary worker exit, verified retirement and committed result |
 | `invalid_request` | 2 | Unsupported/malformed request or invalid modeled state before pricing |
 | `unsupported_policy` | 3 | Requested platform policy unavailable, or Windows containment could not be established |
-| `resource_limited` | 4 | Reported memory/recursion exhaustion or the explicit worker transport cap |
+| `resource_limited` | 4 | Reported memory/recursion exhaustion, bounded transport or an explicit common-model enumeration/cooperative limit |
 | `calculation_error` | 5 | Admitted state could not be calculated, including exhaustion or arithmetic overflow |
 | `worker_failed` | 6 | Unexpected exit, incomplete/invalid message or transport failure |
 | `cleanup_failed` | 7 | An otherwise complete record could not be accepted because cleanup remained unresolved |
@@ -190,9 +197,10 @@ bj-advise --replay run-001/result/decision.json --json
 ```
 
 Replay reports agreement or differences separately from calculation/failure
-outcomes. It trusts no saved answer as a calculation input. Replay itself retains
-its existing caller-owned, unbounded engine behavior. The calculation worker's
-deadline and memory policy do not silently apply to this later replay command.
+outcomes. It trusts no saved answer as a calculation input. Replay retains
+caller-owned execution. Legacy models have no algorithmic bound; schema 3 uses
+its recorded common-model state cap. The calculation worker's deadline and
+memory policy do not silently apply to this later replay command.
 
 Open the [existing project inspector](https://t92t1914.github.io/exact-blackjack-solver/)
 and select `result/decision.json` as local record A. Select another completed record

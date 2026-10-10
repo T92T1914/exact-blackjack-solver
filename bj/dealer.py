@@ -69,6 +69,7 @@ APPROXIMATIONS
 from __future__ import annotations
 
 from functools import lru_cache
+from ._enumeration import state as _enumeration_state
 
 from .core import (
     STANDARD,
@@ -121,6 +122,7 @@ def _resolve(total: int, soft: bool, shoe: Shoe, s17: bool) -> tuple[float, ...]
     Six entries, not seven: a natural is decided by the first two cards and is
     handled by the caller, so it can never arise inside the draw loop.
     """
+    _enumeration_state('root_dealer')
     if total > 21:
         return _BUST_VECTOR
     if total >= 18:
@@ -179,6 +181,7 @@ def _distribution(up: str, shoe: Shoe, s17: bool, peek_resolved: bool) -> tuple[
     normalisation inside a loop that runs tens of millions of times.  Treat the
     signature as stable for that reason.
     """
+    _enumeration_state('root_distribution')
     n = shoe_size(shoe)
     if n == 0:
         raise ValueError('empty shoe: the dealer has no hole card to draw')

@@ -15,6 +15,11 @@ rule and the split state. Replay cannot be combined with positional cards,
 `--table`, or hand/rule options. Existing advice and `--json` export commands
 keep their behavior. Replay calculates one decision and no whole-game value.
 
+An explicitly selected [common-shoe calculation](common-shoe-calculation.md)
+emits schema 3. Replay selects that record's two-hand model and whole-request
+state cap. Existing schema 1 and 2 records keep their declared approximate
+split semantics. Saved EVs remain comparison data for every supported model.
+
 For a small installed-package example, copy
 [`examples/replay_saved_decision.py`](../examples/replay_saved_decision.py)
 outside the checkout and run it with the Python environment containing the
@@ -279,7 +284,7 @@ validation remains a separate question.
 | `differences` | 1 | Calculation completed, with a different legal-action set, EV, recommendation or margin. |
 | `invalid_input` | 2 | JSON or a required representation/consistency check failed before calculation. |
 | `unsupported_record` | 3 | The declared schema, rules, units or model is outside supported replay. |
-| `resource_limited` | 4 | `MemoryError` or calculation recursion exhaustion prevented completion. |
+| `resource_limited` | 4 | Memory/recursion exhaustion, or a recorded common-model state/cooperative limit, prevented completion. |
 | `calculation_error` | 5 | An admitted state could not be calculated, such as dealer draw exhaustion or floating-point overflow. |
 | `io_error` | 6 | The local file could not be read. |
 | `interrupted` | 130 | A `KeyboardInterrupt` stopped reading, admission or calculation. |
@@ -299,7 +304,7 @@ command's mapping.
 
 ## Admission and retained counts
 
-Supported replay is the `blackjack-decision` schema, versions 1 and 2. The importer
+Supported replay is the `blackjack-decision` schema, versions 1, 2 and 3. The importer
 requires every declared field and rejects unknown fields at every object,
 duplicate JSON keys, nonfinite values, Boolean numeric parameters and
 inconsistent derived hand totals or softness. Cards must be normalized ranks
@@ -322,7 +327,9 @@ changed supported state is calculated normally and compared with its saved
 answer.
 
 The importer checks the declared post-peek hidden-hole model, collapsed
-ten-value ranks, original-wager units and the existing split approximation.
+ten-value ranks, original-wager units and the selected split model. Schemas 1
+and 2 retain the existing approximation. Schema 3 requires its common-shoe
+coverage, deal order, split-ace/exhaustion declarations and recorded state cap.
 Unsupported no-peek, surrender, restricted-double or distinct-ten rules are
 refused. Saved EVs, recommendations and margins are historical comparison
 data. Known action-code sets may differ from the current legal set, and a
@@ -331,7 +338,7 @@ finite altered saved answer remains visible as a difference after calculation.
 ## Inspect and compare local records in the browser
 
 The [project page](https://t92t1914.github.io/exact-blackjack-solver/) can inspect
-one or two local version 1 or version 2 decision files. Export a record through an installed
+one or two local version 1, 2 or 3 decision files. Export a record through an installed
 package, save the JSON output as UTF-8, then select it as record A. For example,
 the six unseen cards keep this example small:
 
@@ -346,8 +353,11 @@ rule and model declaration, schema/package labels and recorded answer. It
 keeps integer counts exact and shows raw finite binary-float answer values
 without display rounding. Supported recorded action codes include split `P`.
 
-Selecting record B shows changed modeled inputs before recorded answer
-differences. An action present in only one record is explicitly absent on the
+Selecting record B shows model compatibility and changed modeled inputs before
+recorded answer differences. Schema 3 coverage fields absent from an older
+model remain visible in either comparison direction. Comparing different split
+models does not attribute their EV differences to a single input change.
+An action present in only one record is explicitly absent on the
 other side, with no numeric delta. A changed input pair does not identify a
 single cause, especially when several inputs changed. Matching supplied
 values and package labels do not authenticate origin or establish numerical
@@ -355,7 +365,7 @@ correctness.
 
 The page derives actions permitted by the admitted modeled state separately
 from the supplied EV keys. It displays both effective current action controls,
-distinguishing implicit version 1 defaults from stored version 2 booleans.
+distinguishing implicit version 1 defaults from stored version 2/3 booleans.
 Version 1 and declared true/true version 2 have equal control inputs in either
 comparison direction, with their schema difference shown as metadata.
 It uses those effective controls,
@@ -410,9 +420,11 @@ or memory during installed engine recalculation.
 
 ## Resource ownership and evidence
 
-The production solver has no work, time or memory limit. Its process-wide
-memo tables have no eviction limit and remain owned by the caller's process.
-Replay preserves that behavior and does not create workers, clear shared
+Legacy production models have no work, time or memory limit. The explicit
+schema 3 common model adds its recorded whole-request uncached-state cap and
+the joint calculation's cooperative limit. Process-wide memo tables have no
+eviction limit and remain owned by the caller's process.
+Replay does not create workers, clear shared
 caches, launch a supervisor or guarantee recovery after an operating-system
 kill. A reported `MemoryError`, `RecursionError` or `KeyboardInterrupt` is
 distinct from a numerical difference. Caller-selected execution limits still

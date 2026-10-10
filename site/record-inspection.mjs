@@ -135,12 +135,17 @@ function parse(input) {
   return result;
 }
 
-export function modelFor(up) {
-  return {dealer_information:'hidden_hole_post_peek',
+export function modelFor(up,maxStates=null) {
+  const model={dealer_information:'hidden_hole_post_peek',
     hole_rank_excluded_by_peek:up==='A' ? 'T' : up==='T' ? 'A' : null,
     ten_value_ranks:'collapsed_to_T',insurance_priced:false,
     hit_stand_double:'finite_enumeration_binary_floating_point',
     split:'independent_hands_greedy_shared_resplit_budget',split_error_bound:null};
+  return maxStates===null ? model : {...model,
+    split:'common_shoe_sequential_two_hand_no_resplit_binary_float_v1',split_hands:2n,
+    split_deal_order:'finish_first_before_dealing_second',
+    split_aces:'one_card_no_double_no_natural_premium',
+    split_exhaustion:'refuse_any_unavailable_continuation',enumeration_state_limit:maxStates};
 }
 
 export function inspectRecord(input) {
@@ -148,14 +153,14 @@ export function inspectRecord(input) {
   if (!object(saved)) invalid('record must be an object');
   const schema=fields(saved.schema,['name','version'],'schema');
   string(schema.name,'schema.name'); integer(schema.version,'schema.version');
-  if (schema.name!=='blackjack-decision' || ![1n,2n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1 and 2');
+  if (schema.name!=='blackjack-decision' || ![1n,2n,3n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1, 2 and 3');
   fields(saved,['schema','package','state','rules','decision','model'],'record');
   const pkg=fields(saved.package,['name','version'],'package');
   constant(pkg.name,'exact-blackjack-solver','package.name'); string(pkg.version,'package.version');
   const stateKeys=['cards','dealer_up','total','soft','is_split_hand','hand_count','shoe'];
-  if (schema.version===2n) stateKeys.push('action_controls');
+  if (schema.version!==1n) stateKeys.push('action_controls');
   const state=fields(saved.state,stateKeys,'state');
-  if (schema.version===2n) {
+  if (schema.version!==1n) {
     const controls=fields(state.action_controls,['can_double','can_split'],'state.action_controls');
     for (const key of ['can_double','can_split']) if (typeof controls[key]!=='boolean') invalid(`state.action_controls.${key} must be a boolean`);
   }
@@ -199,7 +204,18 @@ export function inspectRecord(input) {
     for (const rank of [...state.cards,state.dealer_up]) if (--expected[RANKS.indexOf(rank)]<0n) invalid('declared fresh shoe has too few visible cards');
     if (!equal(shoe.counts,expected)) invalid('fresh_minus_visible counts disagree with the declared state');
   }
-  const declarations=modelFor(state.dealer_up),model=fields(saved.model,Object.keys(declarations),'model');
+  let maxStates=null;
+  if (schema.version===3n) {
+    if (!object(saved.model)) invalid('model must be an object');
+    maxStates=integer(saved.model.enumeration_state_limit,'model.enumeration_state_limit');
+    if (maxStates<1n || maxStates>100000n) unsupported('common model enumeration state limit must be from 1 through 100000');
+    if (state.cards.length!==2 || state.cards[0]!==state.cards[1]) unsupported('common-shoe model requires an initial two-card pair');
+    if (state.is_split_hand || state.hand_count!==1n) unsupported('common-shoe model requires an unsplit initial hand');
+    if (rules.max_hands!==2n || rules.resplit_aces || rules.hit_split_aces) unsupported('common-shoe model requires max_hands=2, no resplits and one-card split aces');
+    if (count<3n || count>20n) unsupported('common-shoe model requires 3 to 20 unseen cards including the hole');
+    if (shoe.source!=='supplied_unseen') unsupported('common-shoe records require supplied_unseen counts');
+  }
+  const declarations=modelFor(state.dealer_up,maxStates),model=fields(saved.model,Object.keys(declarations),'model');
   for (const [key,expected] of Object.entries(declarations)) constant(model[key],expected,`model.${key}`,key==='hole_rank_excluded_by_peek');
   const decision=fields(saved.decision,['action','action_name','evs','margin','units','whole_game_estimate'],'decision');
   constant(decision.units,'original_wager','decision.units'); constant(decision.whole_game_estimate,null,'decision.whole_game_estimate');
@@ -213,6 +229,7 @@ export function inspectRecord(input) {
 }
 
 export function display(value) {
+  if (value===undefined) return 'absent (not declared by this model)';
   if (value===null) return 'null';
   if (Array.isArray(value)) return '['+value.map(display).join(', ')+']';
   return String(value);
@@ -227,7 +244,7 @@ export function modeledRows(record) {
     ...RANKS.map((rank,i)=>[`state.shoe.counts.${rank}`,state.shoe.counts[i]]),
     ...['source','includes_hidden_hole','visible_cards_already_removed'].map(key=>[`state.shoe.${key}`,state.shoe[key]]),
     ...RULE_FIELDS.map(key=>[`rules.${key}`,rules[key]]),
-    ...Object.keys(modelFor(state.dealer_up)).map(key=>[`model.${key}`,model[key]])
+    ...Object.keys(model).map(key=>[`model.${key}`,model[key]])
   ];
 }
 export function metadataRows(record) {
@@ -260,11 +277,16 @@ export function recordedActionDifferences(record) {
     recommendation_unavailable:!permitted.includes(record.decision.action)};
 }
 export function compareRecords(left,right) {
-  const rightInputs=new Map(modeledRows(right)),rightMetadata=new Map(metadataRows(right));
-  const changed=(rows,other)=>rows.filter(([key,value])=>!equal(value,other.get(key))).map(([key,value])=>[key,value,other.get(key)]);
+  const changed=(rows,otherRows)=>{
+    const one=new Map(rows),other=new Map(otherRows);
+    return [...new Set([...one.keys(),...other.keys()])]
+      .filter(key=>!equal(one.get(key),other.get(key)))
+      .map(key=>[key,one.get(key),other.get(key)]);
+  };
   const delta=(a,b)=> { const value=b-a; return Number.isFinite(value) ? value : 'outside finite delta range'; };
   return {
-    inputs:changed(modeledRows(left),rightInputs), metadata:changed(metadataRows(left),rightMetadata),
+    inputs:changed(modeledRows(left),modeledRows(right)),metadata:changed(metadataRows(left),metadataRows(right)),
+    model_compatible:left.model.split===right.model.split,
     permitted:{left:permittedActions(left),right:permittedActions(right)},
     action:{left:left.decision.action,right:right.decision.action,matches:left.decision.action===right.decision.action},
     margin:{left:left.decision.margin,right:right.decision.margin,matches:left.decision.margin===right.decision.margin,delta:delta(left.decision.margin,right.decision.margin)},
