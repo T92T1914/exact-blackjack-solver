@@ -19,6 +19,10 @@ An explicitly selected [common-shoe calculation](common-shoe-calculation.md)
 emits schema 3. Replay selects that record's two-hand model and whole-request
 state cap. Existing schema 1 and 2 records keep their declared approximate
 split semantics. Saved EVs remain comparison data for every supported model.
+An explicitly selected [late-surrender calculation](late-surrender-calculation.md)
+emits schema 4 for one original initial two-card hand below 21. Replay uses its
+current surrender permission, retained counts, coverage and root-only state
+cap. Older models remain outside surrender coverage.
 
 For a small installed-package example, copy
 [`examples/replay_saved_decision.py`](../examples/replay_saved_decision.py)
@@ -258,7 +262,8 @@ the admitted state, rules and model. `recorded` is the saved decision.
 saved and current legal-action sets, every action's raw EV, recommendation
 and raw margin, each with an explicit `matches` flag. A missing action has a
 null value on that side and a false match. Action codes retain their existing
-meaning: `S` stand, `H` hit, `D` double and `P` split.
+meaning: `S` stand, `H` hit, `D` double and `P` split. Only schema 4 supports
+`R` surrender in its separate initial-hand family. P is outside that family.
 
 The comparison policy is `exact_binary_float`, with zero absolute and relative
 tolerance. Finite saved numeric values are interpreted as Python binary
@@ -284,7 +289,7 @@ validation remains a separate question.
 | `differences` | 1 | Calculation completed, with a different legal-action set, EV, recommendation or margin. |
 | `invalid_input` | 2 | JSON or a required representation/consistency check failed before calculation. |
 | `unsupported_record` | 3 | The declared schema, rules, units or model is outside supported replay. |
-| `resource_limited` | 4 | Memory/recursion exhaustion, or a recorded common-model state/cooperative limit, prevented completion. |
+| `resource_limited` | 4 | Memory/recursion exhaustion, a recorded bounded-model state cap, or the common model's cooperative limit prevented completion. |
 | `calculation_error` | 5 | An admitted state could not be calculated, such as dealer draw exhaustion or floating-point overflow. |
 | `io_error` | 6 | The local file could not be read. |
 | `interrupted` | 130 | A `KeyboardInterrupt` stopped reading, admission or calculation. |
@@ -304,7 +309,7 @@ command's mapping.
 
 ## Admission and retained counts
 
-Supported replay is the `blackjack-decision` schema, versions 1, 2 and 3. The importer
+Supported replay is the `blackjack-decision` schema, versions 1, 2, 3 and 4. The importer
 requires every declared field and rejects unknown fields at every object,
 duplicate JSON keys, nonfinite values, Boolean numeric parameters and
 inconsistent derived hand totals or softness. Cards must be normalized ranks
@@ -330,15 +335,20 @@ The importer checks the declared post-peek hidden-hole model, collapsed
 ten-value ranks, original-wager units and the selected split model. Schemas 1
 and 2 retain the existing approximation. Schema 3 requires its common-shoe
 coverage, deal order, split-ace/exhaustion declarations and recorded state cap.
-Unsupported no-peek, surrender, restricted-double or distinct-ten rules are
-refused. Saved EVs, recommendations and margins are historical comparison
+Schema 4 requires its explicit post-peek late-surrender identity, original
+initial two-card hand below 21, no split, supplied three through twenty unseen
+cards, current surrender control, terminal half-loss, no later surrender and
+recorded root-only cap. S/H/D retain the ordinary last-draw standing convention
+and required dealer-settlement exhaustion refusal. Surrender in schemas 1/2/3,
+no-peek, restricted-double and distinct-ten rules remain refused. Saved EVs,
+recommendations and margins are historical comparison
 data. Known action-code sets may differ from the current legal set, and a
 finite altered saved answer remains visible as a difference after calculation.
 
 ## Inspect and compare local records in the browser
 
 The [project page](https://t92t1914.github.io/exact-blackjack-solver/) can inspect
-one or two local version 1, 2 or 3 decision files. Export a record through an installed
+one or two local version 1, 2, 3 or 4 decision files. Export a record through an installed
 package, save the JSON output as UTF-8, then select it as record A. For example,
 the six unseen cards keep this example small:
 
@@ -351,12 +361,17 @@ redirection encoding differences. The browser displays the complete dealt
 order, dealer upcard, total and softness, split state, retained counts, every
 rule and model declaration, schema/package labels and recorded answer. It
 keeps integer counts exact and shows raw finite binary-float answer values
-without display rounding. Supported recorded action codes include split `P`.
+without display rounding. Older models support split P. Schema 4 supports
+R in its explicit initial-hand family and excludes P. Admission does not widen
+an older schema's action vocabulary.
 
 Selecting record B shows model compatibility and changed modeled inputs before
 recorded answer differences. Schema 3 coverage fields absent from an older
-model remain visible in either comparison direction. Comparing different split
-models does not attribute their EV differences to a single input change.
+model remain visible in either comparison direction. Schema 4's initial-only
+late-surrender coverage is incompatible with ordinary and common split models
+in both directions. Comparing different mathematical families does not
+attribute their EV differences to a single input change. Same-family current
+permission, retained-count and cap changes remain visible input differences.
 An action present in only one record is explicitly absent on the
 other side, with no numeric delta. A changed input pair does not identify a
 single cause, especially when several inputs changed. Matching supplied
@@ -366,6 +381,10 @@ correctness.
 The page derives actions permitted by the admitted modeled state separately
 from the supplied EV keys. It displays both effective current action controls,
 distinguishing implicit version 1 defaults from stored version 2/3 booleans.
+Schema 4 stores `can_surrender` beside its current double and false split
+controls. Older models have effective surrender permission false and no stored
+surrender control. The viewer distinguishes that absence from an explicit
+false declaration without adding fields to old records.
 Version 1 and declared true/true version 2 have equal control inputs in either
 comparison direction, with their schema difference shown as metadata.
 It uses those effective controls,
@@ -377,7 +396,10 @@ shared hand cap retain the engine's existing eligibility rules. The first
 dealt card remains the split rank. Counts are summed as exact integers without
 removing visible cards again. External table buttons are outside this model.
 
-All four action codes show their permitted status and supplied EV presence.
+Each model's four action codes show their permitted status and supplied EV presence.
+For schema 4 these are S/H/D/R, with R's initial eligibility and current
+permission derived without pricing. Older models retain H/S/D/P. Mixed
+comparisons show the union, including unavailable or absent R on the old side.
 A deliberately disabled action absent from EVs is not an omission.
 A supplied unavailable action, an omitted permitted action or an unavailable
 recorded recommendation produces a warning. It does not reject the record or
@@ -390,7 +412,8 @@ supplied shoe. Dealer draw exhaustion, floating-point range and computation
 resources remain separate engine questions. Browser admission/eligibility
 checks do not recompute EVs or validate their numerical correctness. Focused
 tests compare eligibility with the existing `best_action` branches while four
-valuation routines are stubbed to zero. That is action-key parity, not an
+valuation routines are stubbed to zero, plus schema 4's admitted current R
+permission. That is action-key parity, not an
 independent numerical reference. Use `bj-advise --replay PATH --json` for
 installed recalculation and
 comparison with the engine. Browser inspection does not change the model or
@@ -422,7 +445,9 @@ or memory during installed engine recalculation.
 
 Legacy production models have no work, time or memory limit. The explicit
 schema 3 common model adds its recorded whole-request uncached-state cap and
-the joint calculation's cooperative limit. Process-wide memo tables have no
+the joint calculation's cooperative limit. Schema 4 adds a root-only cap and
+no split cooperative limit. A failed offered price yields no completed result,
+even if R's constant value is already known. Process-wide memo tables have no
 eviction limit and remain owned by the caller's process.
 Replay does not create workers, clear shared
 caches, launch a supervisor or guarantee recovery after an operating-system

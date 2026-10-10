@@ -4,7 +4,8 @@ import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inspectRecord,compareRecords,recordSlot,display,modeledRows,modelFor,permittedActions,recordedActionDifferences,MAX_RECORD_BYTES,
-  MAX_RECORD_DEPTH,MAX_INTEGER_DIGITS,RANKS,RULE_FIELDS,ACTION_NAMES} from '../site/record-inspection.mjs';
+  MAX_RECORD_DEPTH,MAX_INTEGER_DIGITS,RANKS,RULE_FIELDS,ACTION_NAMES,SURRENDER_ACTION_NAMES,
+  surrenderModelFor,recordActionNames,actionControls} from '../site/record-inspection.mjs';
 
 const fixture=await readFile(new URL('./fixtures/saved-decision-v1-7a38141.json',import.meta.url),'utf8');
 const baseline=JSON.parse(fixture);
@@ -30,7 +31,7 @@ add('fresh origin consistent',change(r=>{r.state.shoe.source='fresh_minus_visibl
 add('split dealt ace order',change(r=>{r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('split non-ace first order',change(r=>{r.state.cards=['4','A'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('changed supported rule',change(r=>{r.rules.s17=false;}));
-add('schema future',change(r=>{r.schema.version=4;}),'unsupported_record');
+add('schema future',change(r=>{r.schema.version=5;}),'unsupported_record');
 add('schema name future',change(r=>{r.schema.name='different';}),'unsupported_record');
 add('float schema version',fixture.replace('"version": 1','"version": 1.0'),'invalid_input');
 add('exponent schema version',fixture.replace('"version": 1','"version": 1e0'),'invalid_input');
@@ -126,6 +127,71 @@ add('common version 3 too many cards',commonText(r=>{r.state.shoe.counts=[1,...A
 add('common version 3 Boolean state cap',commonText(r=>{r.model.enumeration_state_limit=true;}),'invalid_input');
 add('common version 3 large state cap',commonText(r=>{r.model.enumeration_state_limit=100001;}),'unsupported_record');
 add('common version 3 fractional state cap',commonText().replace('"enumeration_state_limit":100000','"enumeration_state_limit":100000.0'),'invalid_input');
+const surrenderText=update=>{
+  const saved=structuredClone(baseline);
+  saved.schema.version=4;
+  Object.assign(saved.state,{cards:['T','6'],dealer_up:'T',total:16,soft:false,
+    action_controls:{can_double:true,can_split:false,can_surrender:true}});
+  saved.state.shoe.counts=[...Array(9).fill(0),3];
+  Object.assign(saved.rules,{max_hands:1,surrender:true,resplit_aces:false,hit_split_aces:false});
+  saved.model=surrenderModelFor('T',100000n);
+  saved.decision={action:'R',action_name:'SURRENDER',evs:{S:-1,H:-1,D:-2,R:-0.5},
+    margin:0.5,units:'original_wager',whole_game_estimate:null};
+  if (update) update(saved);
+  return JSON.stringify(saved,(_,value)=>typeof value==='bigint' ? Number(value) : value);
+};
+add('late version 4 complete record',surrenderText());
+add('late version 4 altered finite R',surrenderText(r=>{r.decision.evs.R=99;r.decision.margin=100;}));
+add('late version 4 omitted permitted H',surrenderText(r=>{delete r.decision.evs.H;}));
+add('late version 4 stored unavailable R',surrenderText(r=>{r.state.action_controls.can_surrender=false;}));
+add('late version 4 disabled absent R',surrenderText(r=>{
+  r.state.action_controls.can_surrender=false;delete r.decision.evs.R;
+  r.decision.action='S';r.decision.action_name='STAND';r.decision.margin=0;
+}));
+add('late version 4 missing surrender control',surrenderText(r=>{delete r.state.action_controls.can_surrender;}),'invalid_input');
+add('late version 4 nonboolean surrender control',surrenderText(r=>{r.state.action_controls.can_surrender=1;}),'invalid_input');
+add('late version 4 split action vocabulary',surrenderText(r=>{r.decision.evs.P=0;}),'invalid_input');
+add('late version 4 no table surrender',surrenderText(r=>{r.rules.surrender=false;}),'unsupported_record');
+add('late version 4 no peek',surrenderText(r=>{r.rules.peek=false;}),'unsupported_record');
+add('late version 4 natural',surrenderText(r=>{r.state.cards=['A','T'];r.state.total=21;r.state.soft=true;}),'unsupported_record');
+add('late version 4 already hit',surrenderText(r=>{r.state.cards=['T','2','2'];r.state.total=14;}),'unsupported_record');
+add('late version 4 split choice',surrenderText(r=>{r.state.action_controls.can_split=true;}),'unsupported_record');
+add('late version 4 split hand allowance',surrenderText(r=>{r.rules.max_hands=2;}),'unsupported_record');
+add('late version 4 unsupported rules precede inconsistent hand state',surrenderText(r=>{
+  r.rules.max_hands=2;r.state.hand_count=2;
+}),'unsupported_record');
+add('late version 4 unsupported rules precede invalid count values',surrenderText(r=>{
+  r.rules.max_hands=2;r.state.shoe.counts[0]=false;
+}),'unsupported_record');
+add('late version 4 resplit rule',surrenderText(r=>{r.rules.resplit_aces=true;}),'unsupported_record');
+add('late version 4 hittable split ace rule',surrenderText(r=>{r.rules.hit_split_aces=true;}),'unsupported_record');
+add('late version 4 fewer than three unseen',surrenderText(r=>{r.state.shoe.counts[9]=2;}),'unsupported_record');
+add('late version 4 more than twenty unseen',surrenderText(r=>{r.state.shoe.counts[9]=21;}),'unsupported_record');
+add('late version 4 fresh origin',surrenderText(r=>{
+  r.rules.decks=1;r.state.shoe.source='fresh_minus_visible';
+  r.state.shoe.counts=[4,4,4,4,4,3,4,4,4,14];
+}),'unsupported_record');
+add('late version 4 missing model field',surrenderText(r=>{delete r.model.surrender_after_hit;}),'invalid_input');
+add('late version 4 unknown model field',surrenderText(r=>{r.model.extra=false;}),'invalid_input');
+add('late version 4 wrong model name',surrenderText(r=>{r.model.name='common_shoe_two_hand';}),'unsupported_record');
+add('late version 4 wrong model version',surrenderText(r=>{r.model.version=2;}),'unsupported_record');
+add('late version 4 wrong continuation',surrenderText(r=>{r.model.surrender_after_hit=true;}),'unsupported_record');
+add('late version 4 fractional model version',surrenderText().replace('"name":"post_peek_late_surrender","version":1',
+  '"name":"post_peek_late_surrender","version":1.0'),'invalid_input');
+add('late version 4 fractional draw count',surrenderText().replace('"surrender_draws":0','"surrender_draws":0.0'),'invalid_input');
+add('late version 4 Boolean state cap',surrenderText(r=>{r.model.enumeration_state_limit=true;}),'invalid_input');
+add('late version 4 oversized state cap',surrenderText(r=>{r.model.enumeration_state_limit=100001;}),'unsupported_record');
+for (const version of [1,2,3]) {
+  const create=version===3 ? commonText : change;
+  add(`legacy version ${version} forbids R`,create(r=>{
+    if (version===2) controlled(r);
+    r.decision.evs.R=-0.5;r.decision.action='R';r.decision.action_name='SURRENDER';
+  }),'invalid_input');
+  if (version!==1) add(`legacy version ${version} forbids surrender control`,create(r=>{
+    if (version===2) controlled(r);
+    r.state.action_controls.can_surrender=false;
+  }),'invalid_input');
+}
 for (const value of [null,[],true,0,'false']) {
   add(`version 2 invalid control object ${JSON.stringify(value)}`,change(r=>{controlled(r);r.state.action_controls=value;}),'invalid_input');
 }
@@ -193,11 +259,14 @@ test('shared corpus agrees with existing Python admission and schema declaration
   assert.equal(result.status,0,result.stderr || String(result.error));
   const oracle=JSON.parse(result.stdout);
   assert.deepEqual(oracle.outcomes,cases.map(item=>item.pythonStatus));
-  assert.equal(oracle.eligibility_scope,'best_action action keys with four EV routines stubbed to zero');
+  assert.equal(oracle.eligibility_scope,'best_action action keys with four EV routines stubbed to zero; schema 4 terminal R from admitted current permission');
   assert.deepEqual(oracle.permitted,cases.map(item=>item.status==='accepted' ? permittedActions(inspectRecord(item.bytes)) : null),
     'Eligibility parity only, not EV or mathematical validation');
+  const plain=value=>JSON.parse(JSON.stringify(value,(_,item)=>typeof item==='bigint' ? Number(item) : item));
   assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,controlled_schema_version:2,common_schema_version:3,
-    rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,models:Object.fromEntries(RANKS.map(rank=>[rank,modelFor(rank)]))});
+    surrender_schema_version:4,rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,surrender_actions:SURRENDER_ACTION_NAMES,
+    models:Object.fromEntries(RANKS.map(rank=>[rank,modelFor(rank)])),
+    surrender_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(surrenderModelFor(rank,100000n))]))});
 });
 test('exact large integer counts survive inspection and input-first comparison',()=>{
   const left=inspectRecord(cases.find(item=>item.name==='unsafe exact integer count').bytes);
@@ -207,7 +276,7 @@ test('exact large integer counts survive inspection and input-first comparison',
   assert.equal(display(right.state.shoe.counts[0]),'1'+'0'.repeat(400));
   const result=compareRecords(left,right);
   assert.deepEqual(result.inputs,[['state.shoe.counts.A',9007199254740993n,10n**400n]]);
-  assert.equal(modeledRows(left).length,41);
+  assert.equal(modeledRows(left).length,43);
 });
 test('comparison distinguishes absent actions, one-ULP answers and input order',()=>{
   const left=inspectRecord(fixture);
@@ -324,4 +393,72 @@ test('disabled absent actions are not omissions, but stored disabled answers rem
     permitted:['H','S'],omitted:[],unavailable:['D'],recommendation_unavailable:true
   });
   assert.equal(altered.decision.action,'D');assert.equal(altered.decision.evs.D,baseline.decision.evs.D);
+});
+
+test('late vocabulary and controls preserve stored absence and old model admission',()=>{
+  const late=inspectRecord(surrenderText()),legacy=inspectRecord(fixture);
+  assert.equal(Object.hasOwn(ACTION_NAMES,'R'),false);
+  assert.deepEqual(recordActionNames(late),SURRENDER_ACTION_NAMES);
+  assert.deepEqual(permittedActions(late),['S','H','D','R']);
+  assert.equal(Object.hasOwn(legacy.state,'action_controls'),false);
+  assert.equal(actionControls(legacy).can_surrender,false);
+  const rows=new Map(modeledRows(legacy));
+  assert.equal(rows.get('effective_action_controls.can_surrender'),false);
+  assert.equal(rows.get('state.action_controls.can_surrender'),undefined);
+  assert.deepEqual(recordedActionDifferences(inspectRecord(surrenderText(r=>{
+    r.state.action_controls.can_surrender=false;
+  }))),{permitted:['S','H','D'],omitted:[],unavailable:['R'],recommendation_unavailable:true});
+});
+
+test('late and prior mathematical families are incompatible in both comparison directions',()=>{
+  const late=inspectRecord(surrenderText());
+  for (const previous of [inspectRecord(fixture),inspectRecord(commonText())]) {
+    for (const [left,right] of [[previous,late],[late,previous]]) {
+      const compared=compareRecords(left,right);
+      assert.equal(compared.model_compatible,false);
+      assert.ok(compared.inputs.some(([key])=>key==='model.decision_phase'));
+      assert.ok(compared.inputs.some(([key])=>key==='model.surrender'));
+      const effective=compared.inputs.find(([key])=>key==='effective_action_controls.can_surrender');
+      const stored=compared.inputs.find(([key])=>key==='state.action_controls.can_surrender');
+      assert.deepEqual(effective.slice(1),left===late ? [true,false] : [false,true]);
+      assert.deepEqual(stored.slice(1),left===late ? [true,undefined] : [undefined,true]);
+      const r=compared.evs.find(row=>row.action==='R');
+      assert.equal(left===late ? r.right : r.left,null);
+      assert.equal(r.delta,null);
+    }
+  }
+});
+
+test('same late family separates permission, absence and operational cap changes',()=>{
+  const offered=inspectRecord(surrenderText());
+  const disabled=inspectRecord(surrenderText(r=>{
+    r.state.action_controls.can_surrender=false;delete r.decision.evs.R;
+    r.decision.action='S';r.decision.action_name='STAND';r.decision.margin=0;
+    r.model.enumeration_state_limit=99;
+  }));
+  const compared=compareRecords(offered,disabled);
+  assert.equal(compared.model_compatible,true);
+  assert.deepEqual(compared.inputs,[
+    ['effective_action_controls.can_surrender',true,false],
+    ['state.action_controls.can_surrender',true,false],
+    ['model.enumeration_state_limit',100000n,99n]
+  ]);
+  assert.deepEqual(recordedActionDifferences(disabled),{
+    permitted:['S','H','D'],omitted:[],unavailable:[],recommendation_unavailable:false
+  });
+  assert.equal(compared.evs.find(row=>row.action==='R').right,null);
+});
+
+test('late supplied near-equal answers remain passive comparison data',()=>{
+  const tied=surrenderText(r=>{
+    r.state.cards=['T','8'];r.state.total=18;r.state.shoe.counts=[...Array(7).fill(0),2,0,2];
+    r.decision={...r.decision,action:'S',action_name:'STAND',evs:{S:-0.5,H:-1,D:-2,R:-0.5},margin:0};
+  });
+  const changed=JSON.parse(tied);changed.decision.evs.R=-0.49999999999999994;
+  changed.decision.action='R';changed.decision.action_name='SURRENDER';changed.decision.margin=2**-54;
+  const compared=compareRecords(inspectRecord(tied),inspectRecord(JSON.stringify(changed)));
+  assert.equal(compared.model_compatible,true);assert.deepEqual(compared.inputs,[]);
+  assert.equal(compared.action.matches,false);
+  assert.equal(compared.evs.find(row=>row.action==='R').matches,false);
+  assert.equal(compared.evs.find(row=>row.action==='R').delta,2**-54);
 });

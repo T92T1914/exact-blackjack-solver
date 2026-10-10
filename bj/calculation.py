@@ -25,8 +25,10 @@ EXIT_STATUSES = {'completed': 0, 'invalid_request': 2, 'unsupported_policy': 3,
                  'cancelled': 130}
 REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 1}
 COMMON_REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 2}
+SURRENDER_REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 3}
 INPUT_KEYS = ('cards', 'dealer_up', 'unseen_counts', 'is_split_hand', 'hand_count',
               'can_double', 'can_split')
+SURRENDER_INPUT_KEYS = INPUT_KEYS + ('can_surrender',)
 
 
 class _Cancelled(Exception):
@@ -42,8 +44,11 @@ def _normalise(value):
         raise ValueError('request must be an object')
     schema = replay._object(value.get('schema'), ('name', 'version'), 'request.schema')
     common = type(schema['version']) is int and schema['version'] == 2
-    selected_schema = COMMON_REQUEST_SCHEMA if common else REQUEST_SCHEMA
-    keys = ('schema', 'rules', 'input', 'model', 'limits') if common else (
+    surrender = type(schema['version']) is int and schema['version'] == 3
+    bounded = common or surrender
+    selected_schema = (SURRENDER_REQUEST_SCHEMA if surrender else
+                       COMMON_REQUEST_SCHEMA if common else REQUEST_SCHEMA)
+    keys = ('schema', 'rules', 'input', 'model', 'limits') if bounded else (
         'schema', 'rules', 'input')
     replay._object(value, keys, 'request')
     for key, expected in selected_schema.items():
@@ -56,8 +61,10 @@ def _normalise(value):
         rules = Rules(**supplied_rules)
     except TypeError as exc:
         raise ValueError(str(exc)) from exc
-    rule_values = record._rules_record(rules)
-    inputs = replay._object(value['input'], INPUT_KEYS, 'request.input')
+    rule_values = (record._surrender_rules_record(rules) if surrender else
+                   record._rules_record(rules))
+    inputs = replay._object(value['input'], SURRENDER_INPUT_KEYS if surrender else INPUT_KEYS,
+                           'request.input')
     if (not isinstance(inputs['cards'], list)
             or any(not isinstance(card, str) for card in inputs['cards'])):
         raise ValueError('request.input.cards must be an ordered list of card strings')
@@ -67,7 +74,10 @@ def _normalise(value):
         raise ValueError('request.input.unseen_counts must be ten retained counts')
     if type(inputs['hand_count']) is not int:
         raise ValueError('request.input.hand_count must be an integer, not a boolean')
-    for name in ('is_split_hand', 'can_double', 'can_split'):
+    boolean_fields = ('is_split_hand', 'can_double', 'can_split')
+    if surrender:
+        boolean_fields += ('can_surrender',)
+    for name in boolean_fields:
         if type(inputs[name]) is not bool:
             raise ValueError(f'request.input.{name} must be a boolean')
     cards, up, unseen, hand_count = record._record_inputs(
@@ -77,6 +87,8 @@ def _normalise(value):
             'input': {'cards': list(cards), 'dealer_up': up, 'unseen_counts': list(unseen),
                       'is_split_hand': inputs['is_split_hand'], 'hand_count': hand_count,
                       'can_double': inputs['can_double'], 'can_split': inputs['can_split']}}
+    if surrender:
+        captured['input']['can_surrender'] = inputs['can_surrender']
     if common:
         from . import common_shoe
         model = replay._object(value['model'], ('name', 'version'), 'request.model')
@@ -87,6 +99,16 @@ def _normalise(value):
         common_shoe.validate(cards, rules, unseen, inputs['is_split_hand'], hand_count,
                              limits['max_states'])
         captured.update(model=dict(common_shoe.MODEL), limits=dict(limits))
+    elif surrender:
+        from . import late_surrender
+        model = replay._object(value['model'], ('name', 'version'), 'request.model')
+        for key, expected in late_surrender.MODEL.items():
+            if type(model[key]) is not type(expected) or model[key] != expected:
+                raise ValueError('unsupported late-surrender calculation model')
+        limits = replay._object(value['limits'], ('max_states',), 'request.limits')
+        late_surrender.validate(cards, rules, unseen, inputs['is_split_hand'], hand_count,
+                                limits['max_states'], can_split=inputs['can_split'])
+        captured.update(model=dict(late_surrender.MODEL), limits=dict(limits))
     return captured
 
 
@@ -94,6 +116,11 @@ def _request_policy(policy, captured):
     """Bind the operation's algorithmic cap to the normalized captured request."""
     if captured['schema']['version'] == 1:
         return policy
+    if captured['schema']['version'] == 3:
+        return {**policy, 'algorithmic_work_limit': {
+            'name': 'whole_request_uncached_enumeration_states',
+            'max_states': captured['limits']['max_states'],
+            'includes': 'root_draw_hit_double_distribution_dealer'}}
     return {**policy, 'algorithmic_work_limit': {
         'name': 'whole_request_uncached_enumeration_states',
         'max_states': captured['limits']['max_states'],
@@ -152,8 +179,13 @@ def _validated_decision(raw, captured, digest, returncode, policy):
         raise ValueError('worker did not deliver a complete LF-terminated message')
     message = replay._parse(raw)
     common = captured['schema']['version'] == 2
+    surrender = captured['schema']['version'] == 3
+    bounded = common or surrender
+    if surrender:
+        from . import late_surrender
+    work_families = late_surrender.ROOT_FAMILIES if surrender else None
     keys = ('status', 'decision', 'error', 'request_sha256', 'policy')
-    if common:
+    if bounded:
         keys += ('work',)
     replay._object(message, keys,
                    'worker message')
@@ -170,9 +202,10 @@ def _validated_decision(raw, captured, digest, returncode, policy):
         replay._object(message['error'], ('type', 'message'), 'worker error')
         if any(not isinstance(value, str) for value in message['error'].values()):
             raise ValueError('worker error fields must be strings')
-        if common and message['work'] is not None:
-            _validated_work(message['work'], captured['limits']['max_states'], complete=False)
-        if common and message['error']['type'] == 'EnumerationLimitExceeded' and (
+        if bounded and message['work'] is not None:
+            _validated_work(message['work'], captured['limits']['max_states'], complete=False,
+                             families=work_families)
+        if bounded and message['error']['type'] == 'EnumerationLimitExceeded' and (
                 status != 'resource_limited' or message['work'] is None):
             raise ValueError('enumeration refusal must identify its resource limit and work')
         return status, None, message['error'], message.get('work')
@@ -182,20 +215,37 @@ def _validated_decision(raw, captured, digest, returncode, policy):
     admitted = replay._admit(decision)  # Structural/input admission, no recomputation.
     cards, up, unseen, rules, is_split, hand_count, can_double, can_split = admitted
     inputs = captured['input']
-    actual = (list(cards), up, list(unseen), record._rules_record(rules), is_split,
+    rule_values = (record._surrender_rules_record(rules) if surrender else
+                   record._rules_record(rules))
+    actual = (list(cards), up, list(unseen), rule_values, is_split,
               hand_count, can_double, can_split)
     expected = (inputs['cards'], inputs['dealer_up'], inputs['unseen_counts'], captured['rules'],
                 inputs['is_split_hand'], inputs['hand_count'], inputs['can_double'],
                 inputs['can_split'])
-    expected_version = record.COMMON_SCHEMA_VERSION if common else (
-        1 if can_double and can_split else 2)
+    if surrender:
+        actual += (decision['state']['action_controls']['can_surrender'],)
+        expected += (inputs['can_surrender'],)
+    expected_version = (record.SURRENDER_SCHEMA_VERSION if surrender else
+                        record.COMMON_SCHEMA_VERSION if common else
+                        1 if can_double and can_split else 2)
+    expected_model = (record._surrender_model_record(up, captured['limits']['max_states'])
+                      if surrender else record._common_model_record(
+                          up, captured['limits']['max_states']) if common else None)
     if (actual != expected or decision['state']['shoe']['source'] != 'supplied_unseen'
             or decision['package']['version'] != __version__
             or decision['schema']['version'] != expected_version
-            or common and decision['model'] != record._common_model_record(
-                up, captured['limits']['max_states'])):
+            or bounded and decision['model'] != expected_model):
         raise ValueError('completed decision differs from the captured request/package')
     answer = decision['decision']
+    if surrender:
+        offered = {'S', 'H'} | ({'D'} if inputs['can_double'] else set()) | (
+            {'R'} if inputs['can_surrender'] else set())
+        if set(answer['evs']) != offered or (
+                inputs['can_surrender'] and answer['evs']['R'] != -0.5):
+            raise ValueError('completed late-surrender decision lacks its exact offered values')
+        action, margin = late_surrender.rank(answer['evs'])
+        if answer['action'] != action or answer['margin'] != margin:
+            raise ValueError('late-surrender decision contradicts its canonical ranking')
     values = list(answer['evs'].values())
     ranked = sorted(values, reverse=True)
     margin = ranked[0] - ranked[1] if len(ranked) > 1 else 0.0
@@ -204,20 +254,23 @@ def _validated_decision(raw, captured, digest, returncode, policy):
     result = _json_bytes(decision)
     if len(result) > replay.MAX_RECORD_BYTES:
         raise ValueError('completed decision exceeds existing replay/inspection record admission')
-    if common:
-        _validated_work(message['work'], captured['limits']['max_states'], complete=True)
+    if bounded:
+        _validated_work(message['work'], captured['limits']['max_states'], complete=True,
+                         families=work_families)
     return status, result, None, message.get('work')
 
 
-def _validated_work(work, limit, *, complete):
+def _validated_work(work, limit, *, complete, families=None):
     from ._enumeration import FAMILIES
+
+    allowed = FAMILIES if families is None else families
 
     replay._object(work, ('limit', 'states', 'attempted_states', 'state_counts'), 'worker work')
     for key in ('limit', 'states', 'attempted_states'):
         if type(work[key]) is not int:
             raise ValueError('worker work counters must be integer tokens')
     counts = work['state_counts']
-    if (not isinstance(counts, dict) or any(key not in FAMILIES for key in counts)
+    if (not isinstance(counts, dict) or any(key not in allowed for key in counts)
             or any(type(value) is not int or value < 1 for value in counts.values())):
         raise ValueError('worker work state families are invalid')
     states, attempted = work['states'], work['attempted_states']
@@ -298,7 +351,7 @@ def _run(request_path, output, policy, cancellation):
                     result['stdout'], captured, receipt['request_sha256'],
                     result['worker']['returncode'], policy)
                 receipt['status'], receipt['error'] = status, error
-                if captured['schema']['version'] == 2:
+                if captured['schema']['version'] in (2, 3):
                     receipt['work'] = work
             except (ValueError, TypeError, KeyError, OverflowError) as exc:
                 receipt['status'], receipt['error'] = 'worker_failed', _error(exc)

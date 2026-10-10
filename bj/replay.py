@@ -152,7 +152,7 @@ def _admit(saved):
     version = _integer(schema['version'], 'schema.version')
     if name != 'blackjack-decision' or version not in (
             record.SCHEMA_VERSION, record.CONTROLLED_SCHEMA_VERSION,
-            record.COMMON_SCHEMA_VERSION):
+            record.COMMON_SCHEMA_VERSION, record.SURRENDER_SCHEMA_VERSION):
         raise _UnsupportedRecord(f'unsupported schema {name!r}, version {version}')
     _object(saved, ('schema', 'package', 'state', 'rules', 'decision', 'model'), 'record')
     package = _object(saved['package'], ('name', 'version'), 'package')
@@ -164,9 +164,12 @@ def _admit(saved):
     state = _object(saved['state'], state_keys, 'state')
     can_double = can_split = True
     if version != record.SCHEMA_VERSION:
-        controls = _object(state['action_controls'], ('can_double', 'can_split'),
+        control_keys = ('can_double', 'can_split')
+        if version == record.SURRENDER_SCHEMA_VERSION:
+            control_keys += ('can_surrender',)
+        controls = _object(state['action_controls'], control_keys,
                            'state.action_controls')
-        for key in ('can_double', 'can_split'):
+        for key in control_keys:
             if not isinstance(controls[key], bool):
                 raise _InvalidRecord(f'state.action_controls.{key} must be a boolean')
         can_double, can_split = controls['can_double'], controls['can_split']
@@ -195,7 +198,10 @@ def _admit(saved):
     rule_values = _object(saved['rules'], (field.name for field in fields(Rules)), 'rules')
     rules = Rules(**rule_values)
     try:
-        record._rules_record(rules)
+        if version == record.SURRENDER_SCHEMA_VERSION:
+            record._surrender_rules_record(rules)
+        else:
+            record._rules_record(rules)
         hand, up, unseen, hand_count = record._record_inputs(
             cards, up, rules, shoe['counts'], state['is_split_hand'], state['hand_count'])
     except record._UnsupportedRules as exc:
@@ -227,6 +233,20 @@ def _admit(saved):
         if source != 'supplied_unseen':
             raise _UnsupportedRecord('common-shoe records require supplied_unseen counts')
         declarations = record._common_model_record(up, max_states)
+    elif version == record.SURRENDER_SCHEMA_VERSION:
+        from . import late_surrender
+        if not isinstance(saved['model'], dict):
+            raise _InvalidRecord('model must be an object')
+        max_states = _integer(saved['model'].get('enumeration_state_limit'),
+                              'model.enumeration_state_limit')
+        try:
+            late_surrender.validate(hand, rules, unseen, state['is_split_hand'],
+                                    hand_count, max_states, can_split=can_split)
+        except ValueError as exc:
+            raise _UnsupportedRecord(str(exc)) from exc
+        if source != 'supplied_unseen':
+            raise _UnsupportedRecord('late-surrender records require supplied_unseen counts')
+        declarations = record._surrender_model_record(up, max_states)
     model = _object(saved['model'], declarations.keys(), 'model')
     for key, expected in declarations.items():
         _constant(model[key], expected, f'model.{key}',
@@ -236,11 +256,14 @@ def _admit(saved):
     _constant(decision['units'], 'original_wager', 'decision.units')
     _constant(decision['whole_game_estimate'], None, 'decision.whole_game_estimate')
     action, evs = decision['action'], decision['evs']
-    if not isinstance(action, str) or action not in ACTION_NAMES:
+    action_names = ACTION_NAMES
+    if version == record.SURRENDER_SCHEMA_VERSION:
+        action_names = late_surrender.ACTION_NAMES
+    if not isinstance(action, str) or action not in action_names:
         raise _InvalidRecord('decision.action must be a supported action code')
-    _constant(decision['action_name'], ACTION_NAMES[action], 'decision.action_name', derived=True)
+    _constant(decision['action_name'], action_names[action], 'decision.action_name', derived=True)
     if (not isinstance(evs, dict) or not evs or action not in evs
-            or any(key not in ACTION_NAMES for key in evs)):
+            or any(key not in action_names for key in evs)):
         raise _InvalidRecord('decision.evs must have supported action codes and include action')
     # Check representation only. An altered recommendation, margin or legal
     # action set is comparison data and must remain visible in the replay.
@@ -302,7 +325,7 @@ def replay_json(text: str | bytes) -> dict[str, Any]:
     incomplete calculation. No tolerance is applied, including near ties.
     Legacy recursion and caches retain their existing unbounded lifetime.
     MemoryError and RecursionError report resource_limited, KeyboardInterrupt
-    reports interrupted. The common model enforces its recorded state cap.
+    reports interrupted. Explicit bounded models enforce their recorded state cap.
     Direct replay has no owned worker, wall supervisor or memory cap.
     """
     admitted = None
@@ -313,6 +336,11 @@ def replay_json(text: str | bytes) -> dict[str, Any]:
         if saved['schema']['version'] == record.COMMON_SCHEMA_VERSION:
             current = record.common_shoe_record(
                 hand, up, rules, shoe=unseen, can_double=can_double, can_split=can_split,
+                max_states=saved['model']['enumeration_state_limit'])['decision']
+        elif saved['schema']['version'] == record.SURRENDER_SCHEMA_VERSION:
+            current = record.late_surrender_record(
+                hand, up, rules, shoe=unseen, can_double=can_double,
+                can_surrender=saved['state']['action_controls']['can_surrender'],
                 max_states=saved['model']['enumeration_state_limit'])['decision']
         else:
             current = record.decision_record(

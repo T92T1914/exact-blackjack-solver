@@ -30,9 +30,11 @@ def main():
         if _request_policy(payload['policy'], request) != payload['policy']:
             return 6
         common = request['schema']['version'] == 2
+        surrender = request['schema']['version'] == 3
+        bounded = common or surrender
         result = {'status': 'worker_failed', 'decision': None, 'error': None,
                   'request_sha256': payload['request_sha256'], 'policy': payload['policy']}
-        if common:
+        if bounded:
             result['work'] = None
         try:
             inputs = request['input']
@@ -41,6 +43,12 @@ def main():
                     inputs['cards'], inputs['dealer_up'], Rules(**request['rules']),
                     shoe=tuple(inputs['unseen_counts']), can_double=inputs['can_double'],
                     can_split=inputs['can_split'], max_states=request['limits']['max_states'])
+            elif surrender:
+                result['decision'], result['work'] = record._late_surrender_record(
+                    inputs['cards'], inputs['dealer_up'], Rules(**request['rules']),
+                    shoe=tuple(inputs['unseen_counts']), can_double=inputs['can_double'],
+                    can_surrender=inputs['can_surrender'],
+                    max_states=request['limits']['max_states'])
             else:
                 result['decision'] = record.decision_record(
                     inputs['cards'], inputs['dealer_up'], Rules(**request['rules']),
@@ -50,7 +58,7 @@ def main():
             result['status'] = 'completed'
         except EnumerationLimitExceeded as exc:
             result['status'], result['error'] = 'resource_limited', _error(exc)
-            if common:
+            if bounded:
                 result['work'] = exc.work
         except (MemoryError, RecursionError, ReferenceLimitExceeded) as exc:
             result['status'], result['error'] = 'resource_limited', _error(exc)

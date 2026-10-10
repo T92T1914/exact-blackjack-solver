@@ -4,6 +4,7 @@ export const MAX_RECORD_DEPTH = 8;
 export const MAX_INTEGER_DIGITS = 4300;
 export const RANKS = Object.freeze(['A','2','3','4','5','6','7','8','9','T']);
 export const ACTION_NAMES = Object.freeze({H:'HIT',S:'STAND',D:'DOUBLE',P:'SPLIT'});
+export const SURRENDER_ACTION_NAMES = Object.freeze({S:'STAND',H:'HIT',D:'DOUBLE',R:'SURRENDER'});
 export const RULE_FIELDS = Object.freeze(['decks','s17','das','peek','surrender',
   'resplit_aces','hit_split_aces','max_hands','blackjack_payout','double_any_two',
   'tens_are_pairs','insurance_payout']);
@@ -148,12 +149,33 @@ export function modelFor(up,maxStates=null) {
     split_exhaustion:'refuse_any_unavailable_continuation',enumeration_state_limit:maxStates};
 }
 
+export function surrenderModelFor(up,maxStates) {
+  return {name:'post_peek_late_surrender',version:1n,
+    dealer_information:'hidden_hole_post_peek',
+    hole_rank_excluded_by_peek:up==='A' ? 'T' : up==='T' ? 'A' : null,
+    ten_value_ranks:'collapsed_to_T',insurance_priced:false,
+    hit_stand_double:'finite_enumeration_binary_floating_point',
+    split:'excluded_single_original_hand',decision_phase:'initial_original_two_card_below_21',
+    surrender:'terminal_half_original_wager_post_negative_peek',surrender_after_hit:false,
+    surrender_after_double:false,surrender_draws:0n,
+    player_last_draw:'stand_then_require_dealer_settlement',enumeration_state_limit:maxStates};
+}
+
+export function recordActionNames(record) {
+  return record.schema.version===4n ? SURRENDER_ACTION_NAMES : ACTION_NAMES;
+}
+export function comparisonActionNames(left,right) {
+  return left.schema.version===4n || right.schema.version===4n ?
+    {...ACTION_NAMES,R:SURRENDER_ACTION_NAMES.R} : ACTION_NAMES;
+}
+
 export function inspectRecord(input) {
   const saved=parse(input);
   if (!object(saved)) invalid('record must be an object');
   const schema=fields(saved.schema,['name','version'],'schema');
   string(schema.name,'schema.name'); integer(schema.version,'schema.version');
-  if (schema.name!=='blackjack-decision' || ![1n,2n,3n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1, 2 and 3');
+  if (schema.name!=='blackjack-decision' || ![1n,2n,3n,4n].includes(schema.version)) unsupported('supported schemas are blackjack-decision versions 1, 2, 3 and 4');
+  const surrender=schema.version===4n;
   fields(saved,['schema','package','state','rules','decision','model'],'record');
   const pkg=fields(saved.package,['name','version'],'package');
   constant(pkg.name,'exact-blackjack-solver','package.name'); string(pkg.version,'package.version');
@@ -161,8 +183,9 @@ export function inspectRecord(input) {
   if (schema.version!==1n) stateKeys.push('action_controls');
   const state=fields(saved.state,stateKeys,'state');
   if (schema.version!==1n) {
-    const controls=fields(state.action_controls,['can_double','can_split'],'state.action_controls');
-    for (const key of ['can_double','can_split']) if (typeof controls[key]!=='boolean') invalid(`state.action_controls.${key} must be a boolean`);
+    const keys=surrender ? ['can_double','can_split','can_surrender'] : ['can_double','can_split'];
+    const controls=fields(state.action_controls,keys,'state.action_controls');
+    for (const key of keys) if (typeof controls[key]!=='boolean') invalid(`state.action_controls.${key} must be a boolean`);
   }
   if (!Array.isArray(state.cards) || state.cards.some(rank=>typeof rank!=='string' || !RANKS.includes(rank))) invalid('state.cards must be a list of normalized ranks in dealt order');
   if (typeof state.dealer_up!=='string' || !RANKS.includes(state.dealer_up)) invalid('state.dealer_up must be a normalized rank');
@@ -170,7 +193,9 @@ export function inspectRecord(input) {
   for (const key of ['soft','is_split_hand']) if (typeof state[key]!=='boolean') invalid(`state.${key} must be a boolean`);
   const shoe=fields(state.shoe,['rank_order','counts','source','includes_hidden_hole','visible_cards_already_removed'],'state.shoe');
   constant(shoe.rank_order,RANKS,'state.shoe.rank_order',true);
-  if (!Array.isArray(shoe.counts) || shoe.counts.length!==10 || shoe.counts.some(count=>typeof count!=='bigint' || count<0n)) invalid('state.shoe.counts must contain ten nonnegative integer tokens');
+  if (!Array.isArray(shoe.counts)) invalid('state.shoe.counts must be a list');
+  const validCounts=()=>shoe.counts.length===10 && shoe.counts.every(count=>typeof count==='bigint' && count>=0n);
+  if (!surrender && !validCounts()) invalid('state.shoe.counts must contain ten nonnegative integer tokens');
   constant(shoe.includes_hidden_hole,true,'state.shoe.includes_hidden_hole');
   constant(shoe.visible_cards_already_removed,true,'state.shoe.visible_cards_already_removed');
   string(shoe.source,'state.shoe.source');
@@ -183,9 +208,12 @@ export function inspectRecord(input) {
     if (rules[key]<0) invalid(`rules.${key} must be nonnegative`);
   }
   if (!rules.peek) unsupported('records model the post-peek game; rules.peek must be true');
-  if (rules.surrender) unsupported('records do not model surrender');
+  if (surrender ? !rules.surrender : rules.surrender) unsupported(surrender ?
+    'late-surrender records require rules.surrender=true' : 'these record models do not price surrender');
   if (!rules.double_any_two) unsupported('records require doubling on any two-card hand');
   if (!rules.tens_are_pairs) unsupported('records collapse ten-value ranks and require tens_are_pairs');
+  if (surrender && (rules.max_hands!==1n || rules.resplit_aces || rules.hit_split_aces))
+    unsupported('late-surrender model requires max_hands=1, no resplits and no hittable split aces');
   if (state.hand_count<1n || state.hand_count>rules.max_hands) invalid('state.hand_count must be from 1 to rules.max_hands');
   if (state.is_split_hand ? state.hand_count<2n : state.hand_count!==1n) invalid('split state and state.hand_count disagree');
   if (state.cards.length<2) invalid('a hand needs at least two cards before it has a decision');
@@ -194,6 +222,7 @@ export function inspectRecord(input) {
   while (total>21 && aces>0) { total-=10; aces--; }
   if (total>21) invalid('state.cards describes a busted hand with no decision left');
   if (state.is_split_hand && state.cards[0]==='A' && state.cards.length>2 && !rules.hit_split_aces) invalid('a split ace receives only one card when hit_split_aces is false');
+  if (surrender && !validCounts()) invalid('state.shoe.counts must contain ten nonnegative integer tokens');
   const count=shoe.counts.reduce((sum,value)=>sum+value,0n);
   if (!count) invalid('an unseen shoe must include the reserved dealer hole card');
   const excluded=state.dealer_up==='A' ? 'T' : state.dealer_up==='T' ? 'A' : null;
@@ -215,13 +244,26 @@ export function inspectRecord(input) {
     if (count<3n || count>20n) unsupported('common-shoe model requires 3 to 20 unseen cards including the hole');
     if (shoe.source!=='supplied_unseen') unsupported('common-shoe records require supplied_unseen counts');
   }
-  const declarations=modelFor(state.dealer_up,maxStates),model=fields(saved.model,Object.keys(declarations),'model');
+  if (surrender) {
+    if (!object(saved.model)) invalid('model must be an object');
+    maxStates=integer(saved.model.enumeration_state_limit,'model.enumeration_state_limit');
+    if (maxStates<1n || maxStates>100000n) unsupported('late-surrender enumeration state limit must be from 1 through 100000');
+    if (state.cards.length!==2 || total>=21 || state.is_split_hand || state.hand_count!==1n)
+      unsupported('late-surrender model requires an original initial two-card hand below 21');
+    if (state.action_controls.can_split)
+      unsupported('late-surrender model excludes splitting and requires max_hands=1');
+    if (count<3n || count>20n) unsupported('late-surrender model requires 3 to 20 unseen cards including the hole');
+    if (shoe.source!=='supplied_unseen') unsupported('late-surrender records require supplied_unseen counts');
+  }
+  const declarations=surrender ? surrenderModelFor(state.dealer_up,maxStates) : modelFor(state.dealer_up,maxStates);
+  const model=fields(saved.model,Object.keys(declarations),'model');
   for (const [key,expected] of Object.entries(declarations)) constant(model[key],expected,`model.${key}`,key==='hole_rank_excluded_by_peek');
   const decision=fields(saved.decision,['action','action_name','evs','margin','units','whole_game_estimate'],'decision');
   constant(decision.units,'original_wager','decision.units'); constant(decision.whole_game_estimate,null,'decision.whole_game_estimate');
-  if (typeof decision.action!=='string' || !Object.hasOwn(ACTION_NAMES,decision.action)) invalid('decision.action must be a supported action code');
-  constant(decision.action_name,ACTION_NAMES[decision.action],'decision.action_name',true);
-  if (!object(decision.evs) || !Object.keys(decision.evs).length || !Object.hasOwn(decision.evs,decision.action) || Object.keys(decision.evs).some(key=>!Object.hasOwn(ACTION_NAMES,key))) invalid('decision.evs must have supported action codes and include action');
+  const names=recordActionNames(saved);
+  if (typeof decision.action!=='string' || !Object.hasOwn(names,decision.action)) invalid('decision.action must be a supported action code for this record model');
+  constant(decision.action_name,names[decision.action],'decision.action_name',true);
+  if (!object(decision.evs) || !Object.keys(decision.evs).length || !Object.hasOwn(decision.evs,decision.action) || Object.keys(decision.evs).some(key=>!Object.hasOwn(names,key))) invalid('decision.evs must have supported action codes for this record model and include action');
   for (const key of Object.keys(decision.evs)) decision.evs[key]=finite(decision.evs[key],`decision.evs.${key}`);
   decision.margin=finite(decision.margin,'decision.margin');
   if (decision.margin<0) invalid('decision.margin must be nonnegative');
@@ -240,6 +282,8 @@ export function modeledRows(record) {
   return [
     ...['cards','dealer_up','total','soft','is_split_hand','hand_count'].map(key=>[`state.${key}`,state[key]]),
     ...['can_double','can_split'].map(key=>[`state.action_controls.${key}`,controls[key]]),
+    ['effective_action_controls.can_surrender',controls.can_surrender],
+    ['state.action_controls.can_surrender',record.state.action_controls?.can_surrender],
     ['state.shoe.rank_order',state.shoe.rank_order],
     ...RANKS.map((rank,i)=>[`state.shoe.counts.${rank}`,state.shoe.counts[i]]),
     ...['source','includes_hidden_hole','visible_cards_already_removed'].map(key=>[`state.shoe.${key}`,state.shoe[key]]),
@@ -253,11 +297,15 @@ export function metadataRows(record) {
 }
 // Effective defaults do not add fields to the admitted version 1 object.
 export function actionControls(record) {
-  return record.schema.version===1n ? {can_double:true,can_split:true} : record.state.action_controls;
+  return record.schema.version===1n ? {can_double:true,can_split:true,can_surrender:false} :
+    {...record.state.action_controls,can_surrender:record.schema.version===4n ?
+      record.state.action_controls.can_surrender : false};
 }
 // This derives eligibility only and never evaluates an action's return.
 export function permittedActions(record) {
   const {state,rules}=record,controls=actionControls(record),allowed=new Set(['S']);
+  if (record.schema.version===4n) return ['S','H',...(controls.can_double ? ['D'] : []),
+    ...(controls.can_surrender ? ['R'] : [])];
   if (state.total===21n) return ['S'];
   const twoCards=state.cards.length===2,pair=twoCards && state.cards[0]===state.cards[1];
   const unseen=state.shoe.counts.reduce((sum,count)=>sum+count,0n);
@@ -286,11 +334,12 @@ export function compareRecords(left,right) {
   const delta=(a,b)=> { const value=b-a; return Number.isFinite(value) ? value : 'outside finite delta range'; };
   return {
     inputs:changed(modeledRows(left),modeledRows(right)),metadata:changed(metadataRows(left),metadataRows(right)),
-    model_compatible:left.model.split===right.model.split,
+    model_compatible:(left.schema.version===4n || right.schema.version===4n) ?
+      left.schema.version===4n && right.schema.version===4n : left.model.split===right.model.split,
     permitted:{left:permittedActions(left),right:permittedActions(right)},
     action:{left:left.decision.action,right:right.decision.action,matches:left.decision.action===right.decision.action},
     margin:{left:left.decision.margin,right:right.decision.margin,matches:left.decision.margin===right.decision.margin,delta:delta(left.decision.margin,right.decision.margin)},
-    evs:Object.keys(ACTION_NAMES).filter(key=>Object.hasOwn(left.decision.evs,key) || Object.hasOwn(right.decision.evs,key)).map(action=>{
+    evs:Object.keys(comparisonActionNames(left,right)).filter(key=>Object.hasOwn(left.decision.evs,key) || Object.hasOwn(right.decision.evs,key)).map(action=>{
       const a=left.decision.evs[action],b=right.decision.evs[action];
       return {action,left:a ?? null,right:b ?? null,matches:a!==undefined && b!==undefined && a===b,
         delta:a===undefined || b===undefined ? null : delta(a,b)};

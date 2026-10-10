@@ -210,7 +210,7 @@ def test_invalid_fields_are_refused_before_calculation(monkeypatch, path, value)
 
 
 @pytest.mark.parametrize('path,value', [
-    (('schema', 'name'), 'other'), (('schema', 'version'), 4),
+    (('schema', 'name'), 'other'), (('schema', 'version'), 5),
     (('rules', 'peek'), False), (('rules', 'surrender'), True),
     (('rules', 'double_any_two'), False), (('rules', 'tens_are_pairs'), False),
     (('model', 'dealer_information'), 'known_hole'),
