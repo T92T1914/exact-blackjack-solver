@@ -24,7 +24,7 @@ from unittest.mock import patch
 import bj
 from bj import calculation as calc
 from bj import _calculation_process as transport
-from bj import common_shoe, late_surrender
+from bj import bounded_resplit, common_shoe, late_surrender
 
 
 def require(value, message):
@@ -60,6 +60,16 @@ def surrender_request(cards, up, counts, *, rules=None, double=True, surrender=T
                     double=double, pair=False)
     value['input']['can_surrender'] = surrender
     value.update(schema=dict(calc.SURRENDER_REQUEST_SCHEMA), model=dict(late_surrender.MODEL),
+                 limits={'max_states': limit})
+    return value
+
+
+def resplit_request(cards, up, counts, *, rules=None, double=True, pair=True, limit=100000):
+    value = request(cards, up, counts,
+                    rules={'max_hands': 3, 'surrender': False, 'resplit_aces': False,
+                           'hit_split_aces': False, **(rules or {})},
+                    double=double, pair=pair)
+    value.update(schema=dict(calc.RESPLIT_REQUEST_SCHEMA), model=dict(bounded_resplit.MODEL),
                  limits={'max_states': limit})
     return value
 
@@ -106,7 +116,7 @@ def calculate(root, label, value):
             (directory / 'request-source.json').read_bytes() == path.read_bytes(),
             'caller request or captured source changed')
     saved = json.loads(record_path.read_bytes())
-    bounded = value['schema']['version'] in (2, 3)
+    bounded = value['schema']['version'] in (2, 3, 4)
     if bounded:
         work = receipt['work']
         require(saved['schema']['version'] == value['schema']['version'] + 1 and
@@ -126,6 +136,23 @@ def calculate(root, label, value):
                     'root_draw_hit_double_distribution_dealer' and
                     'split_cooperative_seconds' not in receipt['policy']['algorithmic_work_limit'],
                     'late model, controls or root-only policy differs')
+        elif value['schema']['version'] == 4:
+            require(saved['model'] == bounded_resplit.model_record(
+                        value['input']['dealer_up'], value['limits']['max_states']) and
+                    saved['state']['action_controls'] == {
+                        'can_double': value['input']['can_double'],
+                        'can_split': value['input']['can_split']} and
+                    set(work['state_counts']) <= bounded_resplit.FAMILIES and
+                    receipt['policy']['algorithmic_work_limit'] == {
+                        'name': 'whole_request_uncached_enumeration_states',
+                        'max_states': value['limits']['max_states'],
+                        'includes': 'root_draw_hit_double_distribution_dealer_and_'
+                                    'resplit_draw_play_settle_dealer',
+                        'split_cooperative_seconds': 10.0},
+                    'resplit model, current controls or whole-family policy differs')
+            require(value['input']['can_split'] or
+                    set(work['state_counts']) <= bounded_resplit.ROOT_FAMILIES,
+                    'disabled original split still entered a joint continuation')
     require(saved['state']['cards'] == value['input']['cards'] and
             saved['state']['shoe']['counts'] == value['input']['unseen_counts'],
             'card order or supplied counts changed')
@@ -140,10 +167,12 @@ def calculate(root, label, value):
                    **({'work': receipt['work']} if bounded else {})}
 
 
-def lifecycle(root, source, mode, *, common=False, surrender=False):
+def lifecycle(root, source, mode, *, common=False, surrender=False, resplit=False):
     """Use existing main or a bounded family's owned Event with one controlled child."""
-    require(not (common and surrender), 'controlled child requires one selected family')
-    label = 'controlled-' + ('late-' if surrender else 'common-' if common else '') + mode
+    require(sum((common, surrender, resplit)) <= 1,
+            'controlled child requires one selected family')
+    label = 'controlled-' + ('resplit-' if resplit else 'late-' if surrender else
+                            'common-' if common else '') + mode
     directory = root / label
     ready = root / (label + '-ready')
     code = (
@@ -161,7 +190,7 @@ def lifecycle(root, source, mode, *, common=False, surrender=False):
         code += ' import os;os._exit(17)\n'
     else:
         code += ' time.sleep(20)\n'
-    target = ('_late_surrender_record' if surrender else
+    target = ('_bounded_resplit_record' if resplit else '_late_surrender_record' if surrender else
               '_common_shoe_record' if common else 'decision_record')
     code += (f'record.{target}=controlled\n'
              'sys.stdin=io.TextIOWrapper(io.BytesIO(raw))\n'
@@ -184,7 +213,7 @@ def lifecycle(root, source, mode, *, common=False, surrender=False):
             if not ready.exists():
                 cancellation_errors.append('child did not enter controlled long calculation')
                 return
-            if common or surrender:
+            if common or surrender or resplit:
                 cancellation.set()  # Owned caller Event, no console or host signal.
             else:
                 # This raises SIGINT in this calling process only. It does not use
@@ -200,7 +229,7 @@ def lifecycle(root, source, mode, *, common=False, surrender=False):
     try:
         with patch.object(transport.subprocess, 'Popen', side_effect=fixed_child), \
                 contextlib.redirect_stdout(output), contextlib.redirect_stderr(error):
-            if common or surrender:
+            if common or surrender or resplit:
                 selected = calc._policy(1 if mode == 'timeout' else 8, None)
                 receipt = calc._run(source, directory, selected, cancellation)
                 status = calc.EXIT_STATUSES[receipt['status']]
@@ -273,6 +302,21 @@ def main():
         ('late-control-FF', surrender_request(['T', '6'], 'T', [0]*9+[3],
                                                double=False, surrender=False)),
     ]
+    resplit_eights = [0]*7+[8, 0, 0]
+    cases += [
+        ('resplit-winning', resplit_request(['8', '8'], '6', resplit_eights,
+                                            rules={'das': False})),
+        ('resplit-das-h17', resplit_request(['8', '8'], '6', resplit_eights,
+                                            rules={'das': True, 's17': False})),
+        ('resplit-disabled', resplit_request(['8', '8'], '6', resplit_eights, pair=False)),
+        ('resplit-control-FT', resplit_request(['8', '8'], '6', resplit_eights, double=False)),
+        ('resplit-tie', resplit_request(['T', 'T'], 'T', [0]*9+[8])),
+        ('resplit-declined', resplit_request(['8', '8'], 'T', resplit_eights)),
+        ('resplit-hidden', resplit_request(['T', 'T'], '9', [0]*7+[2, 2, 4])),
+        ('resplit-peek', resplit_request(['T', 'T'], 'T', [2]+[0]*8+[6])),
+        ('resplit-ace-peek', resplit_request(['T', 'T'], 'A', [0]*7+[1, 0, 7])),
+        ('resplit-soft17', resplit_request(['T', 'T'], 'A', [0]*5+[1, 0, 1, 0, 6])),
+    ]
     rows = []
     for label, value in cases:
         saved, row = calculate(root, label, value)
@@ -299,6 +343,45 @@ def main():
                 require(evs['P'] == 4, 'shared double wagers differ from analytic case')
             if label == 'common-aces':
                 require(evs['P'] == 2, 'common split aces received incorrect settlement')
+        elif label.startswith('resplit-'):
+            if label == 'resplit-soft17':
+                require(set(evs) == {'S', 'H', 'D', 'P'} and
+                        all(evs[key] == number for key, number in
+                            {'S': 1, 'H': -1, 'D': -2}.items()),
+                        'soft17 genuine root prices or action set differ')
+                # Independent physical test obtains P from complete deals;
+                # this consumer boundary does not invent a guessed fraction.
+                rows.append(row)
+                continue
+            reference = {
+                'resplit-winning': ({'S': 1, 'H': -1, 'D': -2, 'P': 3}, 'P'),
+                'resplit-das-h17': ({'S': 1, 'H': -1, 'D': -2, 'P': 3}, 'P'),
+                'resplit-disabled': ({'S': 1, 'H': -1, 'D': -2}, 'S'),
+                'resplit-control-FT': ({'S': 1, 'H': -1, 'P': 3}, 'P'),
+                'resplit-tie': ({'S': 0, 'H': -1, 'D': -2, 'P': 0}, 'S'),
+                'resplit-declined': ({'S': -1, 'H': -1, 'D': -2, 'P': -2}, 'S'),
+                'resplit-hidden': ({'S': 1, 'H': -1, 'D': -2, 'P': Fraction(106, 105)}, 'P'),
+                'resplit-peek': ({'S': 0, 'H': Fraction(-3, 7),
+                                  'D': Fraction(-6, 7), 'P': Fraction(9, 7)}, 'P'),
+                'resplit-ace-peek': ({'S': 1, 'H': -1, 'D': -2, 'P': 3}, 'P'),
+            }
+            expected, action = reference[label]
+            require(set(evs) == set(expected) and all(
+                        abs(evs[key] - float(number)) <= 1e-12
+                        for key, number in expected.items()) and
+                    saved['decision']['action'] == action,
+                    'resplit installed prices differ from independent tiny expectations')
+            if label == 'resplit-tie':
+                require(saved['decision']['margin'] == 0, 'resplit root exact tie was changed')
+            if label == 'resplit-hidden':
+                require(evs['P'] < float(Fraction(136, 105)) and
+                        evs['P'] > float(Fraction(29, 30)) and
+                        evs['P'] < float(Fraction(152, 147)),
+                        'lawful resplit price collapsed into a qualified unsafe control')
+            if label in ('resplit-peek', 'resplit-ace-peek'):
+                excluded = 'A' if value['input']['dealer_up'] == 'T' else 'T'
+                require(saved['model']['hole_rank_excluded_by_peek'] == excluded,
+                        'resplit negative-peek exclusion direction differs')
         elif label.startswith('late-'):
             reference = {
                 'late-winning': ({'S': -1, 'H': -1, 'D': -2}, 'R'),
@@ -341,6 +424,7 @@ def main():
     preserved = digest(root / 'ordinary/result/decision.json')
     common_preserved = digest(root / 'common-hidden/result/decision.json')
     late_preserved = digest(root / 'late-winning/result/decision.json')
+    resplit_preserved = digest(root / 'resplit-hidden/result/decision.json')
     refusals = [('common-state-limit', common_request(['T', 'T'], '7', [1]+[0]*8+[5],
                                                      limit=1), 4, 'resource_limited'),
                 ('common-exhaustion', common_request(['8', '8'], 'T', [0]*6+[1, 1, 1, 1]),
@@ -348,6 +432,14 @@ def main():
                 ('late-state-limit', surrender_request(['T', '6'], 'T', [0]*9+[3], limit=1),
                  4, 'resource_limited'),
                 ('late-exhaustion', surrender_request(['T', '6'], '2', [0, 3]+[0]*8),
+                 5, 'calculation_error'),
+                ('resplit-state-limit', resplit_request(['8', '8'], '6', resplit_eights,
+                                                       limit=1), 4, 'resource_limited'),
+                ('resplit-exhaustion', resplit_request(['T', 'T'], '6', [2]+[0]*8+[6]),
+                 5, 'calculation_error'),
+                ('resplit-h17-exhaustion', resplit_request(['T', 'T'], 'A',
+                                                         [0]*5+[1, 0, 1, 0, 6],
+                                                         rules={'s17': False}),
                  5, 'calculation_error')]
     for label, value, expected_exit, expected_status in refusals:
         source = root / (label + '-request.json')
@@ -371,9 +463,14 @@ def main():
     for mode in ('timeout', 'cancel'):
         rows.append(lifecycle(root, root / 'common-hidden-request.json', mode, common=True))
         rows.append(lifecycle(root, root / 'late-winning-request.json', mode, surrender=True))
+        rows.append(lifecycle(root, root / 'resplit-winning-request.json', mode, resplit=True))
     if sys.platform == 'win32':
         rows.append(lifecycle(root, root / 'ordinary-request.json', 'memory'))
     saved, row = calculate(root, 'following', ordinary)
+    rows.append(row)
+    saved, row = calculate(root, 'resplit-following',
+                           resplit_request(['8', '8'], '6', resplit_eights))
+    require(saved['decision']['evs']['P'] == 3, 'following resplit calculation differs')
     rows.append(row)
     saved, row = calculate(root, 'late-following',
                            surrender_request(['T', '6'], 'T', [0]*9+[3]))
@@ -389,6 +486,8 @@ def main():
             'later common refusals changed the prior successful common record')
     require(digest(root / 'late-winning/result/decision.json') == late_preserved,
             'later late refusals changed the prior successful late record')
+    require(digest(root / 'resplit-hidden/result/decision.json') == resplit_preserved,
+            'later resplit refusals changed the prior successful resplit record')
     result = {'status': 'passed', 'installed_origin': str(origin), 'platform': sys.platform,
               'records': rows, 'boundary': 'Genuine small calculations and replay; '
               'controlled faults establish owned lifecycle, not numerical stress performance.'}

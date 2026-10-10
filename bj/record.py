@@ -2,7 +2,7 @@
 
 The record owns normalized copies of the visible cards, remaining rank counts
 and rules. Ordinary records retain the existing post-peek game. Explicit
-bounded records identify their common-shoe or initial late-surrender model.
+bounded records identify their two-hand, bounded-resplit or late-surrender model.
 No whole-game estimate, timestamp, filename or environment identifier is added.
 """
 from __future__ import annotations
@@ -20,13 +20,15 @@ from .core import (ACTION_NAMES, RANKS, STANDARD, CardLike, Rules, Shoe, hand_to
 from .ev import best_action, initial_shoe_for
 
 __all__ = ['SCHEMA_VERSION', 'CONTROLLED_SCHEMA_VERSION', 'COMMON_SCHEMA_VERSION',
-           'SURRENDER_SCHEMA_VERSION', 'decision_record', 'decision_json',
-           'common_shoe_record', 'late_surrender_record']
+           'SURRENDER_SCHEMA_VERSION', 'RESPLIT_SCHEMA_VERSION', 'decision_record',
+           'decision_json', 'common_shoe_record', 'late_surrender_record',
+           'bounded_resplit_record']
 
 SCHEMA_VERSION = 1
 CONTROLLED_SCHEMA_VERSION = 2
 COMMON_SCHEMA_VERSION = 3
 SURRENDER_SCHEMA_VERSION = 4
+RESPLIT_SCHEMA_VERSION = 5
 
 
 class _UnsupportedRules(ValueError):
@@ -140,6 +142,12 @@ def _common_model_record(up, max_states):
 
 def _surrender_model_record(up, max_states):
     from .late_surrender import model_record
+
+    return model_record(up, max_states)
+
+
+def _resplit_model_record(up, max_states):
+    from .bounded_resplit import model_record
 
     return model_record(up, max_states)
 
@@ -299,6 +307,45 @@ def late_surrender_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
     return _late_surrender_record(cards, dealer_up, rules, shoe=shoe,
                                   can_double=can_double, can_surrender=can_surrender,
                                   max_states=max_states)[0]
+
+
+def _bounded_resplit_record(cards, dealer_up, rules, *, shoe, can_double=True,
+                            can_split=True, max_states=100_000):
+    from . import bounded_resplit
+
+    if shoe is None:
+        raise ValueError('bounded-resplit records require explicit retained unseen counts')
+    for name, value in (('can_double', can_double), ('can_split', can_split)):
+        if type(value) is not bool:
+            raise ValueError(f'{name} must be a boolean')
+    rule_values = _rules_record(rules)
+    hand, up, unseen, hand_count = _record_inputs(cards, dealer_up, rules, shoe, False, 1)
+    bounded_resplit.validate(hand, rules, unseen, False, hand_count, max_states)
+    action, evs, margin, work = bounded_resplit.decide(
+        hand, up, unseen, rules, can_double=can_double, can_split=can_split,
+        max_states=max_states)
+    document = _decision_document(hand, up, unseen, rule_values, False, hand_count,
+                                  can_double, can_split, action, evs, margin,
+                                  RESPLIT_SCHEMA_VERSION, _resplit_model_record(up, max_states),
+                                  False)
+    return document, work
+
+
+def bounded_resplit_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
+                           rules: Rules, *, shoe: Shoe, can_double: bool = True,
+                           can_split: bool = True,
+                           max_states: int = 100_000) -> dict[str, Any]:
+    """Record a bounded original non-ace pair with one extra common-shoe resplit.
+
+    Require max_hands=3 and 3..20 supplied counts including the concealed hole.
+    New children precede older pending hands. Complete combined S/H/D/P pricing
+    shares one state cap and refuses any unavailable joint continuation. Root
+    S/H/D retains its accepted last-draw convention. Direct use has no owned wall
+    or memory supervisor, and split continuation has a ten-second deadline.
+    """
+    return _bounded_resplit_record(cards, dealer_up, rules, shoe=shoe,
+                                   can_double=can_double, can_split=can_split,
+                                   max_states=max_states)[0]
 
 
 def decision_json(cards: str | Sequence[CardLike], dealer_up: CardLike,

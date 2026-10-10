@@ -1,0 +1,25 @@
+{
+  "schema": {"name": "solver-calculation-request", "version": 4},
+  "model": {"name": "common_shoe_bounded_resplit", "version": 1},
+  "limits": {"max_states": 100000},
+  "rules": {
+    "max_hands": 3,
+    "das": false,
+    "s17": true,
+    "peek": true,
+    "surrender": false,
+    "resplit_aces": false,
+    "hit_split_aces": false,
+    "double_any_two": true,
+    "tens_are_pairs": true
+  },
+  "input": {
+    "cards": ["8", "8"],
+    "dealer_up": "6",
+    "unseen_counts": [0, 0, 0, 0, 0, 0, 0, 8, 0, 0],
+    "is_split_hand": false,
+    "hand_count": 1,
+    "can_double": true,
+    "can_split": true
+  }
+}
