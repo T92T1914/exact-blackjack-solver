@@ -24,7 +24,7 @@ from unittest.mock import patch
 import bj
 from bj import calculation as calc
 from bj import _calculation_process as transport
-from bj import bounded_resplit, common_shoe, late_surrender
+from bj import bounded_ace_resplit, bounded_resplit, common_shoe, late_surrender
 
 
 def require(value, message):
@@ -74,6 +74,16 @@ def resplit_request(cards, up, counts, *, rules=None, double=True, pair=True, li
     return value
 
 
+def ace_request(up, counts, *, rules=None, double=True, pair=True, limit=100000):
+    value = request(['A', 'A'], up, counts,
+                    rules={'max_hands': 3, 'surrender': False, 'resplit_aces': True,
+                           'hit_split_aces': False, **(rules or {})},
+                    double=double, pair=pair)
+    value.update(schema=dict(calc.ACE_RESPLIT_REQUEST_SCHEMA),
+                 model=dict(bounded_ace_resplit.MODEL), limits={'max_states': limit})
+    return value
+
+
 def command(argv, expected):
     require(argv[0] in ('bj-calculate', 'bj-advise'), 'unsupported installed command')
     entry = Path(sys.executable).parent / (argv[0] + ('.exe' if os.name == 'nt' else ''))
@@ -116,7 +126,7 @@ def calculate(root, label, value):
             (directory / 'request-source.json').read_bytes() == path.read_bytes(),
             'caller request or captured source changed')
     saved = json.loads(record_path.read_bytes())
-    bounded = value['schema']['version'] in (2, 3, 4)
+    bounded = value['schema']['version'] in (2, 3, 4, 5)
     if bounded:
         work = receipt['work']
         require(saved['schema']['version'] == value['schema']['version'] + 1 and
@@ -153,25 +163,51 @@ def calculate(root, label, value):
             require(value['input']['can_split'] or
                     set(work['state_counts']) <= bounded_resplit.ROOT_FAMILIES,
                     'disabled original split still entered a joint continuation')
+        elif value['schema']['version'] == 5:
+            require(saved['model'] == bounded_ace_resplit.model_record(
+                        value['input']['dealer_up'], value['limits']['max_states']) and
+                    saved['model']['name'] == 'common_shoe_bounded_ace_resplit' and
+                    saved['model']['version'] == 1 and
+                    saved['state']['action_controls'] == {
+                        'can_double': value['input']['can_double'],
+                        'can_split': value['input']['can_split']} and
+                    set(work['state_counts']) <= bounded_ace_resplit.FAMILIES and
+                    receipt['policy']['algorithmic_work_limit'] == {
+                        'name': 'whole_request_uncached_enumeration_states',
+                        'max_states': value['limits']['max_states'],
+                        'includes': 'root_draw_hit_double_distribution_dealer_and_'
+                                    'ace_resplit_draw_play_settle_dealer',
+                        'split_cooperative_seconds': 10.0},
+                    'ace model, current controls or whole-family policy differs')
+            require(any(name.startswith('ace_resplit_') for name in work['state_counts'])
+                    is value['input']['can_split'],
+                    'original split control differs from actual ace work')
+            require(value['input']['can_split'] or
+                    set(work['state_counts']) <= bounded_ace_resplit.ROOT_FAMILIES,
+                    'disabled original ace split entered a joint continuation')
     require(saved['state']['cards'] == value['input']['cards'] and
             saved['state']['shoe']['counts'] == value['input']['unseen_counts'],
             'card order or supplied counts changed')
     replay = command(['bj-advise', '--replay', str(record_path), '--json'], 0)
     require(replay['status'] == 'agreement' and replay['recorded'] == replay['recomputed'],
             'existing installed replay differs')
+    require(replay['modeled_input'] == {'state': saved['state'], 'rules': saved['rules'],
+                                      'model': saved['model']},
+            'installed replay did not retain the complete saved modeled inputs')
     require(digest(record_path) == {k: receipt['record'][k] for k in ('bytes', 'sha256')},
             'replay modified successful record')
     return saved, {'label': label, 'record': str(record_path), **digest(record_path),
                    'status': receipt['status'], 'replay': replay['status'],
                    'policy': receipt['policy'], 'cleanup': receipt['cleanup'],
-                   **({'work': receipt['work']} if bounded else {})}
+                   **({'work': receipt['work'], 'schema': saved['schema'],
+                       'model': saved['model']} if bounded else {})}
 
 
-def lifecycle(root, source, mode, *, common=False, surrender=False, resplit=False):
+def lifecycle(root, source, mode, *, common=False, surrender=False, resplit=False, ace=False):
     """Use existing main or a bounded family's owned Event with one controlled child."""
-    require(sum((common, surrender, resplit)) <= 1,
+    require(sum((common, surrender, resplit, ace)) <= 1,
             'controlled child requires one selected family')
-    label = 'controlled-' + ('resplit-' if resplit else 'late-' if surrender else
+    label = 'controlled-' + ('ace-' if ace else 'resplit-' if resplit else 'late-' if surrender else
                             'common-' if common else '') + mode
     directory = root / label
     ready = root / (label + '-ready')
@@ -190,7 +226,8 @@ def lifecycle(root, source, mode, *, common=False, surrender=False, resplit=Fals
         code += ' import os;os._exit(17)\n'
     else:
         code += ' time.sleep(20)\n'
-    target = ('_bounded_resplit_record' if resplit else '_late_surrender_record' if surrender else
+    target = ('_bounded_ace_resplit_record' if ace else '_bounded_resplit_record' if resplit else
+              '_late_surrender_record' if surrender else
               '_common_shoe_record' if common else 'decision_record')
     code += (f'record.{target}=controlled\n'
              'sys.stdin=io.TextIOWrapper(io.BytesIO(raw))\n'
@@ -213,7 +250,7 @@ def lifecycle(root, source, mode, *, common=False, surrender=False, resplit=Fals
             if not ready.exists():
                 cancellation_errors.append('child did not enter controlled long calculation')
                 return
-            if common or surrender or resplit:
+            if common or surrender or resplit or ace:
                 cancellation.set()  # Owned caller Event, no console or host signal.
             else:
                 # This raises SIGINT in this calling process only. It does not use
@@ -229,7 +266,7 @@ def lifecycle(root, source, mode, *, common=False, surrender=False, resplit=Fals
     try:
         with patch.object(transport.subprocess, 'Popen', side_effect=fixed_child), \
                 contextlib.redirect_stdout(output), contextlib.redirect_stderr(error):
-            if common or surrender or resplit:
+            if common or surrender or resplit or ace:
                 selected = calc._policy(1 if mode == 'timeout' else 8, None)
                 receipt = calc._run(source, directory, selected, cancellation)
                 status = calc.EXIT_STATUSES[receipt['status']]
@@ -317,6 +354,18 @@ def main():
         ('resplit-ace-peek', resplit_request(['T', 'T'], 'A', [0]*7+[1, 0, 7])),
         ('resplit-soft17', resplit_request(['T', 'T'], 'A', [0]*5+[1, 0, 1, 0, 6])),
     ]
+    ace_hidden = [3]+[0]*8+[2]
+    cases += [
+        ('ace-hidden', ace_request('7', ace_hidden, rules={'das': False})),
+        ('ace-disabled', ace_request('7', ace_hidden, pair=False)),
+        ('ace-optional', ace_request('7', [5]+[0]*9)),
+        ('ace-peek', ace_request('T', [1]+[0]*8+[4])),
+        ('ace-ace-peek', ace_request('A', [0]*7+[1, 0, 4])),
+        ('ace-das', ace_request('7', ace_hidden, rules={'das': True})),
+        ('ace-control-FT', ace_request('7', ace_hidden, double=False)),
+        ('ace-control-FF', ace_request('7', ace_hidden, double=False, pair=False)),
+        ('ace-extra', ace_request('7', [1]+[0]*8+[5])),
+    ]
     rows = []
     for label, value in cases:
         saved, row = calculate(root, label, value)
@@ -331,6 +380,44 @@ def main():
             require(evs == {'S': 1.25}, 'declared natural payout differs')
         elif label.startswith('split-'):
             require(evs == {'S': 1.0}, 'ordinary split-21 settlement differs')
+        elif label.startswith('ace-'):
+            reference = {
+                'ace-hidden': {'S': -1, 'H': -1, 'D': -2, 'P': Fraction(3, 10)},
+                'ace-disabled': {'S': -1, 'H': -1, 'D': -2},
+                'ace-optional': {'S': -1, 'H': -1, 'D': -2, 'P': -2},
+                'ace-peek': {'S': -1, 'H': -1, 'D': -2, 'P': Fraction(5, 2)},
+                'ace-ace-peek': {'S': -1, 'H': -1, 'D': -2, 'P': 2},
+                'ace-das': {'S': -1, 'H': -1, 'D': -2, 'P': Fraction(3, 10)},
+                'ace-control-FT': {'S': -1, 'H': -1, 'P': Fraction(3, 10)},
+                'ace-control-FF': {'S': -1, 'H': -1},
+                'ace-extra': {'S': -1, 'H': -1, 'D': -2, 'P': Fraction(7, 3)},
+            }
+            expected = reference[label]
+            require(set(evs) == set(expected) and all(
+                        abs(evs[key] - float(number)) <= 1e-12
+                        for key, number in expected.items()),
+                    'ace installed prices differ from qualified physical/manual witnesses')
+            # Preserve binary64 ranking. Exact Fraction ties do not license a
+            # policy epsilon or changing the existing engine's raw recommendation.
+            ranked = sorted((key for key in ('S', 'H', 'D', 'P') if key in evs),
+                            key=lambda key: evs[key], reverse=True)
+            require(saved['decision']['action'] == ranked[0] and
+                    saved['decision']['margin'] == evs[ranked[0]] - evs[ranked[1]],
+                    'ace recommendation did not use raw binary64 ranking')
+            require(saved['model']['split_eligibility'] ==
+                    'matching_A_A_after_mandatory_card_with_shared_slot' and
+                    saved['model']['split_aces'] ==
+                    'one_card_optional_resplit_no_hit_no_double_no_natural_premium',
+                    'ace local eligibility or one-card-only settlement declaration differs')
+            if label in ('ace-peek', 'ace-ace-peek'):
+                excluded = 'A' if value['input']['dealer_up'] == 'T' else 'T'
+                require(saved['model']['hole_rank_excluded_by_peek'] == excluded,
+                        'ace negative-peek exclusion direction differs')
+            if label == 'ace-hidden':
+                require(evs['P'] < float(Fraction(1, 2)),
+                        'lawful ace price collapsed into the known-hole control')
+            if label == 'ace-optional':
+                require(evs['P'] != -3, 'ace optional choice became a forced extra resplit')
         elif label in ('common-hidden', 'common-double', 'common-aces', 'common-h17'):
             require(saved['schema']['version'] == 3 and
                     saved['model']['split'] == common_shoe.SPLIT_MODEL,
@@ -425,6 +512,7 @@ def main():
     common_preserved = digest(root / 'common-hidden/result/decision.json')
     late_preserved = digest(root / 'late-winning/result/decision.json')
     resplit_preserved = digest(root / 'resplit-hidden/result/decision.json')
+    ace_preserved = digest(root / 'ace-hidden/result/decision.json')
     refusals = [('common-state-limit', common_request(['T', 'T'], '7', [1]+[0]*8+[5],
                                                      limit=1), 4, 'resource_limited'),
                 ('common-exhaustion', common_request(['8', '8'], 'T', [0]*6+[1, 1, 1, 1]),
@@ -440,6 +528,15 @@ def main():
                 ('resplit-h17-exhaustion', resplit_request(['T', 'T'], 'A',
                                                          [0]*5+[1, 0, 1, 0, 6],
                                                          rules={'s17': False}),
+                 5, 'calculation_error'),
+                ('ace-state-limit', ace_request('7', [0]*9+[4], limit=1),
+                 4, 'resource_limited'),
+                ('ace-dealer-exhaustion', ace_request('6', [0]*9+[3]),
+                 5, 'calculation_error'),
+                ('ace-mandatory-exhaustion', ace_request('7', [3]+[0]*9),
+                 5, 'calculation_error'),
+                ('ace-h17-exhaustion', ace_request('6', [5]+[0]*9,
+                                                   rules={'s17': False}),
                  5, 'calculation_error')]
     for label, value, expected_exit, expected_status in refusals:
         source = root / (label + '-request.json')
@@ -456,17 +553,36 @@ def main():
                     receipt['work']['attempted_states'] == 2 and
                     receipt['work']['state_counts'] == {'root_distribution': 1},
                     'bounded state refusal did not account for actual root work')
+        elif label.startswith('ace-'):
+            expected_type = ('ValueError' if label == 'ace-h17-exhaustion' else
+                             'UnsupportedShoeError')
+            require(receipt['work'] is None and receipt['error']['type'] == expected_type,
+                    'ace required-continuation refusal differs from the existing worker boundary')
+            expected_message = (receipt['error']['message'] ==
+                                'dealer must draw to 17 but the shoe is empty'
+                                if label == 'ace-h17-exhaustion' else
+                                'mandatory' in receipt['error']['message']
+                                if label == 'ace-mandatory-exhaustion' else
+                                'dealer' in receipt['error']['message'])
+            require(expected_message,
+                    'ace refusal did not explain the unavailable continuation')
         rows.append({'label': label, 'status': receipt['status'], 'exit': expected_exit,
-                     'policy': receipt['policy'], 'cleanup': receipt['cleanup']})
+                     'policy': receipt['policy'], 'cleanup': receipt['cleanup'],
+                     'error': receipt['error'], 'work': receipt['work']})
     for mode in ('timeout', 'cancel', 'error', 'exit'):
         rows.append(lifecycle(root, root / 'ordinary-request.json', mode))
     for mode in ('timeout', 'cancel'):
         rows.append(lifecycle(root, root / 'common-hidden-request.json', mode, common=True))
         rows.append(lifecycle(root, root / 'late-winning-request.json', mode, surrender=True))
         rows.append(lifecycle(root, root / 'resplit-winning-request.json', mode, resplit=True))
+        rows.append(lifecycle(root, root / 'ace-hidden-request.json', mode, ace=True))
     if sys.platform == 'win32':
         rows.append(lifecycle(root, root / 'ordinary-request.json', 'memory'))
     saved, row = calculate(root, 'following', ordinary)
+    rows.append(row)
+    saved, row = calculate(root, 'ace-following', ace_request('7', ace_hidden))
+    require(abs(saved['decision']['evs']['P'] - float(Fraction(3, 10))) <= 1e-12,
+            'following ace calculation differs')
     rows.append(row)
     saved, row = calculate(root, 'resplit-following',
                            resplit_request(['8', '8'], '6', resplit_eights))
@@ -488,9 +604,13 @@ def main():
             'later late refusals changed the prior successful late record')
     require(digest(root / 'resplit-hidden/result/decision.json') == resplit_preserved,
             'later resplit refusals changed the prior successful resplit record')
+    require(digest(root / 'ace-hidden/result/decision.json') == ace_preserved,
+            'later ace refusals changed the prior successful ace record')
     result = {'status': 'passed', 'installed_origin': str(origin), 'platform': sys.platform,
               'records': rows, 'boundary': 'Genuine small calculations and replay; '
-              'controlled faults establish owned lifecycle, not numerical stress performance.'}
+              'controlled faults establish owned lifecycle, not numerical stress performance. '
+              'Ace records are complete original decisions under the named bounded model; '
+              'no full-shoe feasibility or independent ancestry-order proof is claimed.'}
     (root / 'acceptance.json').write_bytes(calc._json_bytes(result))
     print(json.dumps(result, sort_keys=True))
 

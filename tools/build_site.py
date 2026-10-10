@@ -32,6 +32,8 @@ FILES = {
     "site/appearance.js": "appearance.js",
     "examples/bounded-resplit-request.json": "bounded-resplit-request.json",
     "docs/bounded-resplit-calculation.md": "bounded-resplit-calculation.md",
+    "examples/bounded-ace-resplit-request.json": "bounded-ace-resplit-request.json",
+    "docs/bounded-ace-resplit-calculation.md": "bounded-ace-resplit-calculation.md",
     "docs/visual-example-data.json": "data.json",
     "docs/blackjack-composition-example.svg": "example.svg",
     "docs/blackjack-composition-clair.png": "composition-clair.png",

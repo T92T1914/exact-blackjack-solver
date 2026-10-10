@@ -1,0 +1,43 @@
+{
+  "schema": {
+    "name": "solver-calculation-request",
+    "version": 5
+  },
+  "model": {
+    "name": "common_shoe_bounded_ace_resplit",
+    "version": 1
+  },
+  "rules": {
+    "max_hands": 3,
+    "resplit_aces": true,
+    "hit_split_aces": false,
+    "das": false,
+    "s17": true
+  },
+  "input": {
+    "cards": [
+      "A",
+      "A"
+    ],
+    "dealer_up": "7",
+    "unseen_counts": [
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2
+    ],
+    "is_split_hand": false,
+    "hand_count": 1,
+    "can_double": true,
+    "can_split": true
+  },
+  "limits": {
+    "max_states": 100000
+  }
+}

@@ -43,6 +43,8 @@ function renderRecord(target,record,label) {
       'Version 3 stores explicit current action controls and the bounded common-shoe model. Two sequential hands share depletion and one dealer settlement. Split aces take one card, with no resplits or natural premium. Surrender is outside this model: its effective permission is false and no surrender control was stored. This page has not recomputed the result.' :
       record.schema.version===4n ?
       'Version 4 declares bounded post-peek late surrender for one original initial two-card hand below 21. Supplied counts include the hidden hole and exclude visible cards. Current permission controls R, which loses half the original wager and draws no card. Hit continuations offer no surrender or double. Split, natural and later decisions are outside this family. The state cap is not a wall or memory guarantee. This page has not recomputed the result.' :
+      record.schema.version===6n ?
+      'Version 6 declares bounded common-shoe ace resplitting for one original A,A. An initial split has one shared optional extra ace resplit slot and at most three resulting hands. Each split child receives one mandatory card. It then stands, or may resplit A,A while the shared slot remains. Split children cannot hit or double, including when DAS is true. New children finish before an older pending hand receives its card. Choices preserve the concealed hole, shared depletion and all completed wagers for one dealer settlement. Split 21 pays the ordinary wager. Current double and split controls restrict the original choice. Any unavailable offered child or dealer draw refuses the whole calculation. Original hit, stand and double retain the ordinary last-player-draw convention. The state cap is not a wall or memory guarantee. Surrender permission is effectively false and no surrender control was stored. This page has not recomputed the result.' :
       'Version 5 declares bounded common-shoe resplitting for one original non-ace pair. An initial split has one shared extra resplit slot and at most three resulting hands. New children finish before an older pending hand receives its mandatory card. All completed wagers share depletion and one concealed-hole dealer settlement. Split 21 pays the ordinary wager. Split aces and surrender are excluded. Current double and split controls restrict the original choice. An unavailable offered joint draw refuses the whole calculation. Root hit, stand and double retain the ordinary last-player-draw convention. The state cap is not a wall or memory guarantee. Surrender permission is effectively false and no surrender control was stored. This page has not recomputed the result.','fine'),
     table(['Field','Modeled value'],modeledRows(record),`${label} complete modeled state, rules and model`),
     element('h3',`${label}: record metadata`),
@@ -69,13 +71,16 @@ function renderComparison(target,left,right) {
   target.hidden=false;
   const compared=compareRecords(left,right);
   const names=comparisonActionNames(left,right),hasSurrender=left.schema.version===4n || right.schema.version===4n,
-    hasResplit=left.schema.version===5n || right.schema.version===5n;
+    hasResplit=left.schema.version===5n || right.schema.version===5n,
+    hasAceResplit=left.schema.version===6n || right.schema.version===6n;
   target.append(element('h3','1. Changed modeled inputs'),
     element('p',compared.model_compatible ?
       (hasSurrender ? 'Both records declare the same post-peek late-surrender family. Current permission, rules and retained counts can still differ.' :
+        hasAceResplit ? 'Both records declare the same bounded common-shoe ace resplit family. Current original controls, rules, retained counts and work caps can still differ. Split children remain one-card-only.' :
         hasResplit ? 'Both records declare the same bounded common-shoe resplit family. Current controls, rules, retained counts and work caps can still differ.' :
         'Both records declare the same mathematical split model. This is a supplied declaration, not independent numerical validation.') :
       (hasSurrender ? 'These records use different mathematical families. Initial late surrender and split models have different coverage. Their answer differences do not establish an engine regression. Inspect model identity and coverage before the EVs.' :
+        hasAceResplit ? 'These records use different mathematical families. This ace model permits one shared optional extra resplit with one-card-only children. The two-hand no-resplit, non-ace resplit and independent-hand models have different coverage. Their answer differences do not establish an engine regression. Inspect model identity and coverage before the EVs.' :
         hasResplit ? 'These records use different mathematical families. Bounded resplitting carries up to three hands and one shared extra slot. The older two-hand and independent-hand split models have different coverage. Their answer differences do not establish an engine regression. Inspect model identity and coverage before the EVs.' :
         'These records use different mathematical split models. Their answer differences compare different models and do not establish an engine regression. Inspect model identity and coverage before the EVs.'),'fine'),
     element('p',compared.inputs.length ?

@@ -54,6 +54,7 @@ def main():
             "common_schema_version": record.COMMON_SCHEMA_VERSION,
             "surrender_schema_version": record.SURRENDER_SCHEMA_VERSION,
             "resplit_schema_version": record.RESPLIT_SCHEMA_VERSION,
+            "ace_resplit_schema_version": record.ACE_RESPLIT_SCHEMA_VERSION,
             "rule_fields": [field.name for field in fields(Rules)],
             "ranks": list(RANKS),
             "actions": ACTION_NAMES,
@@ -63,6 +64,8 @@ def main():
                                  for rank in RANKS},
             "resplit_models": {rank: record._resplit_model_record(rank, 100000)
                                for rank in RANKS},
+            "ace_resplit_models": {rank: record._ace_resplit_model_record(rank, 100000)
+                                   for rank in RANKS},
         },
     }))
 

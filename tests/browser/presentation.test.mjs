@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium, webkit} from 'playwright';
-import {modelFor,resplitModelFor} from '../../site/record-inspection.mjs';
+import {modelFor,resplitModelFor,aceResplitModelFor} from '../../site/record-inspection.mjs';
 
 // An owned loopback server, headless sandbox and fresh temporary contexts only.
 // Never connect to an existing browser or fall back to a visible window.
@@ -161,7 +161,8 @@ async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON
   assert.match(await result.textContent(),saved.schema.version===1 ? /implicit current action defaults/ :
     saved.schema.version===2 ? /stores the declared current action controls/ :
     saved.schema.version===3 ? /bounded common-shoe model/ :
-    saved.schema.version===4 ? /bounded post-peek late surrender/ : /bounded common-shoe resplitting/);
+    saved.schema.version===4 ? /bounded post-peek late surrender/ :
+    saved.schema.version===6 ? /bounded common-shoe ace resplitting/ : /bounded common-shoe resplitting/);
 }
 
 test('local file consumer shows complete records and compares inputs before answers',async t=>{
@@ -214,7 +215,7 @@ test('record replacement errors remove the old answer and allow recovery',async 
   for (const [name,buffer,message] of [
     ['malformed.json',Buffer.from('{'),/invalid JSON/],
     ['duplicate.json',Buffer.from('{"schema":{},"\\u0073chema":{}}'),/duplicate JSON key/],
-    ['future.json',alteredRecord(r=>{r.schema.version=6;}),/unsupported_record/],
+    ['future.json',alteredRecord(r=>{r.schema.version=7;}),/unsupported_record/],
     ['missing-controls.json',alteredRecord(r=>{r.schema.version=2;}),/action_controls/],
     ['float-count.json',Buffer.from(recordFixture.toString().replace('"counts": [\n        0','"counts": [\n        0.0')),/integer/],
     ['invalid-utf8.json',Buffer.from([255]),/valid UTF-8/],
@@ -535,6 +536,123 @@ test('resplit installed records, complete family boundaries and generated guide 
   await page.locator('#record-inspector .table-wrap').first().focus();
   assert.equal(await page.locator('#record-inspector .table-wrap').first().evaluate(e=>document.activeElement===e),true);
   await capture(page,'bounded-resplit-enlarged-320',false);
+});
+
+
+const aceResplitFixture=(kind='HIDDEN')=>{
+  const saved=JSON.parse(recordFixture);
+  const optional=kind==='OPTIONAL',peek=kind==='PEEK',acePeek=kind==='ACE_PEEK';
+  const up=peek ? 'T' : acePeek ? 'A' : '7';
+  saved.schema.version=6;
+  Object.assign(saved.state,{cards:['A','A'],dealer_up:up,total:12,soft:true,
+    action_controls:{can_double:true,can_split:kind!=='DISABLED'}});
+  saved.state.shoe.counts=optional ? [5,...Array(9).fill(0)] : peek ? [1,...Array(8).fill(0),4] :
+    acePeek ? [0,0,0,0,0,0,0,1,0,4] : [3,...Array(8).fill(0),2];
+  Object.assign(saved.rules,{max_hands:3,surrender:false,resplit_aces:true,hit_split_aces:false,
+    das:kind==='DAS',s17:true});
+  saved.model=aceResplitModelFor(up,100000n);
+  const evs={S:-1,H:-1,D:-2,P:optional ? -2 : peek ? 2.5 : acePeek ? 2 : 0.30000000000000004};
+  if (kind==='DISABLED') delete evs.P;
+  const action=optional || kind==='DISABLED' ? 'S' : 'P';
+  const ranked=Object.values(evs).sort((a,b)=>b-a);
+  saved.decision={action,action_name:action==='S' ? 'STAND' : 'SPLIT',evs,
+    margin:ranked[0]-ranked[1],units:'original_wager',whole_game_estimate:null};
+  return Buffer.from(JSON.stringify(saved,(_,value)=>typeof value==='bigint' ? Number(value) : value));
+};
+
+test('one-card ace installed results, family comparisons and generated artifacts remain usable on mobile',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  for (const name of ['bounded-ace-resplit-request.json','bounded-ace-resplit-calculation.md']) {
+    const expected=await readFile(new URL('../../'+(name.endsWith('.json') ? 'examples/' : 'docs/')+name,import.meta.url),'utf8');
+    const received=await page.evaluate(async name=>{
+      const response=await fetch(name);if (!response.ok) throw Error('Generated ace artifact unavailable');
+      return response.text();
+    },name);
+    assert.equal(received,expected,'Generated or published ace artifact must equal this source');
+    assert.equal(await page.locator(`#record-inspector a[href="${name}"]`).count(),1);
+  }
+  const kinds=['HIDDEN','DISABLED','OPTIONAL','PEEK','ACE_PEEK','DAS'];
+  const provided=kinds.map(kind=>process.env[`SOLVER_RECORD_ACE_${kind}`]);
+  assert.ok(provided.every(Boolean) || provided.every(value=>!value),'Provide all six installed ace records or none');
+  const records=await Promise.all(kinds.map(async(kind,i)=>({kind,path:provided[i] ?? null,
+    buffer:provided[i] ? await readFile(provided[i]) : aceResplitFixture(kind)})));
+  const commonSaved=JSON.parse(recordFixture);
+  commonSaved.schema.version=3;
+  Object.assign(commonSaved.state,{cards:['T','T'],dealer_up:'7',total:20,soft:false,
+    action_controls:{can_double:true,can_split:true}});
+  commonSaved.state.shoe.counts=[1,...Array(8).fill(0),5];commonSaved.rules.max_hands=2;
+  commonSaved.model=modelFor('7',100000n);
+  commonSaved.decision={action:'P',action_name:'SPLIT',evs:{S:1,H:-2/3,D:-4/3,P:2},
+    margin:1,units:'original_wager',whole_game_estimate:null};
+  const common=Buffer.from(JSON.stringify(commonSaved,(_,value)=>typeof value==='bigint' ? Number(value) : value));
+  const previous=await Promise.all([
+    ['LEGACY',process.env.SOLVER_RECORD_APPROX,recordFixture],
+    ['COMMON',process.env.SOLVER_RECORD_COMMON,common],
+    ['SURRENDER',process.env.SOLVER_RECORD_SURRENDER_WINNING,lateFixture()],
+    ['NON_ACE',process.env.SOLVER_RECORD_RESPLIT_WINNING,resplitFixture()]
+  ].map(async([kind,source,fallback])=>({kind,path:source ?? null,buffer:source ? await readFile(source) : fallback})));
+  console.log('Ace inspection invocation:',JSON.stringify({
+    base_url:base+'/',site_directory:root,published:Boolean(process.env.SOLVER_BROWSER_BASE_URL),
+    browser_engine:process.env.SOLVER_BROWSER_ENGINE ?? 'chromium',
+    browser_channel:process.env.SOLVER_BROWSER_CHANNEL ?? null,browser_version:browser.version(),
+    inputs:[...records,...previous].map(({kind,path:source,buffer})=>({kind,path:source,
+      origin:source ? 'provided installed output' : 'constructed admission fixture',
+      bytes:buffer.length,sha256:createHash('sha256').update(buffer).digest('hex')}))
+  }));
+  await page.evaluate(async()=>{
+    const images=Array.from(document.images);
+    for (const image of images) image.loading='eager';
+    await Promise.all(images.map(image=>image.decode()));
+  });
+  await page.waitForLoadState('networkidle');
+  const requests=[];page.on('request',request=>requests.push(request.url()));
+  for (const {buffer} of records) {
+    const saved=JSON.parse(buffer),controls=saved.state.action_controls;
+    assert.equal(saved.schema.version,6);assert.equal(saved.model.name,'common_shoe_bounded_ace_resplit');
+    const permitted=['H','S',...(controls.can_double ? ['D'] : []),...(controls.can_split ? ['P'] : [])];
+    await acceptedRecord(page,'a',buffer);await assertCompleteRecord(page,'a',buffer,permitted);
+    const result=page.locator('#record-result-a');
+    assert.match(await result.textContent(),/one shared optional extra ace resplit slot/);
+    assert.match(await result.textContent(),/Split children cannot hit or double, including when DAS is true/);
+    assert.match(await result.textContent(),/Split 21 pays the ordinary wager/);
+    assert.match(await result.textContent(),/unavailable offered child or dealer draw refuses the whole calculation/);
+    await page.locator('#record-file-a').focus();await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#record-clear-a').evaluate(e=>document.activeElement===e),true);
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  }
+  const hidden=records[0].buffer,disabled=records[1].buffer,comparison=page.locator('#record-comparison');
+  for (const {buffer:older} of previous) for (const [a,b] of [[older,hidden],[hidden,older]]) {
+    await acceptedRecord(page,'a',a);await assertCompleteRecord(page,'a',a);
+    await acceptedRecord(page,'b',b);await assertCompleteRecord(page,'b',b);
+    assert.match(await comparison.textContent(),/different mathematical families/);
+    const changes=comparison.getByRole('region',{name:'Modeled input changes, before answer differences',exact:true});
+    for (const field of ['name','split','split_aces','split_eligibility','split_max_hands',
+      'split_max_extra_resplits','split_child_order','split_twenty_one','split_exhaustion']) {
+      const differs=JSON.parse(a).model[field]!==JSON.parse(b).model[field];
+      assert.equal(await changes.getByRole('rowheader',{name:`model.${field}`,exact:true}).count(),differs ? 1 : 0);
+    }
+    assert.equal(await comparison.evaluate(node=>node.textContent.indexOf('different mathematical families')<
+      node.textContent.indexOf('4. Recorded answer comparison')),true);
+  }
+  await acceptedRecord(page,'a',hidden);await acceptedRecord(page,'b',disabled);
+  assert.match(await comparison.textContent(),/same bounded common-shoe ace resplit family/);
+  const p=page.locator('#record-result-b').getByRole('region',{
+    name:'Record B derived permitted actions beside supplied EV presence',exact:true})
+    .getByRole('rowheader',{name:'P (SPLIT)',exact:true}).locator('..');
+  assert.deepEqual(await p.locator('td').allTextContents(),['false','absent (no saved value)']);
+  await page.locator('#record-file-a').setInputFiles(suppliedRecord('wrong-ace-model.json',
+    Buffer.from(hidden.toString().replace('one_card_optional_resplit_no_hit_no_double_no_natural_premium','different'))));
+  await page.waitForFunction(()=>document.querySelector('#record-status-a').classList.contains('error'));
+  assert.equal(await page.locator('#record-result-a').isVisible(),false);
+  assert.equal(await comparison.isVisible(),false);
+  await acceptedRecord(page,'a',hidden);
+  assert.deepEqual(requests,[],'Local V6 imports trigger no requests');
+  await page.setViewportSize({width:320,height:844});
+  await page.addStyleTag({content:'#record-inspector{font-size:34px}#record-inspector .fine{font-size:28px}#record-inspector th{font-size:30px}#record-inspector h3{font-size:40px}'});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#record-inspector .table-wrap').first().focus();
+  assert.equal(await page.locator('#record-inspector .table-wrap').first().evaluate(e=>document.activeElement===e),true);
+  await capture(page,'bounded-ace-resplit-enlarged-320',false);
 });
 
 test('mixed version true defaults compare in both directions and disabled saved actions warn',async t=>{

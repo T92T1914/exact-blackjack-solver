@@ -5,7 +5,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inspectRecord,compareRecords,recordSlot,display,modeledRows,modelFor,permittedActions,recordedActionDifferences,MAX_RECORD_BYTES,
   MAX_RECORD_DEPTH,MAX_INTEGER_DIGITS,RANKS,RULE_FIELDS,ACTION_NAMES,SURRENDER_ACTION_NAMES,
-  surrenderModelFor,resplitModelFor,recordActionNames,actionControls} from '../site/record-inspection.mjs';
+  surrenderModelFor,resplitModelFor,aceResplitModelFor,recordActionNames,actionControls} from '../site/record-inspection.mjs';
 
 const fixture=await readFile(new URL('./fixtures/saved-decision-v1-7a38141.json',import.meta.url),'utf8');
 const baseline=JSON.parse(fixture);
@@ -31,7 +31,7 @@ add('fresh origin consistent',change(r=>{r.state.shoe.source='fresh_minus_visibl
 add('split dealt ace order',change(r=>{r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('split non-ace first order',change(r=>{r.state.cards=['4','A'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('changed supported rule',change(r=>{r.rules.s17=false;}));
-add('schema future',change(r=>{r.schema.version=6;}),'unsupported_record');
+add('schema future',change(r=>{r.schema.version=7;}),'unsupported_record');
 add('schema name future',change(r=>{r.schema.name='different';}),'unsupported_record');
 add('float schema version',fixture.replace('"version": 1','"version": 1.0'),'invalid_input');
 add('exponent schema version',fixture.replace('"version": 1','"version": 1e0'),'invalid_input');
@@ -242,6 +242,77 @@ add('resplit version 5 fractional model version',resplitText().replace('"name":"
   '"name":"common_shoe_bounded_resplit","version":1.0'),'invalid_input');
 add('resplit version 5 fractional hand cap',resplitText().replace('"split_max_hands":3','"split_max_hands":3.0'),'invalid_input');
 add('resplit version 5 wrong derived hole exclusion',resplitText(r=>{r.model.hole_rank_excluded_by_peek='T';}),'invalid_input');
+const aceResplitText=update=>{
+  const saved=JSON.parse(resplitText());
+  saved.schema.version=6;
+  Object.assign(saved.state,{cards:['A','A'],dealer_up:'7',total:12,soft:true});
+  saved.state.shoe.counts=[3,...Array(8).fill(0),2];
+  saved.rules.resplit_aces=true;
+  saved.model=aceResplitModelFor('7',100000n);
+  saved.decision={action:'P',action_name:'SPLIT',evs:{S:-1,H:-1,D:-2,P:0.30000000000000004},
+    margin:1.3,units:'original_wager',whole_game_estimate:null};
+  if (update) update(saved);
+  return JSON.stringify(saved,(_,value)=>typeof value==='bigint' ? Number(value) : value);
+};
+add('ace resplit version 6 complete record',aceResplitText());
+for (const [double,pair] of [[true,true],[false,true],[true,false],[false,false]]) {
+  add(`ace resplit version 6 controls ${double}/${pair}`,aceResplitText(r=>{
+    r.state.action_controls={can_double:double,can_split:pair};
+    if (!double) delete r.decision.evs.D;
+    if (!pair) {delete r.decision.evs.P;r.decision.action='S';r.decision.action_name='STAND';r.decision.margin=0;}
+  }));
+}
+add('ace resplit version 6 declared DAS',aceResplitText(r=>{r.rules.das=true;}));
+add('ace resplit version 6 altered finite answer',aceResplitText(r=>{r.decision.evs.P=99;r.decision.margin=100;}));
+add('ace resplit version 6 stored unavailable split',aceResplitText(r=>{r.state.action_controls.can_split=false;}));
+add('ace resplit version 6 omitted permitted split',aceResplitText(r=>{
+  delete r.decision.evs.P;r.decision.action='S';r.decision.action_name='STAND';r.decision.margin=0;
+}));
+add('ace resplit version 6 missing controls',aceResplitText(r=>{delete r.state.action_controls;}),'invalid_input');
+add('ace resplit version 6 surrender control forbidden',aceResplitText(r=>{r.state.action_controls.can_surrender=false;}),'invalid_input');
+add('ace resplit version 6 R vocabulary forbidden',aceResplitText(r=>{r.decision.evs.R=-0.5;}),'invalid_input');
+for (const key of ['can_double','can_split']) {
+  add(`ace resplit version 6 nonboolean ${key}`,aceResplitText(r=>{r.state.action_controls[key]=1;}),'invalid_input');
+}
+for (const [key,value] of [['max_hands',2],['resplit_aces',false],['hit_split_aces',true],['surrender',true]]) {
+  add(`ace resplit version 6 unsupported rule ${key}`,aceResplitText(r=>{r.rules[key]=value;}),'unsupported_record');
+}
+add('ace resplit version 6 non-ace pair',aceResplitText(r=>{
+  r.state.cards=['8','8'];r.state.total=16;r.state.soft=false;
+}),'unsupported_record');
+add('ace resplit version 6 nonpair',aceResplitText(r=>{
+  r.state.cards=['A','8'];r.state.total=19;
+}),'unsupported_record');
+add('ace resplit version 6 continuation excluded',aceResplitText(r=>{
+  r.state.is_split_hand=true;r.state.hand_count=2;
+}),'unsupported_record');
+add('ace resplit version 6 below retained envelope',aceResplitText(r=>{
+  r.state.shoe.counts=[1,...Array(8).fill(0),1];
+}),'unsupported_record');
+add('ace resplit version 6 above retained envelope',aceResplitText(r=>{
+  r.state.shoe.counts[0]=19;
+}),'unsupported_record');
+add('ace resplit version 6 fresh origin',aceResplitText(r=>{
+  r.rules.decks=1;r.state.shoe.source='fresh_minus_visible';r.state.shoe.counts=[2,4,4,4,4,4,3,4,4,16];
+}),'unsupported_record');
+add('ace resplit version 6 missing declaration',aceResplitText(r=>{delete r.model.split_aces;}),'invalid_input');
+add('ace resplit version 6 unknown declaration',aceResplitText(r=>{r.model.extra=true;}),'invalid_input');
+for (const key of ['name','dealer_information','player_last_draw','split','split_deal_order','split_child_order',
+  'split_eligibility','split_aces','split_twenty_one','split_objective','split_exhaustion']) {
+  add(`ace resplit version 6 changed declaration ${key}`,aceResplitText(r=>{r.model[key]='different';}),'unsupported_record');
+}
+for (const [key,value] of [['version',2],['split_max_hands',4],['split_max_extra_resplits',2],
+  ['split_cooperative_seconds',9],['enumeration_state_limit',100001]]) {
+  add(`ace resplit version 6 unsupported ${key}`,aceResplitText(r=>{r.model[key]=value;}),'unsupported_record');
+}
+add('ace resplit version 6 numeric cooperative ten',aceResplitText().replace('"split_cooperative_seconds":10',
+  '"split_cooperative_seconds":10.0'));
+add('ace resplit version 6 Boolean cooperative seconds',aceResplitText(r=>{r.model.split_cooperative_seconds=true;}),'invalid_input');
+add('ace resplit version 6 Boolean state cap',aceResplitText(r=>{r.model.enumeration_state_limit=true;}),'invalid_input');
+add('ace resplit version 6 fractional model version',aceResplitText().replace('"name":"common_shoe_bounded_ace_resplit","version":1',
+  '"name":"common_shoe_bounded_ace_resplit","version":1.0'),'invalid_input');
+add('ace resplit version 6 fractional hand cap',aceResplitText().replace('"split_max_hands":3','"split_max_hands":3.0'),'invalid_input');
+add('ace resplit version 6 wrong derived hole exclusion',aceResplitText(r=>{r.model.hole_rank_excluded_by_peek='T';}),'invalid_input');
 for (const version of [1,2,3]) {
   const create=version===3 ? commonText : change;
   add(`legacy version ${version} forbids R`,create(r=>{
@@ -325,10 +396,11 @@ test('shared corpus agrees with existing Python admission and schema declaration
     'Eligibility parity only, not EV or mathematical validation');
   const plain=value=>JSON.parse(JSON.stringify(value,(_,item)=>typeof item==='bigint' ? Number(item) : item));
   assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,controlled_schema_version:2,common_schema_version:3,
-    surrender_schema_version:4,resplit_schema_version:5,rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,surrender_actions:SURRENDER_ACTION_NAMES,
+    surrender_schema_version:4,resplit_schema_version:5,ace_resplit_schema_version:6,rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,surrender_actions:SURRENDER_ACTION_NAMES,
     models:Object.fromEntries(RANKS.map(rank=>[rank,modelFor(rank)])),
     surrender_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(surrenderModelFor(rank,100000n))])),
-    resplit_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(resplitModelFor(rank,100000n))]))});
+    resplit_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(resplitModelFor(rank,100000n))])),
+    ace_resplit_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(aceResplitModelFor(rank,100000n))]))});
 });
 test('exact large integer counts survive inspection and input-first comparison',()=>{
   const left=inspectRecord(cases.find(item=>item.name==='unsafe exact integer count').bytes);
@@ -587,4 +659,52 @@ test('resplit current permissions and cap differences stay separate from saved a
   assert.deepEqual(compared.inputs,[]);
   assert.equal(compared.action.matches,false);
   assert.equal(compared.evs.find(row=>row.action==='P').delta,2**-52);
+});
+
+
+test('one-card ace resplit stays a separate family from every previous split model',()=>{
+  const ace=inspectRecord(aceResplitText());
+  assert.deepEqual(permittedActions(ace),['H','S','D','P'],'Original A,A is not a completed split child');
+  assert.equal(actionControls(ace).can_surrender,false);
+  assert.equal(new Map(modeledRows(ace)).get('state.action_controls.can_surrender'),undefined);
+  for (const older of [inspectRecord(fixture),inspectRecord(commonText()),
+    inspectRecord(surrenderText()),inspectRecord(resplitText())]) {
+    for (const [left,right] of [[ace,older],[older,ace]]) {
+      const compared=compareRecords(left,right);
+      assert.equal(compared.model_compatible,false);
+      for (const field of ['split','split_aces','split_eligibility','split_max_hands',
+        'split_max_extra_resplits','split_child_order','split_twenty_one','split_exhaustion']) {
+        const rows=new Map(modeledRows(ace));
+        assert.equal(rows.get('model.'+field),ace.model[field]);
+        assert.equal(compared.inputs.some(([key])=>key==='model.'+field),
+          left.model[field]!==right.model[field]);
+      }
+    }
+  }
+});
+
+test('ace original controls and missing values remain visible before answer comparison',()=>{
+  const offered=inspectRecord(aceResplitText());
+  const disabled=inspectRecord(aceResplitText(r=>{
+    r.state.action_controls.can_split=false;delete r.decision.evs.P;
+    r.decision.action='S';r.decision.action_name='STAND';r.decision.margin=0;
+    r.model.enumeration_state_limit=99;
+  }));
+  for (const [left,right] of [[offered,disabled],[disabled,offered]]) {
+    const compared=compareRecords(left,right);
+    assert.equal(compared.model_compatible,true);
+    assert.ok(compared.inputs.some(([key])=>key==='state.action_controls.can_split'));
+    assert.ok(compared.inputs.some(([key])=>key==='model.enumeration_state_limit'));
+    assert.equal(compared.evs.find(row=>row.action==='P').delta,null);
+  }
+  assert.deepEqual(recordedActionDifferences(disabled),{
+    permitted:['H','S','D'],omitted:[],unavailable:[],recommendation_unavailable:false});
+  const misleading=inspectRecord(aceResplitText(r=>{r.state.action_controls.can_split=false;}));
+  assert.deepEqual(recordedActionDifferences(misleading),{
+    permitted:['H','S','D'],omitted:[],unavailable:['P'],recommendation_unavailable:true});
+  const changed=inspectRecord(aceResplitText(r=>{r.decision.evs.P=0.3;}));
+  const comparison=compareRecords(offered,changed);
+  assert.deepEqual(comparison.inputs,[]);
+  assert.equal(comparison.evs.find(row=>row.action==='P').matches,false);
+  assert.equal(comparison.evs.find(row=>row.action==='P').delta,0.3-0.30000000000000004);
 });
