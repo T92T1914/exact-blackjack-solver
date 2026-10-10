@@ -18,10 +18,12 @@ from .core import (ACTION_NAMES, RANKS, STANDARD, CardLike, Rules, Shoe, hand_to
                    normalize, normalize_hand, normalize_shoe)
 from .ev import best_action, initial_shoe_for
 
-__all__ = ['SCHEMA_VERSION', 'CONTROLLED_SCHEMA_VERSION', 'decision_record', 'decision_json']
+__all__ = ['SCHEMA_VERSION', 'CONTROLLED_SCHEMA_VERSION', 'COMMON_SCHEMA_VERSION',
+           'decision_record', 'decision_json', 'common_shoe_record']
 
 SCHEMA_VERSION = 1
 CONTROLLED_SCHEMA_VERSION = 2
+COMMON_SCHEMA_VERSION = 3
 
 
 class _UnsupportedRules(ValueError):
@@ -106,6 +108,17 @@ def _model_record(up):
     }
 
 
+def _common_model_record(up, max_states):
+    from .common_shoe import SPLIT_MODEL
+    from ._enumeration import state_limit
+
+    return {**_model_record(up), 'split': SPLIT_MODEL, 'split_hands': 2,
+            'split_deal_order': 'finish_first_before_dealing_second',
+            'split_aces': 'one_card_no_double_no_natural_premium',
+            'split_exhaustion': 'refuse_any_unavailable_continuation',
+            'enumeration_state_limit': state_limit(max_states)}
+
+
 def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
                     rules: Rules = STANDARD, *, shoe: Shoe | None = None,
                     is_split_hand: bool = False,
@@ -135,6 +148,15 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
     action, evs, margin = best_action(hand, up, shoe=unseen, rules=rules,
                                     is_split_hand=is_split_hand, hand_count=hand_count,
                                     can_double=can_double, can_split=can_split)
+    version = SCHEMA_VERSION if can_double and can_split else CONTROLLED_SCHEMA_VERSION
+    return _decision_document(hand, up, unseen, rule_values, is_split_hand, hand_count,
+                              can_double, can_split, action, evs, margin, version,
+                              _model_record(up), shoe is None)
+
+
+def _decision_document(hand, up, unseen, rule_values, is_split_hand, hand_count,
+                       can_double, can_split, action, evs, margin, version, model, fresh):
+    """Assemble the shared numerical record without calculating another answer."""
     if not evs or action not in evs or any(key not in ACTION_NAMES for key in evs):
         raise ValueError('solver returned an invalid action set')
     values = {}
@@ -150,17 +172,16 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
         raise ValueError('solver returned an inconsistent recommendation or margin')
     total, soft = hand_total(hand)
     return {
-        'schema': {'name': 'blackjack-decision', 'version': (
-            SCHEMA_VERSION if can_double and can_split else CONTROLLED_SCHEMA_VERSION)},
+        'schema': {'name': 'blackjack-decision', 'version': version},
         'package': {'name': 'exact-blackjack-solver', 'version': __version__},
         'state': {
             'cards': list(hand), 'dealer_up': up, 'total': total, 'soft': soft,
             'is_split_hand': is_split_hand, 'hand_count': hand_count,
-            **({} if can_double and can_split else {
+            **({} if version == SCHEMA_VERSION else {
                 'action_controls': {'can_double': can_double, 'can_split': can_split}}),
             'shoe': {
                 'rank_order': list(RANKS), 'counts': list(unseen),
-                'source': 'fresh_minus_visible' if shoe is None else 'supplied_unseen',
+                'source': 'fresh_minus_visible' if fresh else 'supplied_unseen',
                 'includes_hidden_hole': True, 'visible_cards_already_removed': True,
             },
         },
@@ -170,8 +191,47 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
             'margin': float(margin), 'units': 'original_wager',
             'whole_game_estimate': None,
         },
-        'model': _model_record(up),
+        'model': model,
     }
+
+
+def _common_shoe_record(cards, dealer_up, rules, *, shoe, can_double=True,
+                        can_split=True, max_states=100_000):
+    from . import common_shoe
+
+    if shoe is None:
+        raise ValueError('common-shoe records require explicit retained unseen counts')
+    for name, value in (('can_double', can_double), ('can_split', can_split)):
+        if type(value) is not bool:
+            raise ValueError(f'{name} must be a boolean')
+    rule_values = _rules_record(rules)
+    hand, up, unseen, hand_count = _record_inputs(cards, dealer_up, rules, shoe, False, 1)
+    common_shoe.validate(hand, rules, unseen, False, hand_count, max_states)
+    action, evs, margin, work = common_shoe.decide(
+        hand, up, unseen, rules, can_double=can_double, can_split=can_split,
+        max_states=max_states)
+    document = _decision_document(hand, up, unseen, rule_values, False, hand_count,
+                                  can_double, can_split, action, evs, margin,
+                                  COMMON_SCHEMA_VERSION, _common_model_record(up, max_states),
+                                  False)
+    return document, work
+
+
+def common_shoe_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
+                       rules: Rules = STANDARD, *, shoe: Shoe,
+                       can_double: bool = True, can_split: bool = True,
+                       max_states: int = 100_000) -> dict[str, Any]:
+    """Record an explicit initial-pair common-shoe decision within its finite cap.
+
+    This additive model requires two sequential hands, no resplits, one-card
+    split aces and 3..20 supplied unseen cards. Counts include the hidden hole
+    and already exclude visible cards. All root and joint uncached states
+    share max_states. A refused branch or budget produces no partial record.
+    Ordinary decision_record retains its existing approximate split model.
+    """
+    return _common_shoe_record(cards, dealer_up, rules, shoe=shoe,
+                               can_double=can_double, can_split=can_split,
+                               max_states=max_states)[0]
 
 
 def decision_json(cards: str | Sequence[CardLike], dealer_up: CardLike,

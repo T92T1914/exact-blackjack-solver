@@ -20,6 +20,7 @@ import math
 from dataclasses import dataclass
 from functools import cache
 from time import perf_counter
+from ._enumeration import state as _enumeration_state
 
 RANKS = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'A')
 VALUES = (2, 3, 4, 5, 6, 7, 8, 9, 10, 1)
@@ -88,6 +89,7 @@ def joint_split_value(pair_rank, dealer_up, shoe, *, double_after_split=True,
     mass_error = 0.0
 
     def tick(kind):
+        _enumeration_state('joint_' + kind)
         counts_by_kind[kind] += 1
         states = sum(counts_by_kind.values())
         elapsed = perf_counter() - started

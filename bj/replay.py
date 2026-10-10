@@ -12,6 +12,8 @@ from dataclasses import fields
 from typing import Any
 
 from . import __version__, record
+from ._enumeration import EnumerationLimitExceeded
+from .joint_split import ReferenceLimitExceeded
 from .core import ACTION_NAMES, RANKS, Rules, hand_total
 
 __all__ = ['MAX_RECORD_BYTES', 'MAX_RECORD_DEPTH', 'EXIT_STATUSES',
@@ -149,18 +151,19 @@ def _admit(saved):
     name = _string(schema['name'], 'schema.name')
     version = _integer(schema['version'], 'schema.version')
     if name != 'blackjack-decision' or version not in (
-            record.SCHEMA_VERSION, record.CONTROLLED_SCHEMA_VERSION):
+            record.SCHEMA_VERSION, record.CONTROLLED_SCHEMA_VERSION,
+            record.COMMON_SCHEMA_VERSION):
         raise _UnsupportedRecord(f'unsupported schema {name!r}, version {version}')
     _object(saved, ('schema', 'package', 'state', 'rules', 'decision', 'model'), 'record')
     package = _object(saved['package'], ('name', 'version'), 'package')
     _constant(package['name'], 'exact-blackjack-solver', 'package.name')
     _string(package['version'], 'package.version')
     state_keys = ('cards', 'dealer_up', 'total', 'soft', 'is_split_hand', 'hand_count', 'shoe')
-    if version == record.CONTROLLED_SCHEMA_VERSION:
+    if version != record.SCHEMA_VERSION:
         state_keys += ('action_controls',)
     state = _object(saved['state'], state_keys, 'state')
     can_double = can_split = True
-    if version == record.CONTROLLED_SCHEMA_VERSION:
+    if version != record.SCHEMA_VERSION:
         controls = _object(state['action_controls'], ('can_double', 'can_split'),
                            'state.action_controls')
         for key in ('can_double', 'can_split'):
@@ -209,8 +212,23 @@ def _admit(saved):
             raise _InvalidRecord(str(exc)) from exc
         if unseen != expected:
             raise _InvalidRecord('fresh_minus_visible counts disagree with the declared state')
-    model = _object(saved['model'], record._model_record(up).keys(), 'model')
-    for key, expected in record._model_record(up).items():
+    declarations = record._model_record(up)
+    if version == record.COMMON_SCHEMA_VERSION:
+        from . import common_shoe
+        if not isinstance(saved['model'], dict):
+            raise _InvalidRecord('model must be an object')
+        max_states = _integer(saved['model'].get('enumeration_state_limit'),
+                              'model.enumeration_state_limit')
+        try:
+            common_shoe.validate(hand, rules, unseen, state['is_split_hand'],
+                                 hand_count, max_states)
+        except ValueError as exc:
+            raise _UnsupportedRecord(str(exc)) from exc
+        if source != 'supplied_unseen':
+            raise _UnsupportedRecord('common-shoe records require supplied_unseen counts')
+        declarations = record._common_model_record(up, max_states)
+    model = _object(saved['model'], declarations.keys(), 'model')
+    for key, expected in declarations.items():
         _constant(model[key], expected, f'model.{key}',
                   derived=key == 'hole_rank_excluded_by_peek')
     decision = _object(saved['decision'], ('action', 'action_name', 'evs', 'margin', 'units',
@@ -248,8 +266,11 @@ def _report(status, *, saved=None, recomputed=None, comparison=None, error=None)
 
 
 def _failure(status, exc, saved=None):
-    return _report(status, saved=saved,
-                   error={'type': type(exc).__name__, 'message': str(exc)})
+    result = _report(status, saved=saved,
+                     error={'type': type(exc).__name__, 'message': str(exc)})
+    if isinstance(exc, EnumerationLimitExceeded):
+        result['work'] = exc.work
+    return result
 
 
 def _compare(recorded, current):
@@ -275,22 +296,28 @@ def _compare(recorded, current):
 
 
 def replay_json(text: str | bytes) -> dict[str, Any]:
-    """Admit schema-v1/v2 JSON, recalculate, and report exact numerical agreement.
+    """Admit a declared record model and report exact numerical agreement.
 
     The report distinguishes invalid/unsupported input from differences and
     incomplete calculation. No tolerance is applied, including near ties.
-    Production recursion and caches retain their existing unbounded lifetime.
+    Legacy recursion and caches retain their existing unbounded lifetime.
     MemoryError and RecursionError report resource_limited, KeyboardInterrupt
-    reports interrupted. There is no new time, work or memory supervisor.
+    reports interrupted. The common model enforces its recorded state cap.
+    Direct replay has no owned worker, wall supervisor or memory cap.
     """
     admitted = None
     try:
         saved = _parse(text)
         hand, up, unseen, rules, is_split_hand, hand_count, can_double, can_split = _admit(saved)
         admitted = saved
-        current = record.decision_record(
-            hand, up, rules, shoe=unseen, is_split_hand=is_split_hand,
-            hand_count=hand_count, can_double=can_double, can_split=can_split)['decision']
+        if saved['schema']['version'] == record.COMMON_SCHEMA_VERSION:
+            current = record.common_shoe_record(
+                hand, up, rules, shoe=unseen, can_double=can_double, can_split=can_split,
+                max_states=saved['model']['enumeration_state_limit'])['decision']
+        else:
+            current = record.decision_record(
+                hand, up, rules, shoe=unseen, is_split_hand=is_split_hand,
+                hand_count=hand_count, can_double=can_double, can_split=can_split)['decision']
         comparison = _compare(saved['decision'], current)
         agrees = (comparison['legal_actions']['matches'] and comparison['evs_match']
                   and comparison['recommendation']['matches'] and comparison['margin']['matches'])
@@ -302,7 +329,7 @@ def replay_json(text: str | bytes) -> dict[str, Any]:
         return _failure('unsupported_record', exc)
     except KeyboardInterrupt as exc:
         return _failure('interrupted', exc, admitted)
-    except (MemoryError, RecursionError) as exc:
+    except (MemoryError, RecursionError, EnumerationLimitExceeded, ReferenceLimitExceeded) as exc:
         return _failure('resource_limited', exc, admitted)
     except (ValueError, OverflowError) as exc:
         return _failure('calculation_error', exc, admitted)

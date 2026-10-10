@@ -221,6 +221,7 @@ from .core import (
 # bj.dealer documents _distribution as stable for exactly this use, so this
 # is a sanctioned shortcut, not a raid.
 from .dealer import IBUST, _distribution
+from ._enumeration import state as _enumeration_state
 
 __all__ = [
     'initial_shoe_for', 'ev_stand', 'ev_hit', 'ev_double', 'ev_split',
@@ -320,6 +321,7 @@ def _draw_probs(shoe: Shoe, up: str) -> tuple[float, ...]:
     Everything else is scaled down to pay for that.  See the PEEK section of the
     module docstring for why this is the entire post-peek correction.
     """
+    _enumeration_state('root_draw')
     n = shoe_size(shoe)
     if n == 0:
         raise ValueError('no cards left to draw')
@@ -402,6 +404,7 @@ def _hit_ev(total: int, soft: bool, up: str, shoe: Shoe, s17: bool) -> float:
     a hard 12), and _stand_ev is monotone in the total.  Skipping the
     comparison prunes a large, entirely pointless subtree.
     """
+    _enumeration_state('root_hit')
     n = shoe_size(shoe)
     if n == 0:
         # A real 312-card shoe cannot run out under a hand that draws at most
@@ -440,6 +443,7 @@ def _double_ev(total: int, soft: bool, up: str, shoe: Shoe, s17: bool) -> float:
     decision, which is what makes doubling a 15 vs 10 so much worse than
     hitting it even though the first card is drawn from the same shoe.
     """
+    _enumeration_state('root_double')
     if shoe_size(shoe) == 0:
         raise ValueError(f'player wants to double {total} but the shoe is empty')
 

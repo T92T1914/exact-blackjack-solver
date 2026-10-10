@@ -24,6 +24,7 @@ EXIT_STATUSES = {'completed': 0, 'invalid_request': 2, 'unsupported_policy': 3,
                  'cleanup_failed': 7, 'delivery_failed': 8, 'timed_out': 124,
                  'cancelled': 130}
 REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 1}
+COMMON_REQUEST_SCHEMA = {'name': 'solver-calculation-request', 'version': 2}
 INPUT_KEYS = ('cards', 'dealer_up', 'unseen_counts', 'is_split_hand', 'hand_count',
               'can_double', 'can_split')
 
@@ -37,9 +38,15 @@ def _json_bytes(value):
 
 
 def _normalise(value):
-    replay._object(value, ('schema', 'rules', 'input'), 'request')
-    schema = replay._object(value['schema'], ('name', 'version'), 'request.schema')
-    for key, expected in REQUEST_SCHEMA.items():
+    if not isinstance(value, dict):
+        raise ValueError('request must be an object')
+    schema = replay._object(value.get('schema'), ('name', 'version'), 'request.schema')
+    common = type(schema['version']) is int and schema['version'] == 2
+    selected_schema = COMMON_REQUEST_SCHEMA if common else REQUEST_SCHEMA
+    keys = ('schema', 'rules', 'input', 'model', 'limits') if common else (
+        'schema', 'rules', 'input')
+    replay._object(value, keys, 'request')
+    for key, expected in selected_schema.items():
         if type(schema[key]) is not type(expected) or schema[key] != expected:
             raise ValueError('unsupported solver calculation request schema')
     supplied_rules = value['rules']
@@ -66,10 +73,32 @@ def _normalise(value):
     cards, up, unseen, hand_count = record._record_inputs(
         inputs['cards'], inputs['dealer_up'], rules, inputs['unseen_counts'],
         inputs['is_split_hand'], inputs['hand_count'])
-    return {'schema': dict(REQUEST_SCHEMA), 'rules': rule_values,
+    captured = {'schema': dict(selected_schema), 'rules': rule_values,
             'input': {'cards': list(cards), 'dealer_up': up, 'unseen_counts': list(unseen),
                       'is_split_hand': inputs['is_split_hand'], 'hand_count': hand_count,
                       'can_double': inputs['can_double'], 'can_split': inputs['can_split']}}
+    if common:
+        from . import common_shoe
+        model = replay._object(value['model'], ('name', 'version'), 'request.model')
+        for key, expected in common_shoe.MODEL.items():
+            if type(model[key]) is not type(expected) or model[key] != expected:
+                raise ValueError('unsupported common-shoe calculation model')
+        limits = replay._object(value['limits'], ('max_states',), 'request.limits')
+        common_shoe.validate(cards, rules, unseen, inputs['is_split_hand'], hand_count,
+                             limits['max_states'])
+        captured.update(model=dict(common_shoe.MODEL), limits=dict(limits))
+    return captured
+
+
+def _request_policy(policy, captured):
+    """Bind the operation's algorithmic cap to the normalized captured request."""
+    if captured['schema']['version'] == 1:
+        return policy
+    return {**policy, 'algorithmic_work_limit': {
+        'name': 'whole_request_uncached_enumeration_states',
+        'max_states': captured['limits']['max_states'],
+        'includes': 'root_draw_hit_double_dealer_and_joint_draw_play_settle_dealer',
+        'split_cooperative_seconds': 10.0}}
 
 
 def _policy(wall_seconds, memory_mib):
@@ -122,7 +151,11 @@ def _validated_decision(raw, captured, digest, returncode, policy):
     if not raw.endswith(b'\n'):
         raise ValueError('worker did not deliver a complete LF-terminated message')
     message = replay._parse(raw)
-    replay._object(message, ('status', 'decision', 'error', 'request_sha256', 'policy'),
+    common = captured['schema']['version'] == 2
+    keys = ('status', 'decision', 'error', 'request_sha256', 'policy')
+    if common:
+        keys += ('work',)
+    replay._object(message, keys,
                    'worker message')
     if message['request_sha256'] != digest or message['policy'] != policy:
         raise ValueError('worker message does not identify the captured request and policy')
@@ -137,7 +170,12 @@ def _validated_decision(raw, captured, digest, returncode, policy):
         replay._object(message['error'], ('type', 'message'), 'worker error')
         if any(not isinstance(value, str) for value in message['error'].values()):
             raise ValueError('worker error fields must be strings')
-        return status, None, message['error']
+        if common and message['work'] is not None:
+            _validated_work(message['work'], captured['limits']['max_states'], complete=False)
+        if common and message['error']['type'] == 'EnumerationLimitExceeded' and (
+                status != 'resource_limited' or message['work'] is None):
+            raise ValueError('enumeration refusal must identify its resource limit and work')
+        return status, None, message['error'], message.get('work')
     if message['error'] is not None:
         raise ValueError('completed worker outcome contains an error')
     decision = message['decision']
@@ -149,9 +187,13 @@ def _validated_decision(raw, captured, digest, returncode, policy):
     expected = (inputs['cards'], inputs['dealer_up'], inputs['unseen_counts'], captured['rules'],
                 inputs['is_split_hand'], inputs['hand_count'], inputs['can_double'],
                 inputs['can_split'])
+    expected_version = record.COMMON_SCHEMA_VERSION if common else (
+        1 if can_double and can_split else 2)
     if (actual != expected or decision['state']['shoe']['source'] != 'supplied_unseen'
             or decision['package']['version'] != __version__
-            or decision['schema']['version'] != (1 if can_double and can_split else 2)):
+            or decision['schema']['version'] != expected_version
+            or common and decision['model'] != record._common_model_record(
+                up, captured['limits']['max_states'])):
         raise ValueError('completed decision differs from the captured request/package')
     answer = decision['decision']
     values = list(answer['evs'].values())
@@ -162,7 +204,27 @@ def _validated_decision(raw, captured, digest, returncode, policy):
     result = _json_bytes(decision)
     if len(result) > replay.MAX_RECORD_BYTES:
         raise ValueError('completed decision exceeds existing replay/inspection record admission')
-    return status, result, None
+    if common:
+        _validated_work(message['work'], captured['limits']['max_states'], complete=True)
+    return status, result, None, message.get('work')
+
+
+def _validated_work(work, limit, *, complete):
+    from ._enumeration import FAMILIES
+
+    replay._object(work, ('limit', 'states', 'attempted_states', 'state_counts'), 'worker work')
+    for key in ('limit', 'states', 'attempted_states'):
+        if type(work[key]) is not int:
+            raise ValueError('worker work counters must be integer tokens')
+    counts = work['state_counts']
+    if (not isinstance(counts, dict) or any(key not in FAMILIES for key in counts)
+            or any(type(value) is not int or value < 1 for value in counts.values())):
+        raise ValueError('worker work state families are invalid')
+    states, attempted = work['states'], work['attempted_states']
+    if (work['limit'] != limit or not 0 <= states <= limit
+            or states != sum(counts.values())
+            or attempted != states + (0 if complete else 1)):
+        raise ValueError('worker work differs from the captured state cap/accounting')
 
 
 def _publish(directory, decision, receipt, cancellation):
@@ -203,6 +265,8 @@ def _run(request_path, output, policy, cancellation):
         receipt['source_request'] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(),
                                      'complete': len(raw) <= replay.MAX_RECORD_BYTES}
         captured = _normalise(replay._parse(raw))
+        policy = _request_policy(policy, captured)
+        receipt['policy'] = policy
         normalized = _json_bytes(captured)
         if len(normalized) > replay.MAX_RECORD_BYTES:
             raise ValueError('normalized request exceeds 65536 bytes')
@@ -230,10 +294,12 @@ def _run(request_path, output, policy, cancellation):
             _exclusive_bytes(directory / 'worker.stdout', result['stdout'])
         if receipt['status'] == 'returned':
             try:
-                status, decision, error = _validated_decision(
+                status, decision, error, work = _validated_decision(
                     result['stdout'], captured, receipt['request_sha256'],
                     result['worker']['returncode'], policy)
                 receipt['status'], receipt['error'] = status, error
+                if captured['schema']['version'] == 2:
+                    receipt['work'] = work
             except (ValueError, TypeError, KeyError, OverflowError) as exc:
                 receipt['status'], receipt['error'] = 'worker_failed', _error(exc)
         else:

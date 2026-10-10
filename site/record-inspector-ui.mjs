@@ -35,7 +35,9 @@ function renderRecord(target,record,label) {
   target.append(element('h3',`${label}: modeled inputs`),
     element('p',record.schema.version===1n ?
       'Version 1 has implicit current action defaults: can_double=true and can_split=true. These two effective values were not stored in the record.' :
-      'Version 2 stores the declared current action controls as booleans. They restrict the present choices and do not change continuation rules.','fine'),
+      record.schema.version===2n ?
+      'Version 2 stores the declared current action controls as booleans. They restrict the present choices and do not change continuation rules.' :
+      'Version 3 stores explicit current action controls and the bounded common-shoe model. Two sequential hands share depletion and one dealer settlement. Split aces take one card, with no resplits or natural premium. This page has not recomputed the result.','fine'),
     table(['Field','Modeled value'],modeledRows(record),`${label} complete modeled state, rules and model`),
     element('h3',`${label}: record metadata`),
     table(['Field','Supplied label'],metadataRows(record),`${label} schema and unauthenticated package labels`),
@@ -61,6 +63,9 @@ function renderComparison(target,left,right) {
   target.hidden=false;
   const compared=compareRecords(left,right);
   target.append(element('h3','1. Changed modeled inputs'),
+    element('p',compared.model_compatible ?
+      'Both records declare the same mathematical split model. This is a supplied declaration, not independent numerical validation.' :
+      'These records use different mathematical split models. Their answer differences compare different models and do not establish an engine regression. Inspect model identity and coverage before the EVs.','fine'),
     element('p',compared.inputs.length ?
       'Inspect these changes before the answers. When several inputs change, their combined difference does not identify a single cause.' :
       'All modeled inputs agree, including effective current action controls, dealt order, retained counts, rules and model declarations.'),

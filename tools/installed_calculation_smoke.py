@@ -11,6 +11,7 @@ import contextlib
 import hashlib
 import io
 import json
+from fractions import Fraction
 import os
 from pathlib import Path
 import signal
@@ -23,6 +24,7 @@ from unittest.mock import patch
 import bj
 from bj import calculation as calc
 from bj import _calculation_process as transport
+from bj import common_shoe
 
 
 def require(value, message):
@@ -40,6 +42,14 @@ def request(cards, up, counts, *, rules=None, split=False, double=True, pair=Tru
             'input': {'cards': cards, 'dealer_up': up, 'unseen_counts': counts,
                       'is_split_hand': split, 'hand_count': 2 if split else 1,
                       'can_double': double, 'can_split': pair}}
+
+
+def common_request(cards, up, counts, *, rules=None, double=True, pair=True, limit=100000):
+    value = request(cards, up, counts, rules={'max_hands': 2, **(rules or {})},
+                    double=double, pair=pair)
+    value.update(schema=dict(calc.COMMON_REQUEST_SCHEMA), model=dict(common_shoe.MODEL),
+                 limits={'max_states': limit})
+    return value
 
 
 def command(argv, expected):
@@ -84,6 +94,14 @@ def calculate(root, label, value):
             (directory / 'request-source.json').read_bytes() == path.read_bytes(),
             'caller request or captured source changed')
     saved = json.loads(record_path.read_bytes())
+    if value['schema']['version'] == 2:
+        work = receipt['work']
+        require(saved['schema']['version'] == 3 and
+                saved['model']['enumeration_state_limit'] == value['limits']['max_states'] and
+                work['limit'] == value['limits']['max_states'] and
+                0 <= work['states'] <= work['limit'] and
+                work['states'] == work['attempted_states'] == sum(work['state_counts'].values()),
+                'common model or whole-request state accounting differs')
     require(saved['state']['cards'] == value['input']['cards'] and
             saved['state']['shoe']['counts'] == value['input']['unseen_counts'],
             'card order or supplied counts changed')
@@ -94,13 +112,15 @@ def calculate(root, label, value):
             'replay modified successful record')
     return saved, {'label': label, 'record': str(record_path), **digest(record_path),
                    'status': receipt['status'], 'replay': replay['status'],
-                   'policy': receipt['policy'], 'cleanup': receipt['cleanup']}
+                   'policy': receipt['policy'], 'cleanup': receipt['cleanup'],
+                   **({'work': receipt['work']} if value['schema']['version'] == 2 else {})}
 
 
-def lifecycle(root, source, mode):
-    """Run public main with a fixed controlled child, including its real Job."""
-    directory = root / ('controlled-' + mode)
-    ready = root / (mode + '-ready')
+def lifecycle(root, source, mode, *, common=False):
+    """Use existing main or an owned common API Event with one controlled child."""
+    label = 'controlled-' + ('common-' if common else '') + mode
+    directory = root / label
+    ready = root / (label + '-ready')
     code = (
         'import io,pathlib,runpy,sys,time;raw=sys.stdin.buffer.read();'
         'from bj import record\n'
@@ -116,7 +136,8 @@ def lifecycle(root, source, mode):
         code += ' import os;os._exit(17)\n'
     else:
         code += ' time.sleep(20)\n'
-    code += ('record.decision_record=controlled\n'
+    target = '_common_shoe_record' if common else 'decision_record'
+    code += (f'record.{target}=controlled\n'
              'sys.stdin=io.TextIOWrapper(io.BytesIO(raw))\n'
              'runpy.run_module("bj._calculation_worker",run_name="__main__")\n')
     original = subprocess.Popen
@@ -128,6 +149,7 @@ def lifecycle(root, source, mode):
 
     cancellation_errors = []
     observer = None
+    cancellation = threading.Event()
     if mode == 'cancel':
         def cancel_entered():
             deadline = time.monotonic() + 5
@@ -136,9 +158,12 @@ def lifecycle(root, source, mode):
             if not ready.exists():
                 cancellation_errors.append('child did not enter controlled long calculation')
                 return
-            # This raises SIGINT in this calling process only. It does not use
-            # CTRL_C_EVENT, CTRL_BREAK_EVENT, a console attachment or keyboard.
-            signal.raise_signal(signal.SIGINT)
+            if common:
+                cancellation.set()  # Owned caller Event, no console or host signal.
+            else:
+                # This raises SIGINT in this calling process only. It does not use
+                # CTRL_C_EVENT, CTRL_BREAK_EVENT, a console attachment or keyboard.
+                signal.raise_signal(signal.SIGINT)
         observer = threading.Thread(target=cancel_entered)
         observer.start()
     output, error = io.TextIOWrapper(io.BytesIO()), io.TextIOWrapper(io.BytesIO())
@@ -149,7 +174,13 @@ def lifecycle(root, source, mode):
     try:
         with patch.object(transport.subprocess, 'Popen', side_effect=fixed_child), \
                 contextlib.redirect_stdout(output), contextlib.redirect_stderr(error):
-            status = calc.main(args)
+            if common:
+                selected = calc._policy(1 if mode == 'timeout' else 8, None)
+                receipt = calc._run(source, directory, selected, cancellation)
+                status = calc.EXIT_STATUSES[receipt['status']]
+                output.buffer.write(calc._json_bytes(receipt))
+            else:
+                status = calc.main(args)
     finally:
         if observer is not None:
             observer.join(timeout=6)
@@ -171,7 +202,7 @@ def lifecycle(root, source, mode):
             'retained incomplete outcome differs')
     if mode == 'memory':
         require(receipt['error']['type'] == 'MemoryError', 'memory denial was not observed')
-    return {'label': 'controlled-' + mode, 'status': receipt['status'], 'exit': status,
+    return {'label': label, 'status': receipt['status'], 'exit': status,
             'policy': receipt['policy'], 'cleanup': receipt['cleanup'], 'controlled': True}
 
 
@@ -193,6 +224,15 @@ def main():
                rules={'max_hands': 2}, double=double, pair=pair))
               for label, double, pair in [('TT', True, True), ('FT', False, True),
                                          ('TF', True, False), ('FF', False, False)]]
+    cases += [('common-hidden', common_request(['5', '5'], 'T', [0]*6+[2, 1, 1, 3])),
+              ('common-double', common_request(['2', '2'], '7', [0]*7+[7, 0, 0])),
+              ('common-aces', common_request(['A', 'A'], '7', [0]*9+[4])),
+              ('common-h17', common_request(['A', 'A'], '6', [1]+[0]*5+[1, 1, 1, 2],
+                                           rules={'das': False, 's17': False}))]
+    cases += [('common-control-' + label, common_request(['T', 'T'], '7', [1]+[0]*8+[5],
+               double=double, pair=pair))
+              for label, double, pair in [('TT', True, True), ('FT', False, True),
+                                         ('TF', True, False), ('FF', False, False)]]
     rows = []
     for label, value in cases:
         saved, row = calculate(root, label, value)
@@ -207,6 +247,18 @@ def main():
             require(evs == {'S': 1.25}, 'declared natural payout differs')
         elif label.startswith('split-'):
             require(evs == {'S': 1.0}, 'ordinary split-21 settlement differs')
+        elif label in ('common-hidden', 'common-double', 'common-aces', 'common-h17'):
+            require(saved['schema']['version'] == 3 and
+                    saved['model']['split'] == common_shoe.SPLIT_MODEL,
+                    'installed common calculation did not preserve model identity')
+            if label == 'common-hidden':
+                require(abs(evs['P'] - float(Fraction(-9, 7))) <= 1e-12 and
+                        evs['P'] < float(Fraction(-107, 84)),
+                        'lawful common expectation differs from independent tiny witness')
+            if label == 'common-double':
+                require(evs['P'] == 4, 'shared double wagers differ from analytic case')
+            if label == 'common-aces':
+                require(evs['P'] == 2, 'common split aces received incorrect settlement')
         else:
             inputs = value['input']
             permitted = {'S', 'H'} | ({'D'} if inputs['can_double'] else set()) | (
@@ -215,14 +267,44 @@ def main():
                     (not inputs['can_split'] or evs['P'] == 2.0), 'current controls differ')
         rows.append(row)
     preserved = digest(root / 'ordinary/result/decision.json')
+    common_preserved = digest(root / 'common-hidden/result/decision.json')
+    refusals = [('common-state-limit', common_request(['T', 'T'], '7', [1]+[0]*8+[5],
+                                                     limit=1), 4, 'resource_limited'),
+                ('common-exhaustion', common_request(['8', '8'], 'T', [0]*6+[1, 1, 1, 1]),
+                 5, 'calculation_error')]
+    for label, value, expected_exit, expected_status in refusals:
+        source = root / (label + '-request.json')
+        source.write_bytes(calc._json_bytes(value))
+        directory = root / label
+        receipt = command(['bj-calculate', str(source), '--output-dir', str(directory),
+                           '--wall-seconds', '5'], expected_exit)
+        retired(receipt)
+        require(receipt['status'] == expected_status and receipt['record'] is None and
+                not (directory / 'result').exists(), 'common refusal published a partial answer')
+        if expected_exit == 4:
+            require(receipt['error']['type'] == 'EnumerationLimitExceeded' and
+                    receipt['work']['limit'] == receipt['work']['states'] == 1 and
+                    receipt['work']['attempted_states'] == 2 and
+                    receipt['work']['state_counts'] == {'root_distribution': 1},
+                    'common state refusal did not account for actual root work')
+        rows.append({'label': label, 'status': receipt['status'], 'exit': expected_exit,
+                     'policy': receipt['policy'], 'cleanup': receipt['cleanup']})
     for mode in ('timeout', 'cancel', 'error', 'exit'):
         rows.append(lifecycle(root, root / 'ordinary-request.json', mode))
+    for mode in ('timeout', 'cancel'):
+        rows.append(lifecycle(root, root / 'common-hidden-request.json', mode, common=True))
     if sys.platform == 'win32':
         rows.append(lifecycle(root, root / 'ordinary-request.json', 'memory'))
     saved, row = calculate(root, 'following', ordinary)
     rows.append(row)
+    saved, row = calculate(root, 'common-following',
+                           common_request(['T', 'T'], '7', [1]+[0]*8+[5]))
+    require(saved['decision']['evs']['P'] == 2, 'following common calculation differs')
+    rows.append(row)
     require(digest(root / 'ordinary/result/decision.json') == preserved,
             'later incomplete attempts changed the prior successful result')
+    require(digest(root / 'common-hidden/result/decision.json') == common_preserved,
+            'later common refusals changed the prior successful common record')
     result = {'status': 'passed', 'installed_origin': str(origin), 'platform': sys.platform,
               'records': rows, 'boundary': 'Genuine small calculations and replay; '
               'controlled faults establish owned lifecycle, not numerical stress performance.'}
