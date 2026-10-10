@@ -1,7 +1,8 @@
 """Portable records for one completed solver call, without display rounding.
 
 The record owns normalized copies of the visible cards, remaining rank counts
-and rules. It prices the existing post-peek game, not an alternate rules model.
+and rules. Ordinary records retain the existing post-peek game. Explicit
+bounded records identify their common-shoe or initial late-surrender model.
 No whole-game estimate, timestamp, filename or environment identifier is added.
 """
 from __future__ import annotations
@@ -19,18 +20,20 @@ from .core import (ACTION_NAMES, RANKS, STANDARD, CardLike, Rules, Shoe, hand_to
 from .ev import best_action, initial_shoe_for
 
 __all__ = ['SCHEMA_VERSION', 'CONTROLLED_SCHEMA_VERSION', 'COMMON_SCHEMA_VERSION',
-           'decision_record', 'decision_json', 'common_shoe_record']
+           'SURRENDER_SCHEMA_VERSION', 'decision_record', 'decision_json',
+           'common_shoe_record', 'late_surrender_record']
 
 SCHEMA_VERSION = 1
 CONTROLLED_SCHEMA_VERSION = 2
 COMMON_SCHEMA_VERSION = 3
+SURRENDER_SCHEMA_VERSION = 4
 
 
 class _UnsupportedRules(ValueError):
     """Well-typed rules outside the decision record's declared model."""
 
 
-def _rules_record(rules: Rules) -> dict[str, Any]:
+def _rule_values(rules: Rules) -> dict[str, Any]:
     if not isinstance(rules, Rules):
         raise ValueError('rules must be a Rules instance')
     values = {field.name: getattr(rules, field.name) for field in fields(Rules)}
@@ -53,6 +56,11 @@ def _rules_record(rules: Rules) -> dict[str, Any]:
             raise ValueError(f'{name} must be finite and nonnegative') from None
         if not math.isfinite(values[name]) or values[name] < 0:
             raise ValueError(f'{name} must be finite and nonnegative')
+    return values
+
+
+def _rules_record(rules: Rules) -> dict[str, Any]:
+    values = _rule_values(rules)
     if not rules.peek:
         raise _UnsupportedRules('decision records model the post-peek game; peek must be True')
     if rules.surrender:
@@ -62,6 +70,17 @@ def _rules_record(rules: Rules) -> dict[str, Any]:
     if not rules.tens_are_pairs:
         raise _UnsupportedRules(
             'decision records collapse ten-value ranks and require tens_are_pairs')
+    return values
+
+
+def _surrender_rules_record(rules: Rules) -> dict[str, Any]:
+    from .late_surrender import validate_rules
+
+    values = _rule_values(rules)
+    try:
+        validate_rules(rules)
+    except ValueError as exc:
+        raise _UnsupportedRules(str(exc)) from exc
     return values
 
 
@@ -119,6 +138,12 @@ def _common_model_record(up, max_states):
             'enumeration_state_limit': state_limit(max_states)}
 
 
+def _surrender_model_record(up, max_states):
+    from .late_surrender import model_record
+
+    return model_record(up, max_states)
+
+
 def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
                     rules: Rules = STANDARD, *, shoe: Shoe | None = None,
                     is_split_hand: bool = False,
@@ -155,9 +180,10 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
 
 
 def _decision_document(hand, up, unseen, rule_values, is_split_hand, hand_count,
-                       can_double, can_split, action, evs, margin, version, model, fresh):
+                       can_double, can_split, action, evs, margin, version, model, fresh,
+                       *, action_names=ACTION_NAMES, can_surrender=None):
     """Assemble the shared numerical record without calculating another answer."""
-    if not evs or action not in evs or any(key not in ACTION_NAMES for key in evs):
+    if not evs or action not in evs or any(key not in action_names for key in evs):
         raise ValueError('solver returned an invalid action set')
     values = {}
     for key, value in evs.items():
@@ -178,7 +204,9 @@ def _decision_document(hand, up, unseen, rule_values, is_split_hand, hand_count,
             'cards': list(hand), 'dealer_up': up, 'total': total, 'soft': soft,
             'is_split_hand': is_split_hand, 'hand_count': hand_count,
             **({} if version == SCHEMA_VERSION else {
-                'action_controls': {'can_double': can_double, 'can_split': can_split}}),
+                'action_controls': {'can_double': can_double, 'can_split': can_split,
+                                    **({} if can_surrender is None else {
+                                        'can_surrender': can_surrender})}}),
             'shoe': {
                 'rank_order': list(RANKS), 'counts': list(unseen),
                 'source': 'fresh_minus_visible' if fresh else 'supplied_unseen',
@@ -187,7 +215,7 @@ def _decision_document(hand, up, unseen, rule_values, is_split_hand, hand_count,
         },
         'rules': rule_values,
         'decision': {
-            'action': action, 'action_name': ACTION_NAMES[action], 'evs': values,
+            'action': action, 'action_name': action_names[action], 'evs': values,
             'margin': float(margin), 'units': 'original_wager',
             'whole_game_estimate': None,
         },
@@ -232,6 +260,45 @@ def common_shoe_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
     return _common_shoe_record(cards, dealer_up, rules, shoe=shoe,
                                can_double=can_double, can_split=can_split,
                                max_states=max_states)[0]
+
+
+def _late_surrender_record(cards, dealer_up, rules, *, shoe, can_double=True,
+                           can_surrender=True, max_states=100_000):
+    from . import late_surrender
+
+    if shoe is None:
+        raise ValueError('late-surrender records require explicit retained unseen counts')
+    for name, value in (('can_double', can_double), ('can_surrender', can_surrender)):
+        if type(value) is not bool:
+            raise ValueError(f'{name} must be a boolean')
+    rule_values = _surrender_rules_record(rules)
+    hand, up, unseen, hand_count = _record_inputs(cards, dealer_up, rules, shoe, False, 1)
+    late_surrender.validate(hand, rules, unseen, False, hand_count, max_states)
+    action, evs, margin, work = late_surrender.decide(
+        hand, up, unseen, rules, can_double=can_double, can_surrender=can_surrender,
+        max_states=max_states)
+    document = _decision_document(
+        hand, up, unseen, rule_values, False, hand_count, can_double, False,
+        action, evs, margin, SURRENDER_SCHEMA_VERSION, _surrender_model_record(up, max_states),
+        False, action_names=late_surrender.ACTION_NAMES, can_surrender=can_surrender)
+    return document, work
+
+
+def late_surrender_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
+                          rules: Rules, *, shoe: Shoe, can_double: bool = True,
+                          can_surrender: bool = True,
+                          max_states: int = 100_000) -> dict[str, Any]:
+    """Record one explicitly selected initial post-peek late-surrender decision.
+
+    Require surrender=True, one original two-card hand below 21, no split and
+    3..20 retained unseen cards including the hole. All offered S/H/D values
+    finish before adding the optional terminal R=-0.5. Any failure withholds
+    the whole record. Current controls do not change later hit/stand policy.
+    The direct call has a state cap, without an owned wall or memory supervisor.
+    """
+    return _late_surrender_record(cards, dealer_up, rules, shoe=shoe,
+                                  can_double=can_double, can_surrender=can_surrender,
+                                  max_states=max_states)[0]
 
 
 def decision_json(cards: str | Sequence[CardLike], dealer_up: CardLike,

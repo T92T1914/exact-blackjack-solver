@@ -27,6 +27,9 @@ Version 1 requests retain the existing numerical model. For an initial pair
 with two split hands sharing one depleted shoe, explicitly select the
 [version 2 common-shoe request](common-shoe-calculation.md). That separate
 domain adds a whole-request enumeration cap and produces schema 3 records.
+For one original initial hand with post-peek late surrender, select the
+[version 3 late-surrender request](late-surrender-calculation.md). That bounded
+family produces schema 4 records with explicit current surrender permission.
 
 ## Supply modeled inputs
 
@@ -68,8 +71,9 @@ one, and a split hand requires at least two within the selected cap. The
 current action controls only exclude the present double or split alternative.
 They do not change continuation rules. Supported calculations retain the
 hidden-hole post-peek model, ordinary split-21 settlement, stated payout and
-the existing independent-hand/shared-budget split approximations. No surrender,
-no-peek settlement, insurance calculation or general split error bound is added.
+the existing independent-hand/shared-budget split approximations. Version 1
+does not price surrender, no-peek settlement or insurance and adds no general
+split error bound. Late surrender requires its separate version 3 model.
 
 Input admission is limited to 65,536 UTF-8 bytes and eight nested containers.
 Duplicate keys, nonfinite data and invalid state/rules are refused before
@@ -120,6 +124,9 @@ allowance, and unresolved cleanup is visible rather than reported as success.
 Each worker stream is bounded to 65,536 bytes. Version 1 requests have no
 enumeration-state or algorithmic-work cap. Explicit version 2 common-shoe
 requests add the [shared state cap](common-shoe-calculation.md#actual-work-and-operational-limits).
+Version 3 late-surrender requests add a root-only state cap, without joint
+split work or a split cooperative deadline. Every offered S/H/D/R price must
+finish. Knowing R's fixed half-loss does not permit a partial completed result.
 Caches belong to the disposable worker and retire with it. Parent/shared
 caches are not cleared.
 
@@ -199,7 +206,8 @@ bj-advise --replay run-001/result/decision.json --json
 Replay reports agreement or differences separately from calculation/failure
 outcomes. It trusts no saved answer as a calculation input. Replay retains
 caller-owned execution. Legacy models have no algorithmic bound; schema 3 uses
-its recorded common-model state cap. The calculation worker's deadline and
+its recorded common-model state cap and schema 4 uses its late-surrender
+root-only cap. The calculation worker's deadline and
 memory policy do not silently apply to this later replay command.
 
 Open the [existing project inspector](https://t92t1914.github.io/exact-blackjack-solver/)

@@ -1,0 +1,16 @@
+{
+  "schema": {"name": "solver-calculation-request", "version": 3},
+  "model": {"name": "post_peek_late_surrender", "version": 1},
+  "limits": {"max_states": 100000},
+  "rules": {"max_hands": 1, "surrender": true, "resplit_aces": false, "hit_split_aces": false},
+  "input": {
+    "cards": ["T", "6"],
+    "dealer_up": "T",
+    "unseen_counts": [0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
+    "is_split_hand": false,
+    "hand_count": 1,
+    "can_double": true,
+    "can_split": false,
+    "can_surrender": true
+  }
+}

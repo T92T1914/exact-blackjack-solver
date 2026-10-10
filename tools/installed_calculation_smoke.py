@@ -24,7 +24,7 @@ from unittest.mock import patch
 import bj
 from bj import calculation as calc
 from bj import _calculation_process as transport
-from bj import common_shoe
+from bj import common_shoe, late_surrender
 
 
 def require(value, message):
@@ -48,6 +48,18 @@ def common_request(cards, up, counts, *, rules=None, double=True, pair=True, lim
     value = request(cards, up, counts, rules={'max_hands': 2, **(rules or {})},
                     double=double, pair=pair)
     value.update(schema=dict(calc.COMMON_REQUEST_SCHEMA), model=dict(common_shoe.MODEL),
+                 limits={'max_states': limit})
+    return value
+
+
+def surrender_request(cards, up, counts, *, rules=None, double=True, surrender=True,
+                      limit=100000):
+    value = request(cards, up, counts,
+                    rules={'max_hands': 1, 'surrender': True, 'resplit_aces': False,
+                           'hit_split_aces': False, **(rules or {})},
+                    double=double, pair=False)
+    value['input']['can_surrender'] = surrender
+    value.update(schema=dict(calc.SURRENDER_REQUEST_SCHEMA), model=dict(late_surrender.MODEL),
                  limits={'max_states': limit})
     return value
 
@@ -94,14 +106,26 @@ def calculate(root, label, value):
             (directory / 'request-source.json').read_bytes() == path.read_bytes(),
             'caller request or captured source changed')
     saved = json.loads(record_path.read_bytes())
-    if value['schema']['version'] == 2:
+    bounded = value['schema']['version'] in (2, 3)
+    if bounded:
         work = receipt['work']
-        require(saved['schema']['version'] == 3 and
+        require(saved['schema']['version'] == value['schema']['version'] + 1 and
                 saved['model']['enumeration_state_limit'] == value['limits']['max_states'] and
                 work['limit'] == value['limits']['max_states'] and
                 0 <= work['states'] <= work['limit'] and
                 work['states'] == work['attempted_states'] == sum(work['state_counts'].values()),
-                'common model or whole-request state accounting differs')
+                'bounded model or whole-request state accounting differs')
+        if value['schema']['version'] == 3:
+            require(saved['model'] == late_surrender.model_record(
+                        value['input']['dealer_up'], value['limits']['max_states']) and
+                    saved['state']['action_controls'] == {
+                        'can_double': value['input']['can_double'], 'can_split': False,
+                        'can_surrender': value['input']['can_surrender']} and
+                    set(work['state_counts']) <= late_surrender.ROOT_FAMILIES and
+                    receipt['policy']['algorithmic_work_limit']['includes'] ==
+                    'root_draw_hit_double_distribution_dealer' and
+                    'split_cooperative_seconds' not in receipt['policy']['algorithmic_work_limit'],
+                    'late model, controls or root-only policy differs')
     require(saved['state']['cards'] == value['input']['cards'] and
             saved['state']['shoe']['counts'] == value['input']['unseen_counts'],
             'card order or supplied counts changed')
@@ -113,12 +137,13 @@ def calculate(root, label, value):
     return saved, {'label': label, 'record': str(record_path), **digest(record_path),
                    'status': receipt['status'], 'replay': replay['status'],
                    'policy': receipt['policy'], 'cleanup': receipt['cleanup'],
-                   **({'work': receipt['work']} if value['schema']['version'] == 2 else {})}
+                   **({'work': receipt['work']} if bounded else {})}
 
 
-def lifecycle(root, source, mode, *, common=False):
-    """Use existing main or an owned common API Event with one controlled child."""
-    label = 'controlled-' + ('common-' if common else '') + mode
+def lifecycle(root, source, mode, *, common=False, surrender=False):
+    """Use existing main or a bounded family's owned Event with one controlled child."""
+    require(not (common and surrender), 'controlled child requires one selected family')
+    label = 'controlled-' + ('late-' if surrender else 'common-' if common else '') + mode
     directory = root / label
     ready = root / (label + '-ready')
     code = (
@@ -136,7 +161,8 @@ def lifecycle(root, source, mode, *, common=False):
         code += ' import os;os._exit(17)\n'
     else:
         code += ' time.sleep(20)\n'
-    target = '_common_shoe_record' if common else 'decision_record'
+    target = ('_late_surrender_record' if surrender else
+              '_common_shoe_record' if common else 'decision_record')
     code += (f'record.{target}=controlled\n'
              'sys.stdin=io.TextIOWrapper(io.BytesIO(raw))\n'
              'runpy.run_module("bj._calculation_worker",run_name="__main__")\n')
@@ -158,7 +184,7 @@ def lifecycle(root, source, mode, *, common=False):
             if not ready.exists():
                 cancellation_errors.append('child did not enter controlled long calculation')
                 return
-            if common:
+            if common or surrender:
                 cancellation.set()  # Owned caller Event, no console or host signal.
             else:
                 # This raises SIGINT in this calling process only. It does not use
@@ -174,7 +200,7 @@ def lifecycle(root, source, mode, *, common=False):
     try:
         with patch.object(transport.subprocess, 'Popen', side_effect=fixed_child), \
                 contextlib.redirect_stdout(output), contextlib.redirect_stderr(error):
-            if common:
+            if common or surrender:
                 selected = calc._policy(1 if mode == 'timeout' else 8, None)
                 receipt = calc._run(source, directory, selected, cancellation)
                 status = calc.EXIT_STATUSES[receipt['status']]
@@ -233,6 +259,20 @@ def main():
                double=double, pair=pair))
               for label, double, pair in [('TT', True, True), ('FT', False, True),
                                          ('TF', True, False), ('FF', False, False)]]
+    cases += [
+        ('late-winning', surrender_request(['T', '6'], 'T', [0]*9+[3])),
+        ('late-disabled', surrender_request(['T', '6'], 'T', [0]*9+[3], surrender=False)),
+        ('late-tie', surrender_request(['T', '8'], 'T', [0]*7+[2, 0, 2])),
+        ('late-hidden', surrender_request(['T', '4'], 'T', [0, 1, 1, 0, 0, 0, 1, 1, 1, 1])),
+        ('late-peek', surrender_request(['T', '4'], 'T', [1, 0, 1, 0, 0, 0, 1, 1, 1, 1])),
+        ('late-h17', surrender_request(['T', '8'], '6', [1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+                                       rules={'s17': False})),
+        ('late-last-draw', surrender_request(['A', '6'], 'T', [3, 0, 0, 0, 0, 0, 1, 0, 0, 0])),
+        ('late-continuation', surrender_request(['2', '2'], 'T', [0]*9+[3])),
+        ('late-control-FT', surrender_request(['T', '6'], 'T', [0]*9+[3], double=False)),
+        ('late-control-FF', surrender_request(['T', '6'], 'T', [0]*9+[3],
+                                               double=False, surrender=False)),
+    ]
     rows = []
     for label, value in cases:
         saved, row = calculate(root, label, value)
@@ -259,6 +299,38 @@ def main():
                 require(evs['P'] == 4, 'shared double wagers differ from analytic case')
             if label == 'common-aces':
                 require(evs['P'] == 2, 'common split aces received incorrect settlement')
+        elif label.startswith('late-'):
+            reference = {
+                'late-winning': ({'S': -1, 'H': -1, 'D': -2}, 'R'),
+                'late-disabled': ({'S': -1, 'H': -1, 'D': -2}, 'S'),
+                'late-tie': ({'S': Fraction(-1, 2), 'H': -1, 'D': -2}, 'S'),
+                'late-hidden': ({'S': Fraction(-2, 3), 'H': Fraction(-71, 120),
+                                 'D': Fraction(-6, 5)}, 'R'),
+                'late-peek': ({'S': Fraction(-39, 50), 'H': Fraction(-61, 100),
+                               'D': Fraction(-61, 50)}, 'R'),
+                'late-h17': ({'S': Fraction(-1, 3), 'H': -1, 'D': -2}, 'S'),
+                'late-last-draw': ({'S': 0, 'H': 1, 'D': 2}, 'D'),
+                'late-continuation': ({'S': -1, 'H': -1, 'D': -2}, 'R'),
+                'late-control-FT': ({'S': -1, 'H': -1}, 'R'),
+                'late-control-FF': ({'S': -1, 'H': -1}, 'S'),
+            }
+            expected, action = reference[label]
+            if value['input']['can_surrender']:
+                expected['R'] = Fraction(-1, 2)
+            require(set(evs) == set(expected) and all(
+                        abs(evs[key] - float(number)) <= 1e-12
+                        for key, number in expected.items()) and
+                    saved['decision']['action'] == action,
+                    'late installed prices differ from the frozen independent tiny expectations')
+            if 'R' in evs:
+                require(evs['R'] == -0.5, 'late terminal price differs')
+            if label == 'late-tie':
+                require(saved['decision']['margin'] == 0, 'late exact tie was changed')
+            if label == 'late-hidden':
+                require(evs['H'] < float(Fraction(-8, 15)),
+                        'late hit price admits the illegal known-hole policy')
+            if label == 'late-continuation':
+                require(evs['H'] != -0.5, 'later surrender leaked into the hit price')
         else:
             inputs = value['input']
             permitted = {'S', 'H'} | ({'D'} if inputs['can_double'] else set()) | (
@@ -268,9 +340,14 @@ def main():
         rows.append(row)
     preserved = digest(root / 'ordinary/result/decision.json')
     common_preserved = digest(root / 'common-hidden/result/decision.json')
+    late_preserved = digest(root / 'late-winning/result/decision.json')
     refusals = [('common-state-limit', common_request(['T', 'T'], '7', [1]+[0]*8+[5],
                                                      limit=1), 4, 'resource_limited'),
                 ('common-exhaustion', common_request(['8', '8'], 'T', [0]*6+[1, 1, 1, 1]),
+                 5, 'calculation_error'),
+                ('late-state-limit', surrender_request(['T', '6'], 'T', [0]*9+[3], limit=1),
+                 4, 'resource_limited'),
+                ('late-exhaustion', surrender_request(['T', '6'], '2', [0, 3]+[0]*8),
                  5, 'calculation_error')]
     for label, value, expected_exit, expected_status in refusals:
         source = root / (label + '-request.json')
@@ -280,22 +357,27 @@ def main():
                            '--wall-seconds', '5'], expected_exit)
         retired(receipt)
         require(receipt['status'] == expected_status and receipt['record'] is None and
-                not (directory / 'result').exists(), 'common refusal published a partial answer')
+                not (directory / 'result').exists(), 'bounded refusal published a partial answer')
         if expected_exit == 4:
             require(receipt['error']['type'] == 'EnumerationLimitExceeded' and
                     receipt['work']['limit'] == receipt['work']['states'] == 1 and
                     receipt['work']['attempted_states'] == 2 and
                     receipt['work']['state_counts'] == {'root_distribution': 1},
-                    'common state refusal did not account for actual root work')
+                    'bounded state refusal did not account for actual root work')
         rows.append({'label': label, 'status': receipt['status'], 'exit': expected_exit,
                      'policy': receipt['policy'], 'cleanup': receipt['cleanup']})
     for mode in ('timeout', 'cancel', 'error', 'exit'):
         rows.append(lifecycle(root, root / 'ordinary-request.json', mode))
     for mode in ('timeout', 'cancel'):
         rows.append(lifecycle(root, root / 'common-hidden-request.json', mode, common=True))
+        rows.append(lifecycle(root, root / 'late-winning-request.json', mode, surrender=True))
     if sys.platform == 'win32':
         rows.append(lifecycle(root, root / 'ordinary-request.json', 'memory'))
     saved, row = calculate(root, 'following', ordinary)
+    rows.append(row)
+    saved, row = calculate(root, 'late-following',
+                           surrender_request(['T', '6'], 'T', [0]*9+[3]))
+    require(saved['decision']['action'] == 'R', 'following late calculation differs')
     rows.append(row)
     saved, row = calculate(root, 'common-following',
                            common_request(['T', 'T'], '7', [1]+[0]*8+[5]))
@@ -305,6 +387,8 @@ def main():
             'later incomplete attempts changed the prior successful result')
     require(digest(root / 'common-hidden/result/decision.json') == common_preserved,
             'later common refusals changed the prior successful common record')
+    require(digest(root / 'late-winning/result/decision.json') == late_preserved,
+            'later late refusals changed the prior successful late record')
     result = {'status': 'passed', 'installed_origin': str(origin), 'platform': sys.platform,
               'records': rows, 'boundary': 'Genuine small calculations and replay; '
               'controlled faults establish owned lifecycle, not numerical stress performance.'}

@@ -112,7 +112,8 @@ async function assertPermittedActions(page,label,permitted,saved) {
   const result=page.locator(`#record-result-${label}`),name=`Record ${label.toUpperCase()}`;
   const table=result.getByRole('region',{name:`${name} derived permitted actions beside supplied EV presence`,exact:true});
   assert.equal(await table.locator('tbody tr').count(),4);
-  const names={H:'HIT',S:'STAND',D:'DOUBLE',P:'SPLIT'};
+  const names=saved.schema.version===4 ? {S:'STAND',H:'HIT',D:'DOUBLE',R:'SURRENDER'} :
+    {H:'HIT',S:'STAND',D:'DOUBLE',P:'SPLIT'};
   for (const action of Object.keys(names)) {
     const row=table.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:`${action} (${names[action]})`,exact:true})});
     assert.deepEqual(await row.locator('td').allTextContents(),[String(permitted.includes(action)),
@@ -132,6 +133,8 @@ async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON
   const controls=effectiveControls(saved);
   const expected=[...Object.entries(saved.state).filter(([key])=>!['shoe','action_controls'].includes(key)).map(([key,value])=>[`state.${key}`,value]),
     ['state.action_controls.can_double',controls.can_double],['state.action_controls.can_split',controls.can_split],
+    ['effective_action_controls.can_surrender',saved.schema.version===4 ? controls.can_surrender : false],
+    ['state.action_controls.can_surrender',saved.state.action_controls?.can_surrender],
     ['state.shoe.rank_order',saved.state.shoe.rank_order],
     ...saved.state.shoe.rank_order.map((rank,i)=>[`state.shoe.counts.${rank}`,saved.state.shoe.counts[i]]),
     ...Object.entries(saved.state.shoe).filter(([key])=>!['counts','rank_order'].includes(key)).map(([key,value])=>[`state.shoe.${key}`,value]),
@@ -140,7 +143,8 @@ async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON
     ...Object.entries(saved.schema).map(([key,value])=>[`schema.${key}`,value]),
     ...Object.entries(saved.package).map(([key,value])=>[`package.${key}`,value]),
     ...Object.entries(saved.decision).filter(([key])=>key!=='evs').map(([key,value])=>[`decision.${key}`,value])];
-  const show=value=>Array.isArray(value) ? '['+value.join(', ')+']' : String(value);
+  const show=value=>value===undefined ? 'absent (not declared by this model)' :
+    Array.isArray(value) ? '['+value.join(', ')+']' : String(value);
   for (const [key,value] of expected) {
     const row=result.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:key,exact:true})});
     assert.equal(await row.count(),1,key);
@@ -154,7 +158,8 @@ async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON
   }
   await assertPermittedActions(page,label,permitted,saved);
   assert.match(await result.textContent(),saved.schema.version===1 ? /implicit current action defaults/ :
-    saved.schema.version===2 ? /stores the declared current action controls/ : /bounded common-shoe model/);
+    saved.schema.version===2 ? /stores the declared current action controls/ :
+    saved.schema.version===3 ? /bounded common-shoe model/ : /bounded post-peek late surrender/);
 }
 
 test('local file consumer shows complete records and compares inputs before answers',async t=>{
@@ -295,6 +300,108 @@ test('all four current controls retain complete inputs and match current action 
     const row=changed.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:`state.action_controls.${key}`,exact:true})});
     assert.deepEqual(await row.locator('td').allTextContents(),[left,right]);
   }
+});
+
+const lateFixture=({surrender=true,tie=false,hidden=false}={})=>alteredRecord(saved=>{
+  saved.schema.version=4;
+  Object.assign(saved.state,{cards:['T',tie ? '8' : hidden ? '4' : '6'],dealer_up:'T',
+    total:tie ? 18 : hidden ? 14 : 16,soft:false,
+    action_controls:{can_double:true,can_split:false,can_surrender:surrender}});
+  saved.state.shoe.counts=tie ? [...Array(7).fill(0),2,0,2] : hidden ?
+    [0,1,1,0,0,0,1,1,1,1] : [...Array(9).fill(0),3];
+  Object.assign(saved.rules,{max_hands:1,surrender:true,resplit_aces:false,hit_split_aces:false});
+  saved.model={name:'post_peek_late_surrender',version:1,dealer_information:'hidden_hole_post_peek',
+    hole_rank_excluded_by_peek:'A',ten_value_ranks:'collapsed_to_T',insurance_priced:false,
+    hit_stand_double:'finite_enumeration_binary_floating_point',split:'excluded_single_original_hand',
+    decision_phase:'initial_original_two_card_below_21',
+    surrender:'terminal_half_original_wager_post_negative_peek',surrender_after_hit:false,
+    surrender_after_double:false,surrender_draws:0,
+    player_last_draw:'stand_then_require_dealer_settlement',enumeration_state_limit:100000};
+  const evs=hidden ? {S:-0.6666666666666665,H:-0.5916666666666668,D:-1.2000000000000002} :
+    {S:tie ? -0.5 : -1,H:-1,D:-2};
+  if (surrender) evs.R=-0.5;
+  const action=surrender && !tie ? 'R' : hidden ? 'H' : 'S';
+  const ranked=Object.values(evs).sort((a,b)=>b-a);
+  saved.decision={action,action_name:{S:'STAND',H:'HIT',R:'SURRENDER'}[action],evs,
+    margin:ranked[0]-ranked[1],units:'original_wager',whole_game_estimate:null};
+});
+
+test('late-surrender records show current permission and family coverage before answers',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  const kinds=['WINNING','DISABLED','TIE','HIDDEN'];
+  const provided=kinds.map(kind=>process.env[`SOLVER_RECORD_SURRENDER_${kind}`]);
+  assert.ok(provided.every(Boolean) || provided.every(value=>!value),
+    'Provide all four installed late-surrender records or none');
+  const fallback=[lateFixture(),lateFixture({surrender:false}),lateFixture({tie:true}),lateFixture({hidden:true})];
+  const records=await Promise.all(kinds.map(async(kind,i)=>({kind,path:provided[i] ?? null,
+    buffer:provided[i] ? await readFile(provided[i]) : fallback[i]})));
+  const legacyPath=process.env.SOLVER_RECORD_APPROX ?? null;
+  const commonPath=process.env.SOLVER_RECORD_COMMON ?? null;
+  const legacy=legacyPath ? await readFile(legacyPath) : recordFixture;
+  const commonSaved=JSON.parse(recordFixture);
+  commonSaved.schema.version=3;
+  Object.assign(commonSaved.state,{cards:['T','T'],dealer_up:'7',total:20,soft:false,
+    action_controls:{can_double:true,can_split:true}});
+  commonSaved.state.shoe.counts=[1,...Array(8).fill(0),5];commonSaved.rules.max_hands=2;
+  Object.assign(commonSaved.model,{hole_rank_excluded_by_peek:null,
+    split:'common_shoe_sequential_two_hand_no_resplit_binary_float_v1',split_hands:2,
+    split_deal_order:'finish_first_before_dealing_second',split_aces:'one_card_no_double_no_natural_premium',
+    split_exhaustion:'refuse_any_unavailable_continuation',enumeration_state_limit:100000});
+  commonSaved.decision={action:'P',action_name:'SPLIT',evs:{S:1,H:-2/3,D:-4/3,P:2},
+    margin:1,units:'original_wager',whole_game_estimate:null};
+  const common=commonPath ? await readFile(commonPath) : Buffer.from(JSON.stringify(commonSaved));
+  console.log('Late-surrender inspection invocation:',JSON.stringify({
+    base_url:base+'/',site_directory:root,published:Boolean(process.env.SOLVER_BROWSER_BASE_URL),
+    browser_engine:process.env.SOLVER_BROWSER_ENGINE ?? 'chromium',
+    browser_channel:process.env.SOLVER_BROWSER_CHANNEL ?? null,browser_version:browser.version(),
+    inputs:[...records,{kind:'LEGACY',path:legacyPath,buffer:legacy},{kind:'COMMON',path:commonPath,buffer:common}]
+      .map(({kind,path:source,buffer})=>({kind,path:source,
+        origin:source ? 'provided installed output' : 'constructed admission fixture',
+        bytes:buffer.length,sha256:createHash('sha256').update(buffer).digest('hex')}))
+  }));
+  await page.waitForLoadState('networkidle');
+  const requests=[];page.on('request',request=>requests.push(request.url()));
+  for (const {buffer} of records) {
+    const saved=JSON.parse(buffer);
+    const permitted=['S','H',...(saved.state.action_controls.can_double ? ['D'] : []),
+      ...(saved.state.action_controls.can_surrender ? ['R'] : [])];
+    await acceptedRecord(page,'a',buffer);await assertCompleteRecord(page,'a',buffer,permitted);
+    assert.match(await page.locator('#record-result-a').textContent(),/original initial two-card hand below 21/);
+    assert.match(await page.locator('#record-result-a').textContent(),/Hit continuations offer no surrender or double/);
+  }
+  const winner=records[0].buffer,disabled=records[1].buffer;
+  const comparison=page.locator('#record-comparison');
+  for (const previous of [legacy,common]) for (const [a,b] of [[previous,winner],[winner,previous]]) {
+    await acceptedRecord(page,'a',a);await assertCompleteRecord(page,'a',a);
+    await acceptedRecord(page,'b',b);await assertCompleteRecord(page,'b',b);
+    assert.match(await comparison.textContent(),/different mathematical families/);
+    const rows=comparison.getByRole('region',{name:'Modeled input changes, before answer differences',exact:true});
+    const stored=rows.getByRole('rowheader',{name:'state.action_controls.can_surrender',exact:true}).locator('..');
+    const effective=rows.getByRole('rowheader',{name:'effective_action_controls.can_surrender',exact:true}).locator('..');
+    assert.deepEqual(await stored.locator('td').allTextContents(),a===winner ?
+      ['true','absent (not declared by this model)'] : ['absent (not declared by this model)','true']);
+    assert.deepEqual(await effective.locator('td').allTextContents(),a===winner ? ['true','false'] : ['false','true']);
+    for (const field of ['model.decision_phase','model.surrender','model.player_last_draw'])
+      assert.equal(await rows.getByRole('rowheader',{name:field,exact:true}).count(),1);
+    const answers=comparison.getByRole('region',{name:'Union of recorded actions, with absence distinguished from zero',exact:true});
+    const r=answers.getByRole('rowheader',{name:'R (SURRENDER)',exact:true}).locator('..');
+    assert.deepEqual((await r.locator('td').allTextContents()).slice(0,2),a===winner ? ['-0.5','absent'] : ['absent','-0.5']);
+    assert.equal(await comparison.evaluate(node=>node.textContent.indexOf('different mathematical families')<
+      node.textContent.indexOf('4. Recorded answer comparison')),true);
+  }
+  await acceptedRecord(page,'a',winner);await acceptedRecord(page,'b',disabled);
+  assert.match(await comparison.textContent(),/same post-peek late-surrender family/);
+  const r=page.locator('#record-result-b').getByRole('region',{
+    name:'Record B derived permitted actions beside supplied EV presence',exact:true})
+    .getByRole('rowheader',{name:'R (SURRENDER)',exact:true}).locator('..');
+  assert.deepEqual(await r.locator('td').allTextContents(),['false','absent (no saved value)']);
+  assert.deepEqual(requests,[],'Local V4 imports trigger no requests');
+  await page.setViewportSize({width:320,height:844});
+  await page.addStyleTag({content:'#record-inspector{font-size:34px}#record-inspector .fine{font-size:28px}#record-inspector th{font-size:30px}#record-inspector h3{font-size:40px}'});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#record-inspector .table-wrap').first().focus();
+  assert.equal(await page.locator('#record-inspector .table-wrap').first().evaluate(e=>document.activeElement===e),true);
+  await capture(page,'late-surrender-enlarged-320',false);
 });
 
 test('mixed version true defaults compare in both directions and disabled saved actions warn',async t=>{
