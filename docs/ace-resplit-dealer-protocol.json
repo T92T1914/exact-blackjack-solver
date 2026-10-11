@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "id": "ace-dealer-summary-qualification-v1",
+  "base_revision": "72ae11f40094ba2318e56d0a3ad5aed309419a14",
+  "base_tree": "293c84260583238aca737c566844d67bbea8c7d1",
+  "model": "common_shoe_bounded_ace_resplit v1; full S/H/D/P, one optional globally shared extra split, one card per ace child, negative peek, concealed hole, shared depletion and settlement",
+  "candidate": "Only joint_ace_resplit dealer memo becomes low total/ace presence/remaining counts. Literal rank/outcome/product/fsum order and settlement start preserved. Player keys, pending child order, completed wagers and slot untouched. No non-ace model change.",
+  "exploratory_already_profiled": [
+    {
+      "id": "ace-peek-h17-explore",
+      "up": "A",
+      "counts": [
+        2,
+        1,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        4
+      ],
+      "s17": false,
+      "das": true,
+      "provenance": "Existing two-hand deciding composition reused only as exploratory input for a different family."
+    },
+    {
+      "id": "six-h17-explore",
+      "up": "6",
+      "counts": [
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        4
+      ],
+      "s17": false,
+      "das": false,
+      "provenance": "Mixed twenty-card exploratory full-root ace-resplit input."
+    },
+    {
+      "id": "high-fourteen-control",
+      "up": "7",
+      "counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        3,
+        3,
+        5
+      ],
+      "s17": true,
+      "das": true,
+      "provenance": "High-rank complete control, no retained ace resplit card."
+    }
+  ],
+  "deciding": [
+    {
+      "id": "ace-peek-h17",
+      "up": "A",
+      "counts": [
+        1,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        4
+      ],
+      "s17": false,
+      "das": true
+    },
+    {
+      "id": "six-s17",
+      "up": "6",
+      "counts": [
+        1,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        5
+      ],
+      "s17": true,
+      "das": true
+    },
+    {
+      "id": "ten-peek-s17",
+      "up": "T",
+      "counts": [
+        2,
+        1,
+        2,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        4
+      ],
+      "s17": true,
+      "das": false
+    },
+    {
+      "id": "optional-slot-control",
+      "up": "7",
+      "counts": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        5
+      ],
+      "s17": true,
+      "das": false
+    }
+  ],
+  "product_max_states": 100000,
+  "input_ceiling": 20,
+  "original_verification": "Separate private observer admits at most500000 total original root+ace uncached bodies. Original joint's imported state_limit validator accepts only this verifier bound, and original joint max_states is500000. The original arithmetic recurrence is unchanged. Product validation, MAX_STATES, installed dispatch and process limits remain100000. Observer refusal is retained. This is equivalence evidence, not installed coverage.",
+  "equivalence": "Every completed full ordered action map, margin and selected action must literally equal original float.hex values; no epsilon. All completed candidates including previously refused originals need complete bounded original verification. Work sum/attempt/entry counts truthful.",
+  "acceptance": "At least one of the three frozen twenty-card full-root cases previously product-refused completes under unchanged100000 and matches bounded original complete map. Otherwise reject this coverage objective, retain evidence, no substitution of a small repair or a timing-only result. All deciding observations retained. Existing independent physical/Fraction hidden-hole/slot/wager/exhaustion and public-interface checks must pass.",
+  "runs": "3 fresh-process baseline/candidate repetitions per frozen input, alternate order, then one bounded original arithmetic verifier per input. No input tuning or dropped result. Timer covers engine call and small answer-hex construction, excludes imports/input/output. Coverage is not a refusal/completion speed ratio.",
+  "resources": "Serial existing owned_operations Windows Job,512MiB aggregate committed memory,30sec wall+5cleanup. Joint cooperative10sec unchanged; verification at most500000 bodies. SharedPC no desktop/profile/native/clipboard/audio. Record process receipt and hashes.",
+  "identity": "Freeze protocol before candidate. Pin baseline/current source and body hashes. Separate computational method identity, original model/request5/record6 remain. Work counts may legitimately change.",
+  "delivery": "Independent numerical/source/consumer review, relevant existing physical and lifecycle tests, actual external installed calculation/direct+protected replay/generated+published mobile inspection, exact current required CI, normal merge and deployment, checkpoint. No README/profile edit.",
+  "failures": "Incomplete/refused verification withholds acceptance, no partial maps, no approximation, no limit/default/rule change or silently omitted offered branch."
+}

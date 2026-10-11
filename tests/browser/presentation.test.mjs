@@ -570,17 +570,22 @@ test('resplit installed records, complete family boundaries and generated guide 
 
 const aceResplitFixture=(kind='HIDDEN')=>{
   const saved=JSON.parse(recordFixture);
-  const optional=kind==='OPTIONAL',peek=kind==='PEEK',acePeek=kind==='ACE_PEEK';
-  const up=peek ? 'T' : acePeek ? 'A' : '7';
+  const optional=kind==='OPTIONAL',peek=kind==='PEEK',acePeek=kind==='ACE_PEEK',mixed=kind==='MIXED';
+  const up=mixed ? '6' : peek ? 'T' : acePeek ? 'A' : '7';
   saved.schema.version=6;
   Object.assign(saved.state,{cards:['A','A'],dealer_up:up,total:12,soft:true,
     action_controls:{can_double:true,can_split:kind!=='DISABLED'}});
-  saved.state.shoe.counts=optional ? [5,...Array(9).fill(0)] : peek ? [1,...Array(8).fill(0),4] :
+  saved.state.shoe.counts=mixed ? [1,2,1,2,2,2,2,2,1,5] :
+    optional ? [5,...Array(9).fill(0)] : peek ? [1,...Array(8).fill(0),4] :
     acePeek ? [0,0,0,0,0,0,0,1,0,4] : [3,...Array(8).fill(0),2];
   Object.assign(saved.rules,{max_hands:3,surrender:false,resplit_aces:true,hit_split_aces:false,
-    das:kind==='DAS',s17:true});
+    das:kind==='DAS' || mixed,s17:true});
   saved.model=aceResplitModelFor(up,100000n);
-  const evs={S:-1,H:-1,D:-2,P:optional ? -2 : peek ? 2.5 : acePeek ? 2 : 0.30000000000000004};
+  // The mixed fallback is a DOM admission fixture using frozen raw values.
+  // It is not an installed calculation or an independent arithmetic check.
+  const evs=mixed ? {S:-0.2290247678018575,H:0.19320171422145105,
+    D:0.0800848526545121,P:0.5342915090012612} :
+    {S:-1,H:-1,D:-2,P:optional ? -2 : peek ? 2.5 : acePeek ? 2 : 0.30000000000000004};
   if (kind==='DISABLED') delete evs.P;
   const action=optional || kind==='DISABLED' ? 'S' : 'P';
   const ranked=Object.values(evs).sort((a,b)=>b-a);
@@ -588,6 +593,63 @@ const aceResplitFixture=(kind='HIDDEN')=>{
     margin:ranked[0]-ranked[1],units:'original_wager',whole_game_estimate:null};
   return Buffer.from(JSON.stringify(saved,(_,value)=>typeof value==='bigint' ? Number(value) : value));
 };
+
+test('mixed ace request download and raw completed record remain usable at 390px',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  const guide='bounded-ace-resplit-calculation.md',name='bounded-ace-resplit-mixed-request.json';
+  assert.equal(await page.locator(`#record-inspector a[href="${guide}"]`).count(),1);
+  const received=await page.request.get(base+'/'+guide);assert.equal(received.status(),200);
+  const text=await received.text();assert.equal(text,await readFile(path.join(root,guide),'utf8'));
+  assert.ok(text.includes(`[mixed ace request](${name})`),'Generated guide must expose the local mixed request');
+  for (const match of text.matchAll(/\]\(([^\s)]+)\)/g)) {
+    const target=match[1];
+    if (target.includes('://') || target.startsWith('#')) continue;
+    const linked=await page.request.get(base+'/'+target.split('#')[0]);
+    assert.equal(linked.status(),200,`Local ace guide link must resolve: ${target}`);
+  }
+  const response=await page.request.get(base+'/'+name);assert.equal(response.status(),200);
+  const downloaded=await response.body();
+  assert.deepEqual(downloaded,await readFile(new URL('../../examples/'+name,import.meta.url)),
+    'Downloaded request must retain the exact source bytes');
+  const request=JSON.parse(downloaded);
+  assert.deepEqual(request.schema,{name:'solver-calculation-request',version:5});
+  assert.deepEqual(request.model,{name:'common_shoe_bounded_ace_resplit',version:1});
+  assert.deepEqual(request.input,{cards:['A','A'],dealer_up:'6',
+    unseen_counts:[1,2,1,2,2,2,2,2,1,5],is_split_hand:false,hand_count:1,
+    can_double:true,can_split:true});
+  assert.deepEqual(request.rules,{max_hands:3,resplit_aces:true,hit_split_aces:false,das:true,s17:true});
+  assert.deepEqual(request.limits,{max_states:100000});
+  const source=process.env.SOLVER_RECORD_ACE_MIXED ?? null;
+  const buffer=source ? await readFile(source) : aceResplitFixture('MIXED');
+  const saved=JSON.parse(buffer),hash=createHash('sha256').update(buffer).digest('hex');
+  console.log('Mixed ace inspection input:',JSON.stringify({base_url:base+'/',site_directory:root,
+    published:Boolean(process.env.SOLVER_BROWSER_BASE_URL),path:source,
+    origin:source ? 'provided installed output' : 'constructed admission fixture',bytes:buffer.length,sha256:hash}));
+  assert.equal(saved.schema.version,6);
+  assert.equal(saved.model.name,request.model.name);assert.equal(saved.model.version,request.model.version);
+  assert.equal(saved.model.enumeration_state_limit,request.limits.max_states);
+  assert.deepEqual(saved.state.cards,request.input.cards);assert.equal(saved.state.dealer_up,request.input.dealer_up);
+  assert.deepEqual(saved.state.shoe.counts,request.input.unseen_counts);
+  assert.deepEqual(saved.state.action_controls,{can_double:true,can_split:true});
+  for (const [key,value] of Object.entries(request.rules)) assert.equal(saved.rules[key],value,key);
+  assert.deepEqual(saved.decision.evs,{S:-0.2290247678018575,H:0.19320171422145105,
+    D:0.0800848526545121,P:0.5342915090012612});
+  assert.equal(saved.decision.action,'P');assert.equal(saved.decision.margin,0.34108979477981016);
+  await page.evaluate(async()=>{
+    for (const image of document.images) image.loading='eager';
+    await Promise.all(Array.from(document.images,image=>image.decode()));
+  });
+  await page.waitForLoadState('networkidle');
+  const requests=[];page.on('request',request=>requests.push(request.url()));
+  await acceptedRecord(page,'a',buffer,'ace-mixed-decision.json');
+  await assertCompleteRecord(page,'a',buffer,['S','H','D','P']);
+  assert.match(await page.locator('#record-result-a').textContent(),/Split children cannot hit or double, including when DAS is true/);
+  assert.deepEqual(requests,[],'Local mixed ace import triggers no requests');
+  assert.equal(createHash('sha256').update(source ? await readFile(source) : buffer).digest('hex'),hash,
+    'Inspection must preserve the successful record bytes');
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  await capture(page,'bounded-ace-resplit-mixed-390',false);
+});
 
 test('one-card ace installed results, family comparisons and generated artifacts remain usable on mobile',async t=>{
   const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
