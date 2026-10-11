@@ -233,6 +233,31 @@ test('record replacement errors remove the old answer and allow recovery',async 
   }
 });
 
+test('mixed common request and generated guidance retain the complete consumer route',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  const name='common-shoe-mixed-request.json';
+  assert.equal(await page.locator(`#record-inspector a[href="${name}"][download]`).count(),1);
+  const response=await page.request.get(base+'/'+name);assert.equal(response.status(),200);
+  const downloaded=await response.body();
+  assert.deepEqual(downloaded,await readFile(new URL('../../examples/'+name,import.meta.url)));
+  const request=JSON.parse(downloaded);
+  assert.deepEqual(request.input.cards,['A','A']);assert.equal(request.input.dealer_up,'A');
+  assert.deepEqual(request.input.unseen_counts,[2,1,2,1,2,2,2,2,2,4]);
+  assert.equal(request.rules.s17,false);assert.equal(request.limits.max_states,100000);
+  for (const guide of ['common-shoe-calculation.md','local-calculation.md','common-shoe-dealer-computation.md']) {
+    const received=await page.request.get(base+'/'+guide);assert.equal(received.status(),200);
+    const text=await received.text();
+    assert.equal(text,await readFile(path.join(root,guide),'utf8'));
+    for (const match of text.matchAll(/\]\(([^\s)]+)\)/g)) {
+      const target=match[1];
+      if (target.includes('://') || target.startsWith('#')) continue;
+      const linked=await page.request.get(base+'/'+target.split('#')[0]);
+      assert.equal(linked.status(),200,`Local guide link must resolve: ${guide} -> ${target}`);
+    }
+  }
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+});
+
 test('common records expose model coverage and incompatibility before answers',async t=>{
   const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
   const constructed=JSON.parse(recordFixture);
@@ -435,12 +460,13 @@ const resplitFixture=(kind='WINNING')=>{
 test('resplit installed records, complete family boundaries and generated guide remain usable on mobile',async t=>{
   const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
   for (const name of ['bounded-resplit-request.json','bounded-resplit-calculation.md']) {
-    const expected=await readFile(new URL('../../'+(name.endsWith('.json') ? 'examples/' : 'docs/')+name,import.meta.url),'utf8');
+    const expected=await readFile(name.endsWith('.json') ?
+      new URL('../../examples/'+name,import.meta.url) : path.join(root,name),'utf8');
     const received=await page.evaluate(async name=>{
       const response=await fetch(name);if (!response.ok) throw Error('Generated artifact unavailable');
       return response.text();
     },name);
-    assert.equal(received,expected,'Generated or published artifact body must equal this revision source');
+    assert.equal(received,expected,'Published artifact body must equal this revision generated artifact');
     assert.equal(await page.locator(`#record-inspector a[href="${name}"]`).count(),1);
   }
   const kinds=['WINNING','DISABLED','TIE','HIDDEN','PEEK','ACE_PEEK'];
@@ -566,12 +592,13 @@ const aceResplitFixture=(kind='HIDDEN')=>{
 test('one-card ace installed results, family comparisons and generated artifacts remain usable on mobile',async t=>{
   const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
   for (const name of ['bounded-ace-resplit-request.json','bounded-ace-resplit-calculation.md']) {
-    const expected=await readFile(new URL('../../'+(name.endsWith('.json') ? 'examples/' : 'docs/')+name,import.meta.url),'utf8');
+    const expected=await readFile(name.endsWith('.json') ?
+      new URL('../../examples/'+name,import.meta.url) : path.join(root,name),'utf8');
     const received=await page.evaluate(async name=>{
       const response=await fetch(name);if (!response.ok) throw Error('Generated ace artifact unavailable');
       return response.text();
     },name);
-    assert.equal(received,expected,'Generated or published ace artifact must equal this source');
+    assert.equal(received,expected,'Published ace artifact must equal this revision generated artifact');
     assert.equal(await page.locator(`#record-inspector a[href="${name}"]`).count(),1);
   }
   const kinds=['HIDDEN','DISABLED','OPTIONAL','PEEK','ACE_PEEK','DAS'];
@@ -677,12 +704,13 @@ const deferredFixture=(sole=false)=>{
 test('deferred installed records and generated request remain usable with null margins on mobile',async t=>{
   const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
   for (const name of ['deferred-second-card-request.json','deferred-second-card-calculation.md']) {
-    const expected=await readFile(new URL('../../'+(name.endsWith('.json') ? 'examples/' : 'docs/')+name,import.meta.url),'utf8');
+    const expected=await readFile(name.endsWith('.json') ?
+      new URL('../../examples/'+name,import.meta.url) : path.join(root,name),'utf8');
     const received=await page.evaluate(async name=>{
       const response=await fetch(name);if (!response.ok) throw Error('Generated deferred artifact unavailable');
       return response.text();
     },name);
-    assert.equal(received,expected,'Generated or published artifact must equal reviewed source');
+    assert.equal(received,expected,'Published artifact must equal this revision generated artifact');
     assert.equal(await page.locator(`#record-inspector a[href="${name}"]`).count(),1);
   }
   const kinds=['EIGHT','SOLE'],provided=kinds.map(kind=>process.env[`SOLVER_RECORD_DEFERRED_${kind}`]);

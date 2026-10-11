@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import json
+import re
 import shutil
 import sys
 
@@ -53,6 +54,25 @@ FILES = {
 }
 
 
+def public_guide(source: str, text: str) -> str:
+    """Keep source-relative guides usable after their flat Pages copy."""
+    def link(match):
+        target = match.group(2)
+        if '://' in target or target.startswith('#'):
+            return match.group(0)
+        relative, separator, fragment = target.partition('#')
+        resolved = ((ROOT / source).parent / relative).resolve()
+        repo_path = resolved.relative_to(ROOT).as_posix()
+        if not resolved.is_file():
+            raise ValueError('Missing guide target: ' + repo_path)
+        public = FILES.get(repo_path)
+        if public is None:
+            public = 'https://github.com/T92T1914/exact-blackjack-solver/blob/main/' + repo_path
+        return '[' + match.group(1) + '](' + public + separator + fragment + ')'
+
+    return re.sub(r'\[([^\]]+)\]\(([^\s)]+)\)', link, text)
+
+
 def main():
     from tools.render_share_preview import check as check_share_preview
 
@@ -72,7 +92,11 @@ def main():
         path = ROOT / source
         if not path.is_file() or path.is_symlink():
             raise ValueError("Expected a regular source file: " + source)
-        shutil.copyfile(path, OUT / target)
+        if path.suffix == '.md':
+            (OUT / target).write_text(public_guide(source, path.read_text(encoding='utf-8')),
+                                      encoding='utf-8', newline='\n')
+        else:
+            shutil.copyfile(path, OUT / target)
     (OUT / "appearance.css").write_text(css, encoding="utf-8", newline="\n")
     for target, content in report.items():
         (OUT / target).write_bytes(content)
