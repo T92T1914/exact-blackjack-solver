@@ -24,6 +24,7 @@ from ._enumeration import state as _enumeration_state
 
 RANKS = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'A')
 VALUES = (2, 3, 4, 5, 6, 7, 8, 9, 10, 1)
+DEALER_COMPUTATION_METHOD = 'joint_dealer_low_ace_counts_binary64_v1'
 
 
 class ReferenceLimitExceeded(RuntimeError):
@@ -134,9 +135,12 @@ def joint_split_value(pair_rank, dealer_up, shoe, *, double_after_split=True,
         return tuple(rows)
 
     @cache
-    def dealer(cards, remaining):
+    def dealer(low, has_ace, remaining):
         tick('dealer')
-        total, soft = _total(cards)
+        # Order and card count do not affect this post-peek dealer rule.
+        # Keep the integer low total and ace presence, including unusable aces.
+        soft = has_ace and low + 10 <= 21
+        total = low + (10 if soft else 0)
         if total > 21:
             return ((0, 1.0),)
         if total > 17 or (total == 17 and (stand_soft_17 or not soft)):
@@ -147,7 +151,9 @@ def joint_split_value(pair_rank, dealer_up, shoe, *, double_after_split=True,
         outcomes = {}
         for rank, count in enumerate(remaining):
             if count:
-                for outcome, probability in dealer(cards + (rank,), _take(remaining, rank)):
+                for outcome, probability in dealer(low + VALUES[rank],
+                                                   has_ace or rank == 9,
+                                                   _take(remaining, rank)):
                     outcomes.setdefault(outcome, []).append(count / n * probability)
         rows = tuple((outcome, math.fsum(parts)) for outcome, parts in outcomes.items())
         mass(p for _, p in rows)
@@ -161,7 +167,8 @@ def joint_split_value(pair_rank, dealer_up, shoe, *, double_after_split=True,
             return -float(sum(wager for _, wager in completed))
         values = []
         for hole, probability in holes(unseen):
-            for outcome, p in dealer((up, hole), _take(unseen, hole)):
+            for outcome, p in dealer(VALUES[up] + VALUES[hole], up == 9 or hole == 9,
+                                     _take(unseen, hole)):
                 reward = sum(-wager if total > 21 else
                              wager if outcome == 0 or total > outcome else
                              -wager if total < outcome else 0
