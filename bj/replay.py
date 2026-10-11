@@ -13,6 +13,7 @@ from typing import Any
 
 from . import __version__, record
 from ._enumeration import EnumerationLimitExceeded
+from .deferred_second_card import DeferredTimeLimitExceeded, UnsupportedContinuation
 from .joint_split import ReferenceLimitExceeded
 from .core import ACTION_NAMES, RANKS, Rules, hand_total
 
@@ -153,7 +154,8 @@ def _admit(saved):
     if name != 'blackjack-decision' or version not in (
             record.SCHEMA_VERSION, record.CONTROLLED_SCHEMA_VERSION,
             record.COMMON_SCHEMA_VERSION, record.SURRENDER_SCHEMA_VERSION,
-            record.RESPLIT_SCHEMA_VERSION, record.ACE_RESPLIT_SCHEMA_VERSION):
+            record.RESPLIT_SCHEMA_VERSION, record.ACE_RESPLIT_SCHEMA_VERSION,
+            record.DEFERRED_SCHEMA_VERSION):
         raise _UnsupportedRecord(f'unsupported schema {name!r}, version {version}')
     _object(saved, ('schema', 'package', 'state', 'rules', 'decision', 'model'), 'record')
     package = _object(saved['package'], ('name', 'version'), 'package')
@@ -190,7 +192,8 @@ def _admit(saved):
     _constant(shoe['rank_order'], list(RANKS), 'state.shoe.rank_order', derived=True)
     if not isinstance(shoe['counts'], list):
         raise _InvalidRecord('state.shoe.counts must be a list')
-    _constant(shoe['includes_hidden_hole'], True, 'state.shoe.includes_hidden_hole')
+    _constant(shoe['includes_hidden_hole'], version != record.DEFERRED_SCHEMA_VERSION,
+              'state.shoe.includes_hidden_hole')
     _constant(shoe['visible_cards_already_removed'], True,
               'state.shoe.visible_cards_already_removed')
     source = _string(shoe['source'], 'state.shoe.source')
@@ -199,12 +202,17 @@ def _admit(saved):
     rule_values = _object(saved['rules'], (field.name for field in fields(Rules)), 'rules')
     rules = Rules(**rule_values)
     try:
-        if version == record.SURRENDER_SCHEMA_VERSION:
+        if version == record.DEFERRED_SCHEMA_VERSION:
+            record._deferred_rules_record(rules)
+            hand, up, unseen, hand_count = record._deferred_record_inputs(
+                cards, up, rules, shoe['counts'], state['is_split_hand'], state['hand_count'])
+        elif version == record.SURRENDER_SCHEMA_VERSION:
             record._surrender_rules_record(rules)
         else:
             record._rules_record(rules)
-        hand, up, unseen, hand_count = record._record_inputs(
-            cards, up, rules, shoe['counts'], state['is_split_hand'], state['hand_count'])
+        if version != record.DEFERRED_SCHEMA_VERSION:
+            hand, up, unseen, hand_count = record._record_inputs(
+                cards, up, rules, shoe['counts'], state['is_split_hand'], state['hand_count'])
     except record._UnsupportedRules as exc:
         raise _UnsupportedRecord(str(exc)) from exc
     except ValueError as exc:
@@ -212,6 +220,8 @@ def _admit(saved):
     total, soft = hand_total(hand)
     _constant(state['total'], total, 'state.total', derived=True)
     _constant(state['soft'], soft, 'state.soft', derived=True)
+    if version == record.DEFERRED_SCHEMA_VERSION and source != 'supplied_unseen':
+        raise _UnsupportedRecord('deferred second-card records require supplied_unseen counts')
     if source == 'fresh_minus_visible':
         try:
             expected = record.initial_shoe_for(hand, up, rules)
@@ -220,7 +230,22 @@ def _admit(saved):
         if unseen != expected:
             raise _InvalidRecord('fresh_minus_visible counts disagree with the declared state')
     declarations = record._model_record(up)
-    if version == record.COMMON_SCHEMA_VERSION:
+    if version == record.DEFERRED_SCHEMA_VERSION:
+        from . import deferred_second_card
+        if not isinstance(saved['model'], dict):
+            raise _InvalidRecord('model must be an object')
+        max_states = _integer(saved['model'].get('enumeration_state_limit'),
+                              'model.enumeration_state_limit')
+        max_seconds = _number(saved['model'].get('enumeration_seconds_limit'),
+                              'model.enumeration_seconds_limit')
+        try:
+            deferred_second_card.validate(
+                hand, rules, unseen, state['is_split_hand'], hand_count, max_states,
+                can_split=can_split, max_seconds=max_seconds)
+        except ValueError as exc:
+            raise _UnsupportedRecord(str(exc)) from exc
+        declarations = record._deferred_model_record(up, max_states, max_seconds)
+    elif version == record.COMMON_SCHEMA_VERSION:
         from . import common_shoe
         if not isinstance(saved['model'], dict):
             raise _InvalidRecord('model must be an object')
@@ -283,6 +308,10 @@ def _admit(saved):
             if _number(model[key], f'model.{key}') != expected:
                 raise _UnsupportedRecord(f'model.{key} must be {expected!r}')
             continue
+        if version == record.DEFERRED_SCHEMA_VERSION and key == 'enumeration_seconds_limit':
+            if _number(model[key], f'model.{key}') != expected:
+                raise _UnsupportedRecord(f'model.{key} must be {expected!r}')
+            continue
         _constant(model[key], expected, f'model.{key}',
                   derived=key == 'hole_rank_excluded_by_peek')
     decision = _object(saved['decision'], ('action', 'action_name', 'evs', 'margin', 'units',
@@ -291,7 +320,9 @@ def _admit(saved):
     _constant(decision['whole_game_estimate'], None, 'decision.whole_game_estimate')
     action, evs = decision['action'], decision['evs']
     action_names = ACTION_NAMES
-    if version == record.SURRENDER_SCHEMA_VERSION:
+    if version == record.DEFERRED_SCHEMA_VERSION:
+        action_names = {key: ACTION_NAMES[key] for key in ('S', 'H', 'D')}
+    elif version == record.SURRENDER_SCHEMA_VERSION:
         action_names = late_surrender.ACTION_NAMES
     if not isinstance(action, str) or action not in action_names:
         raise _InvalidRecord('decision.action must be a supported action code')
@@ -303,7 +334,8 @@ def _admit(saved):
     # action set is comparison data and must remain visible in the replay.
     for key, value in evs.items():
         _number(value, f'decision.evs.{key}')
-    if _number(decision['margin'], 'decision.margin') < 0:
+    if not (version == record.DEFERRED_SCHEMA_VERSION and decision['margin'] is None) and (
+            _number(decision['margin'], 'decision.margin') < 0):
         raise _InvalidRecord('decision.margin must be nonnegative')
     return hand, up, unseen, rules, state['is_split_hand'], hand_count, can_double, can_split
 
@@ -325,7 +357,8 @@ def _report(status, *, saved=None, recomputed=None, comparison=None, error=None)
 def _failure(status, exc, saved=None):
     result = _report(status, saved=saved,
                      error={'type': type(exc).__name__, 'message': str(exc)})
-    if isinstance(exc, EnumerationLimitExceeded):
+    if isinstance(exc, (EnumerationLimitExceeded, DeferredTimeLimitExceeded,
+                        UnsupportedContinuation)):
         result['work'] = exc.work
     return result
 
@@ -340,7 +373,10 @@ def _compare(recorded, current):
         for code in codes
     }
     action_matches = recorded['action'] == current['action']
-    margin_matches = float(recorded['margin']) == float(current['margin'])
+    if recorded['margin'] is None or current['margin'] is None:
+        margin_matches = recorded['margin'] is current['margin']
+    else:
+        margin_matches = float(recorded['margin']) == float(current['margin'])
     return {
         'legal_actions': {'recorded': sorted(left), 'recomputed': sorted(right),
                           'matches': left.keys() == right.keys()},
@@ -367,7 +403,14 @@ def replay_json(text: str | bytes) -> dict[str, Any]:
         saved = _parse(text)
         hand, up, unseen, rules, is_split_hand, hand_count, can_double, can_split = _admit(saved)
         admitted = saved
-        if saved['schema']['version'] == record.COMMON_SCHEMA_VERSION:
+        work = None
+        if saved['schema']['version'] == record.DEFERRED_SCHEMA_VERSION:
+            document, work = record._deferred_second_card_record(
+                hand, up, rules, shoe=unseen, can_double=can_double, can_split=can_split,
+                max_states=saved['model']['enumeration_state_limit'],
+                max_seconds=saved['model']['enumeration_seconds_limit'])
+            current = document['decision']
+        elif saved['schema']['version'] == record.COMMON_SCHEMA_VERSION:
             current = record.common_shoe_record(
                 hand, up, rules, shoe=unseen, can_double=can_double, can_split=can_split,
                 max_states=saved['model']['enumeration_state_limit'])['decision']
@@ -391,21 +434,26 @@ def replay_json(text: str | bytes) -> dict[str, Any]:
         comparison = _compare(saved['decision'], current)
         agrees = (comparison['legal_actions']['matches'] and comparison['evs_match']
                   and comparison['recommendation']['matches'] and comparison['margin']['matches'])
-        return _report('agreement' if agrees else 'differences', saved=saved,
-                       recomputed=current, comparison=comparison)
+        report = _report('agreement' if agrees else 'differences', saved=saved,
+                         recomputed=current, comparison=comparison)
+        if work is not None:
+            report['work'] = work
+        return report
     except _InvalidRecord as exc:
         return _failure('invalid_input', exc)
     except _UnsupportedRecord as exc:
         return _failure('unsupported_record', exc)
     except KeyboardInterrupt as exc:
         return _failure('interrupted', exc, admitted)
-    except (MemoryError, RecursionError, EnumerationLimitExceeded, ReferenceLimitExceeded) as exc:
+    except (MemoryError, RecursionError, EnumerationLimitExceeded,
+            DeferredTimeLimitExceeded, ReferenceLimitExceeded) as exc:
         return _failure('resource_limited', exc, admitted)
     except (ValueError, OverflowError) as exc:
         return _failure('calculation_error', exc, admitted)
     except ArithmeticError as exc:
         if admitted is not None and admitted['schema']['version'] in (
-                record.RESPLIT_SCHEMA_VERSION, record.ACE_RESPLIT_SCHEMA_VERSION):
+                record.RESPLIT_SCHEMA_VERSION, record.ACE_RESPLIT_SCHEMA_VERSION,
+                record.DEFERRED_SCHEMA_VERSION):
             return _failure('calculation_error', exc, admitted)
         raise
 

@@ -1,0 +1,24 @@
+{
+  "schema": {"name": "solver-calculation-request", "version": 6},
+  "model": {"name": "deferred_second_card_all_wagers_sdh", "version": 1},
+  "rules": {
+    "peek": false,
+    "surrender": false,
+    "max_hands": 1,
+    "double_any_two": true,
+    "tens_are_pairs": true,
+    "resplit_aces": false,
+    "hit_split_aces": false,
+    "s17": true
+  },
+  "input": {
+    "cards": ["9", "2"],
+    "dealer_up": "T",
+    "unseen_counts": [1, 0, 1, 0, 1, 0, 1, 1, 1, 2],
+    "is_split_hand": false,
+    "hand_count": 1,
+    "can_double": true,
+    "can_split": false
+  },
+  "limits": {"max_states": 100000, "max_seconds": 10}
+}

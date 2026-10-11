@@ -34,6 +34,8 @@ FILES = {
     "docs/bounded-resplit-calculation.md": "bounded-resplit-calculation.md",
     "examples/bounded-ace-resplit-request.json": "bounded-ace-resplit-request.json",
     "docs/bounded-ace-resplit-calculation.md": "bounded-ace-resplit-calculation.md",
+    "examples/deferred-second-card-request.json": "deferred-second-card-request.json",
+    "docs/deferred-second-card-calculation.md": "deferred-second-card-calculation.md",
     "docs/protected-replay.md": "protected-replay.md",
     "docs/visual-example-data.json": "data.json",
     "docs/blackjack-composition-example.svg": "example.svg",

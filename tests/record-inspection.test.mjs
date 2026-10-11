@@ -5,7 +5,8 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inspectRecord,compareRecords,recordSlot,display,modeledRows,modelFor,permittedActions,recordedActionDifferences,MAX_RECORD_BYTES,
   MAX_RECORD_DEPTH,MAX_INTEGER_DIGITS,RANKS,RULE_FIELDS,ACTION_NAMES,SURRENDER_ACTION_NAMES,
-  surrenderModelFor,resplitModelFor,aceResplitModelFor,recordActionNames,actionControls} from '../site/record-inspection.mjs';
+  surrenderModelFor,resplitModelFor,aceResplitModelFor,deferredModelFor,DEFERRED_ACTION_NAMES,
+  recordActionNames,actionControls} from '../site/record-inspection.mjs';
 
 const fixture=await readFile(new URL('./fixtures/saved-decision-v1-7a38141.json',import.meta.url),'utf8');
 const baseline=JSON.parse(fixture);
@@ -31,7 +32,7 @@ add('fresh origin consistent',change(r=>{r.state.shoe.source='fresh_minus_visibl
 add('split dealt ace order',change(r=>{r.state.cards=['A','4'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('split non-ace first order',change(r=>{r.state.cards=['4','A'];r.state.total=15;r.state.soft=true;r.state.is_split_hand=true;r.state.hand_count=2;}));
 add('changed supported rule',change(r=>{r.rules.s17=false;}));
-add('schema future',change(r=>{r.schema.version=7;}),'unsupported_record');
+add('schema future',change(r=>{r.schema.version=8;}),'unsupported_record');
 add('schema name future',change(r=>{r.schema.name='different';}),'unsupported_record');
 add('float schema version',fixture.replace('"version": 1','"version": 1.0'),'invalid_input');
 add('exponent schema version',fixture.replace('"version": 1','"version": 1e0'),'invalid_input');
@@ -374,6 +375,89 @@ eligibility('exact hand allowance above Number range',r=>{split(r);pair(r);r.sta
 eligibility('exact hand cap above Number range',r=>{split(r);pair(r);r.state.hand_count=3;},['H','S','D'],
   text=>text.replace('"hand_count":3','"hand_count":9007199254740993').replace('"max_hands":4','"max_hands":9007199254740993'));
 
+// These are constructed representation cases, not recorded numerical acceptance.
+const deferredText=(update=()=>{})=>{
+  const saved=structuredClone(baseline);
+  saved.schema.version=7;
+  Object.assign(saved.state,{cards:['9','2'],dealer_up:'T',total:11,soft:false,
+    is_split_hand:false,hand_count:1,action_controls:{can_double:true,can_split:false}});
+  Object.assign(saved.state.shoe,{counts:[1,0,1,0,1,0,1,1,1,2],
+    source:'supplied_unseen',includes_hidden_hole:false});
+  Object.assign(saved.rules,{peek:false,surrender:false,max_hands:1,resplit_aces:false,
+    hit_split_aces:false,double_any_two:true,tens_are_pairs:true});
+  saved.model=deferredModelFor('T',100000n,10);
+  saved.decision={action:'S',action_name:'STAND',evs:{S:0.3,H:0.3,D:0},
+    margin:0,units:'original_wager',whole_game_estimate:null};
+  update(saved);
+  return JSON.stringify(saved,(_,value)=>typeof value==='bigint' ? Number(value) : value);
+};
+const soleDeferred=r=>{r.state.shoe.counts=[1,...Array(9).fill(0)];r.decision.evs={S:-1};r.decision.margin=null;};
+add('deferred version 7 eight-card representation',deferredText());
+add('deferred version 7 formerly impossible peek stock is allowed',deferredText(soleDeferred));
+cases.at(-1).expectedPermitted=['S'];
+add('deferred version 7 two-card menu',deferredText(r=>{r.state.shoe.counts=[1,...Array(8).fill(0),1];}));
+cases.at(-1).expectedPermitted=['S','H','D'];
+add('deferred version 7 disabled initial double stored value remains data',deferredText(r=>{r.state.action_controls.can_double=false;}));
+cases.at(-1).expectedPermitted=['S','H'];
+add('deferred version 7 sole S numeric altered margin remains data',deferredText(r=>{soleDeferred(r);r.decision.margin=9;}));
+add('deferred version 7 multi-action null altered margin remains data',deferredText(r=>{r.decision.margin=null;}));
+add('deferred version 7 altered finite answer is not ranked at import',deferredText(r=>{r.decision.evs.H=99;r.decision.margin=100;}));
+add('deferred version 7 omitted permitted H remains data',deferredText(r=>{delete r.decision.evs.H;}));
+add('deferred version 7 sole S stored unavailable recommendation remains data',deferredText(r=>{
+  soleDeferred(r);r.decision.evs.H=99;r.decision.action='H';r.decision.action_name='HIT';
+}));
+add('deferred version 7 H17 and inactive DAS context',deferredText(r=>{r.rules.s17=false;r.rules.das=false;}));
+add('deferred version 7 inactive deck and premium context',deferredText(r=>{
+  r.rules.decks=1;r.rules.blackjack_payout=2;r.rules.insurance_payout=0;
+}));
+add('deferred version 7 twenty retained cards are represented',deferredText(r=>{
+  r.state.shoe.counts=[1,...Array(8).fill(0),19];
+}));
+add('deferred version 7 smaller requested limits',deferredText(r=>{
+  r.model.enumeration_state_limit=1;r.model.enumeration_seconds_limit=0.25;
+}));
+add('deferred version 7 numeric floating seconds',deferredText().replace('"enumeration_seconds_limit":10','"enumeration_seconds_limit":10.0'));
+for (const [key,value] of [['peek',true],['surrender',true],['max_hands',2],
+  ['resplit_aces',true],['hit_split_aces',true],['double_any_two',false],['tens_are_pairs',false]]) {
+  add(`deferred version 7 unsupported rule ${key}`,deferredText(r=>{r.rules[key]=value;}),'unsupported_record');
+}
+add('deferred version 7 missing controls',deferredText(r=>{delete r.state.action_controls;}),'invalid_input');
+add('deferred version 7 no surrender control',deferredText(r=>{r.state.action_controls.can_surrender=false;}),'invalid_input');
+add('deferred version 7 split permission is outside subset',deferredText(r=>{r.state.action_controls.can_split=true;}),'unsupported_record');
+add('deferred version 7 split state is invalid',deferredText(r=>{r.state.is_split_hand=true;r.state.hand_count=2;}),'invalid_input');
+add('deferred version 7 three-card continuation is invalid',deferredText(r=>{r.state.cards=['5','3','3'];}),'invalid_input');
+add('deferred version 7 initial natural is invalid',deferredText(r=>{r.state.cards=['A','T'];r.state.total=21;r.state.soft=true;}),'invalid_input');
+add('deferred version 7 empty stock is invalid',deferredText(r=>{r.state.shoe.counts=Array(10).fill(0);}),'invalid_input');
+add('deferred version 7 stock above twenty is invalid',deferredText(r=>{r.state.shoe.counts[9]=20;}),'invalid_input');
+add('deferred version 7 no hidden hole declaration',deferredText(r=>{r.state.shoe.includes_hidden_hole=true;}),'unsupported_record');
+add('deferred version 7 visible cards cannot be subtracted twice',deferredText(r=>{r.state.shoe.visible_cards_already_removed=false;}),'unsupported_record');
+add('deferred version 7 fresh source is outside subset',deferredText(r=>{r.state.shoe.source='fresh_minus_visible';}),'unsupported_record');
+for (const key of ['enumeration_state_limit','enumeration_seconds_limit']) {
+  add(`deferred version 7 Boolean ${key}`,deferredText(r=>{r.model[key]=true;}),'invalid_input');
+  add(`deferred version 7 missing ${key}`,deferredText(r=>{delete r.model[key];}),'invalid_input');
+}
+for (const [key,value] of [['enumeration_state_limit',0],['enumeration_state_limit',100001],
+  ['enumeration_seconds_limit',0],['enumeration_seconds_limit',11]]) {
+  add(`deferred version 7 out-of-range ${key} ${value}`,deferredText(r=>{r.model[key]=value;}),'unsupported_record');
+}
+add('deferred version 7 seconds overflow',deferredText().replace('"enumeration_seconds_limit":10','"enumeration_seconds_limit":1e309'),'invalid_input');
+add('deferred version 7 fractional state cap token',deferredText().replace('"enumeration_state_limit":100000','"enumeration_state_limit":100000.0'),'invalid_input');
+add('deferred version 7 wrong derived peek exclusion',deferredText(r=>{r.model.hole_rank_excluded_by_peek='A';}),'invalid_input');
+for (const key of ['dealer_information','dealer_natural','player_last_draw','dealer_last_draw',
+  'split','continuation_exhaustion','computation_method','cache_scope']) {
+  add(`deferred version 7 changed model declaration ${key}`,deferredText(r=>{r.model[key]='different';}),'unsupported_record');
+}
+for (const action of ['P','R']) {
+  add(`deferred version 7 rejects ${action} vocabulary`,deferredText(r=>{r.decision.evs[action]=0;}),'invalid_input');
+}
+add('deferred version 7 negative margin',deferredText(r=>{r.decision.margin=-1;}),'invalid_input');
+add('deferred version 7 Boolean margin',deferredText(r=>{r.decision.margin=true;}),'invalid_input');
+add('deferred version 7 unknown model field',deferredText(r=>{r.model.extra=0;}),'invalid_input');
+for (const [name,create] of [['legacy',change],['common',commonText],['surrender',surrenderText],
+  ['resplit',resplitText],['ace',aceResplitText]]) {
+  add(`${name} retains nonnullable historical margin`,create(r=>{r.decision.margin=null;}),'invalid_input');
+}
+
 for (const item of cases) test(`admission: ${item.name}`,()=>{
   if (item.status==='accepted') {
     const admitted=inspectRecord(item.bytes);
@@ -391,16 +475,18 @@ test('shared corpus agrees with existing Python admission and schema declaration
   assert.equal(result.status,0,result.stderr || String(result.error));
   const oracle=JSON.parse(result.stdout);
   assert.deepEqual(oracle.outcomes,cases.map(item=>item.pythonStatus));
-  assert.equal(oracle.eligibility_scope,'best_action action keys with four EV routines stubbed to zero; schema 4 terminal R from admitted current permission');
+  assert.equal(oracle.eligibility_scope,'best_action action keys with four EV routines stubbed to zero; schema 4 terminal R from admitted current permission; schema 7 S/H/initial-D menu from admitted counts and permission without EV evaluation');
   assert.deepEqual(oracle.permitted,cases.map(item=>item.status==='accepted' ? permittedActions(inspectRecord(item.bytes)) : null),
     'Eligibility parity only, not EV or mathematical validation');
   const plain=value=>JSON.parse(JSON.stringify(value,(_,item)=>typeof item==='bigint' ? Number(item) : item));
   assert.deepEqual(oracle.contract,{max_bytes:MAX_RECORD_BYTES,max_depth:MAX_RECORD_DEPTH,schema_version:1,controlled_schema_version:2,common_schema_version:3,
-    surrender_schema_version:4,resplit_schema_version:5,ace_resplit_schema_version:6,rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,surrender_actions:SURRENDER_ACTION_NAMES,
+    surrender_schema_version:4,resplit_schema_version:5,ace_resplit_schema_version:6,deferred_schema_version:7,rule_fields:RULE_FIELDS,ranks:RANKS,actions:ACTION_NAMES,surrender_actions:SURRENDER_ACTION_NAMES,
+    deferred_actions:DEFERRED_ACTION_NAMES,
     models:Object.fromEntries(RANKS.map(rank=>[rank,modelFor(rank)])),
     surrender_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(surrenderModelFor(rank,100000n))])),
     resplit_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(resplitModelFor(rank,100000n))])),
-    ace_resplit_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(aceResplitModelFor(rank,100000n))]))});
+    ace_resplit_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(aceResplitModelFor(rank,100000n))])),
+    deferred_models:Object.fromEntries(RANKS.map(rank=>[rank,plain(deferredModelFor(rank,100000n,10))]))});
 });
 test('exact large integer counts survive inspection and input-first comparison',()=>{
   const left=inspectRecord(cases.find(item=>item.name==='unsafe exact integer count').bytes);
@@ -707,4 +793,85 @@ test('ace original controls and missing values remain visible before answer comp
   assert.deepEqual(comparison.inputs,[]);
   assert.equal(comparison.evs.find(row=>row.action==='P').matches,false);
   assert.equal(comparison.evs.find(row=>row.action==='P').delta,0.3-0.30000000000000004);
+});
+
+test('deferred second-card family differs from schemas 1 through 6 in both comparison orders',()=>{
+  const deferred=inspectRecord(deferredText()),controlledOlder=inspectRecord(change(r=>controlled(r)));
+  const rows=new Map(modeledRows(deferred));
+  assert.equal(rows.get('state.shoe.includes_hidden_hole'),false);
+  assert.equal(rows.get('rules.peek'),false);
+  for (const [key,value] of Object.entries(deferred.model)) assert.deepEqual(rows.get(`model.${key}`),value);
+  assert.deepEqual(recordActionNames(deferred),DEFERRED_ACTION_NAMES);
+  assert.deepEqual(permittedActions(deferred),['S','H','D']);
+  for (const older of [inspectRecord(fixture),controlledOlder,inspectRecord(commonText()),
+    inspectRecord(surrenderText()),inspectRecord(resplitText()),inspectRecord(aceResplitText())]) {
+    for (const [left,right] of [[deferred,older],[older,deferred]]) {
+      const compared=compareRecords(left,right);
+      assert.equal(compared.model_compatible,false);
+      assert.ok(compared.inputs.some(([key])=>key==='state.shoe.includes_hidden_hole'));
+      assert.ok(compared.inputs.some(([key])=>key==='rules.peek'));
+      assert.ok(compared.inputs.some(([key])=>key==='model.dealer_information'));
+    }
+  }
+});
+
+test('deferred controls, limits and inactive context precede supplied-answer comparisons',()=>{
+  const left=inspectRecord(deferredText());
+  const right=inspectRecord(deferredText(r=>{
+    r.state.action_controls.can_double=false;delete r.decision.evs.D;
+    r.model.enumeration_state_limit=31;r.model.enumeration_seconds_limit=0.5;
+    r.rules.das=false;r.rules.blackjack_payout=2;
+  }));
+  for (const [a,b] of [[left,right],[right,left]]) {
+    const compared=compareRecords(a,b);
+    assert.equal(compared.model_compatible,true);
+    for (const field of ['state.action_controls.can_double','model.enumeration_state_limit',
+      'model.enumeration_seconds_limit','rules.das','rules.blackjack_payout']) {
+      assert.ok(compared.inputs.some(([key])=>key===field));
+    }
+    assert.equal(compared.evs.find(row=>row.action==='D').delta,null);
+  }
+  assert.deepEqual(recordedActionDifferences(right),{
+    permitted:['S','H'],omitted:[],unavailable:[],recommendation_unavailable:false});
+});
+
+test('deferred null margins do not become numeric zero or claim a runner-up',()=>{
+  const sole=inspectRecord(deferredText(soleDeferred));
+  const altered=inspectRecord(deferredText(r=>{soleDeferred(r);r.decision.margin=0;}));
+  for (const [left,right] of [[sole,altered],[altered,sole]]) {
+    const compared=compareRecords(left,right);
+    assert.deepEqual(compared.inputs,[]);
+    assert.equal(compared.margin.matches,false);
+    assert.equal(compared.margin.delta,null);
+    assert.notEqual(compared.margin.left,compared.margin.right);
+  }
+  const same=compareRecords(sole,sole);
+  assert.equal(same.margin.matches,true);
+  assert.equal(same.margin.delta,null);
+  assert.equal(display(sole.decision.margin),'null');
+  assert.deepEqual(permittedActions(sole),['S']);
+  const ordinary=compareRecords(inspectRecord(fixture),inspectRecord(fixture));
+  assert.equal(ordinary.margin.delta,0,'Older finite margin comparison remains numeric');
+});
+
+test('deferred raw binary64 supplied values remain distinct from rational tie claims',()=>{
+  const rawTie=inspectRecord(deferredText());
+  const roundedDifference=inspectRecord(deferredText(r=>{
+    r.decision.evs.H=0.30000000000000004;r.decision.action='H';r.decision.action_name='HIT';
+    r.decision.margin=0.30000000000000004-0.3;
+  }));
+  const compared=compareRecords(rawTie,roundedDifference);
+  assert.deepEqual(compared.inputs,[]);
+  assert.equal(compared.action.matches,false);
+  assert.equal(compared.evs.find(row=>row.action==='H').matches,false);
+  assert.equal(compared.evs.find(row=>row.action==='H').delta,0.30000000000000004-0.3);
+  assert.equal(compared.margin.delta,0.30000000000000004-0.3);
+  const omitted=inspectRecord(deferredText(r=>{delete r.decision.evs.H;}));
+  assert.deepEqual(recordedActionDifferences(omitted),{
+    permitted:['S','H','D'],omitted:['H'],unavailable:[],recommendation_unavailable:false});
+  const unavailable=inspectRecord(deferredText(r=>{
+    soleDeferred(r);r.decision.evs.D=99;r.decision.action='D';r.decision.action_name='DOUBLE';
+  }));
+  assert.deepEqual(recordedActionDifferences(unavailable),{
+    permitted:['S'],omitted:[],unavailable:['D'],recommendation_unavailable:true});
 });

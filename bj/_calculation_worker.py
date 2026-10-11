@@ -22,6 +22,7 @@ def main():
         from .core import Rules
         from ._enumeration import EnumerationLimitExceeded
         from .joint_split import ReferenceLimitExceeded
+        from .deferred_second_card import DeferredTimeLimitExceeded
 
         request = _normalise(payload['request'])
         if (request != payload['request']
@@ -33,14 +34,21 @@ def main():
         surrender = request['schema']['version'] == 3
         resplit = request['schema']['version'] == 4
         ace_resplit = request['schema']['version'] == 5
-        bounded = common or surrender or resplit or ace_resplit
+        deferred = request['schema']['version'] == 6
+        bounded = common or surrender or resplit or ace_resplit or deferred
         result = {'status': 'worker_failed', 'decision': None, 'error': None,
                   'request_sha256': payload['request_sha256'], 'policy': payload['policy']}
         if bounded:
             result['work'] = None
         try:
             inputs = request['input']
-            if common:
+            if deferred:
+                result['decision'], result['work'] = record._deferred_second_card_record(
+                    inputs['cards'], inputs['dealer_up'], Rules(**request['rules']),
+                    shoe=tuple(inputs['unseen_counts']), can_double=inputs['can_double'],
+                    can_split=inputs['can_split'], max_states=request['limits']['max_states'],
+                    max_seconds=request['limits']['max_seconds'])
+            elif common:
                 result['decision'], result['work'] = record._common_shoe_record(
                     inputs['cards'], inputs['dealer_up'], Rules(**request['rules']),
                     shoe=tuple(inputs['unseen_counts']), can_double=inputs['can_double'],
@@ -72,10 +80,16 @@ def main():
             result['status'], result['error'] = 'resource_limited', _error(exc)
             if bounded:
                 result['work'] = exc.work
+        except DeferredTimeLimitExceeded as exc:
+            result['status'], result['error'] = 'resource_limited', _error(exc)
+            if deferred:
+                result['work'] = exc.work
         except (MemoryError, RecursionError, ReferenceLimitExceeded) as exc:
             result['status'], result['error'] = 'resource_limited', _error(exc)
         except (ValueError, OverflowError) as exc:
             result['status'], result['error'] = 'calculation_error', _error(exc)
+            if deferred:
+                result['work'] = getattr(exc, 'work', None)
         except Exception as exc:
             status = ('calculation_error' if (resplit or ace_resplit)
                       and isinstance(exc, ArithmeticError)

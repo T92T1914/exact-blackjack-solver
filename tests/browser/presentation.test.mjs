@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium, webkit} from 'playwright';
-import {modelFor,resplitModelFor,aceResplitModelFor} from '../../site/record-inspection.mjs';
+import {modelFor,resplitModelFor,aceResplitModelFor,deferredModelFor} from '../../site/record-inspection.mjs';
 
 // An owned loopback server, headless sandbox and fresh temporary contexts only.
 // Never connect to an existing browser or fall back to a visible window.
@@ -112,9 +112,10 @@ async function acceptedRecord(page,label,buffer,name=`record-${label}.json`) {
 async function assertPermittedActions(page,label,permitted,saved) {
   const result=page.locator(`#record-result-${label}`),name=`Record ${label.toUpperCase()}`;
   const table=result.getByRole('region',{name:`${name} derived permitted actions beside supplied EV presence`,exact:true});
-  assert.equal(await table.locator('tbody tr').count(),4);
-  const names=saved.schema.version===4 ? {S:'STAND',H:'HIT',D:'DOUBLE',R:'SURRENDER'} :
+  const names=saved.schema.version===7 ? {S:'STAND',H:'HIT',D:'DOUBLE'} :
+    saved.schema.version===4 ? {S:'STAND',H:'HIT',D:'DOUBLE',R:'SURRENDER'} :
     {H:'HIT',S:'STAND',D:'DOUBLE',P:'SPLIT'};
+  assert.equal(await table.locator('tbody tr').count(),Object.keys(names).length);
   for (const action of Object.keys(names)) {
     const row=table.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:`${action} (${names[action]})`,exact:true})});
     assert.deepEqual(await row.locator('td').allTextContents(),[String(permitted.includes(action)),
@@ -151,7 +152,8 @@ async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON
     assert.equal(await row.count(),1,key);
     assert.equal(await row.locator('td').textContent(),show(value),key);
   }
-  assert.equal(await result.locator('tbody tr').count(),expected.length+Object.keys(saved.decision.evs).length+4);
+  assert.equal(await result.locator('tbody tr').count(),expected.length+Object.keys(saved.decision.evs).length+
+    (saved.schema.version===7 ? 3 : 4));
   const values=result.getByRole('region',{name:`Record ${label.toUpperCase()} supplied action values in original wager units`,exact:true});
   for (const [action,value] of Object.entries(saved.decision.evs)) {
     const row=values.locator('tbody tr').filter({has:page.getByRole('rowheader',{name:new RegExp('^'+action+' \\(')})});
@@ -162,6 +164,7 @@ async function assertCompleteRecord(page,label,buffer,permitted=Object.keys(JSON
     saved.schema.version===2 ? /stores the declared current action controls/ :
     saved.schema.version===3 ? /bounded common-shoe model/ :
     saved.schema.version===4 ? /bounded post-peek late surrender/ :
+    saved.schema.version===7 ? /deferred, unpeeked dealer second card/ :
     saved.schema.version===6 ? /bounded common-shoe ace resplitting/ : /bounded common-shoe resplitting/);
 }
 
@@ -215,7 +218,7 @@ test('record replacement errors remove the old answer and allow recovery',async 
   for (const [name,buffer,message] of [
     ['malformed.json',Buffer.from('{'),/invalid JSON/],
     ['duplicate.json',Buffer.from('{"schema":{},"\\u0073chema":{}}'),/duplicate JSON key/],
-    ['future.json',alteredRecord(r=>{r.schema.version=7;}),/unsupported_record/],
+    ['future.json',alteredRecord(r=>{r.schema.version=8;}),/unsupported_record/],
     ['missing-controls.json',alteredRecord(r=>{r.schema.version=2;}),/action_controls/],
     ['float-count.json',Buffer.from(recordFixture.toString().replace('"counts": [\n        0','"counts": [\n        0.0')),/integer/],
     ['invalid-utf8.json',Buffer.from([255]),/valid UTF-8/],
@@ -653,6 +656,142 @@ test('one-card ace installed results, family comparisons and generated artifacts
   await page.locator('#record-inspector .table-wrap').first().focus();
   assert.equal(await page.locator('#record-inspector .table-wrap').first().evaluate(e=>document.activeElement===e),true);
   await capture(page,'bounded-ace-resplit-enlarged-320',false);
+});
+
+// These fallback EVs exercise representation and DOM behavior only.
+const deferredFixture=(sole=false)=>{
+  const saved=JSON.parse(recordFixture);
+  saved.schema.version=7;
+  Object.assign(saved.state,{cards:['9','2'],dealer_up:'T',total:11,soft:false,
+    is_split_hand:false,hand_count:1,action_controls:{can_double:true,can_split:false}});
+  Object.assign(saved.state.shoe,{counts:sole ? [1,...Array(9).fill(0)] : [1,0,1,0,1,0,1,1,1,2],
+    source:'supplied_unseen',includes_hidden_hole:false});
+  Object.assign(saved.rules,{peek:false,surrender:false,max_hands:1,resplit_aces:false,
+    hit_split_aces:false,double_any_two:true,tens_are_pairs:true});
+  saved.model=deferredModelFor('T',100000n,10);
+  saved.decision={action:'S',action_name:'STAND',evs:sole ? {S:-1} : {S:0.3,H:0.3,D:0},
+    margin:sole ? null : 0,units:'original_wager',whole_game_estimate:null};
+  return Buffer.from(JSON.stringify(saved,(_,value)=>typeof value==='bigint' ? Number(value) : value));
+};
+
+test('deferred installed records and generated request remain usable with null margins on mobile',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  for (const name of ['deferred-second-card-request.json','deferred-second-card-calculation.md']) {
+    const expected=await readFile(new URL('../../'+(name.endsWith('.json') ? 'examples/' : 'docs/')+name,import.meta.url),'utf8');
+    const received=await page.evaluate(async name=>{
+      const response=await fetch(name);if (!response.ok) throw Error('Generated deferred artifact unavailable');
+      return response.text();
+    },name);
+    assert.equal(received,expected,'Generated or published artifact must equal reviewed source');
+    assert.equal(await page.locator(`#record-inspector a[href="${name}"]`).count(),1);
+  }
+  const kinds=['EIGHT','SOLE'],provided=kinds.map(kind=>process.env[`SOLVER_RECORD_DEFERRED_${kind}`]);
+  assert.ok(provided.every(Boolean) || provided.every(value=>!value),'Provide both installed deferred records or neither');
+  const records=await Promise.all(kinds.map(async(kind,i)=>({kind,path:provided[i] ?? null,
+    buffer:provided[i] ? await readFile(provided[i]) : deferredFixture(i===1)})));
+  const controlled=controlledRecord(false,true);
+  const commonSaved=JSON.parse(recordFixture);
+  commonSaved.schema.version=3;
+  Object.assign(commonSaved.state,{cards:['T','T'],dealer_up:'7',total:20,soft:false,
+    action_controls:{can_double:true,can_split:true}});
+  commonSaved.state.shoe.counts=[1,...Array(8).fill(0),5];commonSaved.rules.max_hands=2;
+  commonSaved.model=modelFor('7',100000n);
+  commonSaved.decision={action:'P',action_name:'SPLIT',evs:{S:1,H:-2/3,D:-4/3,P:2},
+    margin:1,units:'original_wager',whole_game_estimate:null};
+  const common=Buffer.from(JSON.stringify(commonSaved,(_,value)=>typeof value==='bigint' ? Number(value) : value));
+  const previous=await Promise.all([
+    ['LEGACY',process.env.SOLVER_RECORD_APPROX,recordFixture],
+    ['CONTROLLED',process.env.SOLVER_RECORD_FT,controlled],
+    ['COMMON',process.env.SOLVER_RECORD_COMMON,common],
+    ['SURRENDER',process.env.SOLVER_RECORD_SURRENDER_WINNING,lateFixture()],
+    ['NON_ACE',process.env.SOLVER_RECORD_RESPLIT_WINNING,resplitFixture()],
+    ['ACE',process.env.SOLVER_RECORD_ACE_HIDDEN,aceResplitFixture()]
+  ].map(async([kind,source,fallback])=>({kind,path:source ?? null,buffer:source ? await readFile(source) : fallback})));
+  console.log('Deferred inspection invocation:',JSON.stringify({
+    base_url:base+'/',site_directory:root,published:Boolean(process.env.SOLVER_BROWSER_BASE_URL),
+    browser_engine:process.env.SOLVER_BROWSER_ENGINE ?? 'chromium',
+    browser_channel:process.env.SOLVER_BROWSER_CHANNEL ?? null,browser_version:browser.version(),
+    inputs:[...records,...previous].map(({kind,path:source,buffer})=>({kind,path:source,
+      origin:source ? 'provided installed output' : 'constructed admission fixture',
+      bytes:buffer.length,sha256:createHash('sha256').update(buffer).digest('hex')}))
+  }));
+  const [eight,sole]=records.map(({buffer})=>buffer),eightSaved=JSON.parse(eight),soleSaved=JSON.parse(sole);
+  assert.deepEqual(eightSaved.state.cards,['9','2']);assert.equal(eightSaved.state.dealer_up,'T');
+  assert.deepEqual(eightSaved.state.shoe.counts,[1,0,1,0,1,0,1,1,1,2]);
+  assert.deepEqual(eightSaved.state.action_controls,{can_double:true,can_split:false});
+  assert.deepEqual(soleSaved.state.cards,['9','2']);assert.equal(soleSaved.state.dealer_up,'T');
+  assert.deepEqual(soleSaved.state.shoe.counts,[1,0,0,0,0,0,0,0,0,0]);
+  assert.deepEqual(soleSaved.state.action_controls,{can_double:true,can_split:false});
+  assert.deepEqual(Object.keys(soleSaved.decision.evs),['S']);assert.equal(soleSaved.decision.margin,null);
+  assert.deepEqual(soleSaved.decision.evs,{S:-1});
+  assert.equal(soleSaved.decision.action,'S');assert.equal(soleSaved.decision.action_name,'STAND');
+  await page.evaluate(async()=>{
+    const images=Array.from(document.images);for (const image of images) image.loading='eager';
+    await Promise.all(images.map(image=>image.decode()));
+  });
+  await page.waitForLoadState('networkidle');
+  const requests=[];page.on('request',request=>requests.push(request.url()));
+  for (const {buffer} of records) {
+    const saved=JSON.parse(buffer),count=saved.state.shoe.counts.reduce((sum,value)=>sum+value,0);
+    assert.equal(saved.schema.version,7);assert.equal(saved.state.shoe.includes_hidden_hole,false);
+    assert.equal(saved.state.shoe.visible_cards_already_removed,true);
+    assert.equal(saved.state.shoe.source,'supplied_unseen');assert.equal(saved.rules.peek,false);
+    assert.equal(saved.state.is_split_hand,false);assert.equal(saved.state.hand_count,1);
+    for (const [key,value] of Object.entries({s17:true,surrender:false,max_hands:1,
+      double_any_two:true,tens_are_pairs:true,resplit_aces:false,hit_split_aces:false})) {
+      assert.equal(saved.rules[key],value,key);
+    }
+    assert.equal(saved.model.enumeration_state_limit,100000);assert.equal(saved.model.enumeration_seconds_limit,10);
+    const declaration=deferredModelFor(saved.state.dealer_up,BigInt(saved.model.enumeration_state_limit),saved.model.enumeration_seconds_limit);
+    assert.deepEqual(saved.model,JSON.parse(JSON.stringify(declaration,(_,value)=>typeof value==='bigint' ? Number(value) : value)));
+    const permitted=count===1 ? ['S'] : ['S','H',...(saved.state.action_controls.can_double ? ['D'] : [])];
+    await acceptedRecord(page,'a',buffer);await assertCompleteRecord(page,'a',buffer,permitted);
+    assert.match(await page.locator('#record-result-a').textContent(),/no dealer second card has been removed/);
+    assert.match(await page.locator('#record-result-a').textContent(),/exact rational tie by rounding/);
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  }
+  const comparison=page.locator('#record-comparison');
+  for (const {buffer:older} of previous) for (const [a,b] of [[older,eight],[eight,older]]) {
+    await acceptedRecord(page,'a',a);await assertCompleteRecord(page,'a',a);
+    await acceptedRecord(page,'b',b);await assertCompleteRecord(page,'b',b);
+    assert.match(await comparison.textContent(),/different mathematical families/);
+    assert.match(await comparison.textContent(),/all committed wagers to a later dealer natural/);
+    const changes=comparison.getByRole('region',{name:'Modeled input changes, before answer differences',exact:true});
+    for (const field of ['state.shoe.includes_hidden_hole','rules.peek','model.dealer_information']) {
+      assert.equal(await changes.getByRole('rowheader',{name:field,exact:true}).count(),1);
+    }
+    assert.equal(await comparison.evaluate(node=>node.textContent.indexOf('different mathematical families')<
+      node.textContent.indexOf('4. Recorded answer comparison')),true);
+  }
+  for (const [a,b] of [[sole,eight],[eight,sole]]) {
+    await acceptedRecord(page,'a',a);await acceptedRecord(page,'b',b);
+    assert.match(await comparison.textContent(),/same deferred second-card all-wagers family/);
+    const row=comparison.getByRole('rowheader',{name:'Raw margin',exact:true}).locator('..');
+    const margins=[JSON.parse(a).decision.margin,JSON.parse(b).decision.margin];
+    assert.deepEqual(await row.locator('td').allTextContents(),
+      [String(margins[0]),String(margins[1]),String(margins[0]===margins[1]),'not available: a margin is null']);
+  }
+  const changed=JSON.parse(eight);changed.decision.evs.S+=0.125;changed.decision.margin=null;
+  const altered=Buffer.from(JSON.stringify(changed));
+  await acceptedRecord(page,'a',eight);await acceptedRecord(page,'b',altered);await assertCompleteRecord(page,'b',altered);
+  const evRow=comparison.getByRole('rowheader',{name:'S (STAND)',exact:true}).last().locator('..');
+  assert.deepEqual(await evRow.locator('td').allTextContents(),[String(eightSaved.decision.evs.S),
+    String(changed.decision.evs.S),'false',String(changed.decision.evs.S-eightSaved.decision.evs.S)]);
+  assert.match(await comparison.textContent(),/All modeled inputs agree/);
+  await page.locator('#record-file-a').setInputFiles(suppliedRecord('wrong-deferred-model.json',
+    Buffer.from(eight.toString().replace('lose_all_committed_wager_units','different'))));
+  await page.waitForFunction(()=>document.querySelector('#record-status-a').classList.contains('error'));
+  assert.equal(await page.locator('#record-result-a').isVisible(),false);
+  assert.equal(await comparison.isVisible(),false);
+  await acceptedRecord(page,'a',eight);await assertCompleteRecord(page,'a',eight);
+  await acceptedRecord(page,'b',sole);await assertCompleteRecord(page,'b',sole,['S']);
+  assert.deepEqual(requests,[],'Local V7 imports trigger no requests');
+  await page.setViewportSize({width:320,height:844});
+  await page.addStyleTag({content:'#record-inspector{font-size:34px}#record-inspector .fine{font-size:28px}#record-inspector th{font-size:30px}#record-inspector h3{font-size:40px}'});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#record-inspector .table-wrap').first().focus();
+  assert.equal(await page.locator('#record-inspector .table-wrap').first().evaluate(e=>document.activeElement===e),true);
+  await capture(page,'deferred-second-card-enlarged-320',false);
 });
 
 test('mixed version true defaults compare in both directions and disabled saved actions warn',async t=>{
