@@ -17,6 +17,7 @@ from .joint_split import ReferenceLimitExceeded, UnsupportedShoeError
 RANKS = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'A')
 VALUES = (2, 3, 4, 5, 6, 7, 8, 9, 10, 1)
 ACE = 9
+DEALER_COMPUTATION_METHOD = 'ace_resplit_dealer_low_ace_counts_binary64_v1'
 
 
 @dataclass(frozen=True)
@@ -114,9 +115,10 @@ def joint_ace_resplit_value(dealer_up, shoe, *, double_after_split=True,
         return tuple(rows)
 
     @cache
-    def dealer(cards, remaining):
+    def dealer(low, has_ace, remaining):
         tick('dealer')
-        total, soft = _total(cards)
+        soft = has_ace and low + 10 <= 21
+        total = low + (10 if soft else 0)
         if total > 21:
             return ((0, 1.0),)
         if total > 17 or (total == 17 and (stand_soft_17 or not soft)):
@@ -127,7 +129,8 @@ def joint_ace_resplit_value(dealer_up, shoe, *, double_after_split=True,
         outcomes = {}
         for rank, count in enumerate(remaining):
             if count:
-                for outcome, probability in dealer(cards + (rank,), _take(remaining, rank)):
+                for outcome, probability in dealer(
+                        low + VALUES[rank], has_ace or rank == ACE, _take(remaining, rank)):
                     outcomes.setdefault(outcome, []).append(count / size * probability)
         rows = tuple((outcome, math.fsum(parts)) for outcome, parts in outcomes.items())
         mass(probability for _, probability in rows)
@@ -138,7 +141,8 @@ def joint_ace_resplit_value(dealer_up, shoe, *, double_after_split=True,
         tick('settle')
         values = []
         for hole, probability in holes(unseen):
-            for outcome, weight in dealer((up, hole), _take(unseen, hole)):
+            for outcome, weight in dealer(
+                    VALUES[up] + VALUES[hole], up == ACE or hole == ACE, _take(unseen, hole)):
                 reward = sum(wager if outcome == 0 or total > outcome else
                              -wager if total < outcome else 0
                              for total, wager in completed)

@@ -1,0 +1,1976 @@
+{
+  "schema_version": 1,
+  "status": "PASSED_FROZEN_COVERAGE_AND_ORIGINAL_ARITHMETIC_GATE",
+  "not_established": [
+    "arbitrary20cardcompletion",
+    "fullshoecompletion",
+    "generalperformance",
+    "symbolicrealexactness",
+    "nativeacceptance"
+  ],
+  "base_revision": "72ae11f40094ba2318e56d0a3ad5aed309419a14",
+  "candidate_numerical_revision": "69ea000843a39187e40d99440e7857b6411aec08",
+  "protocol_sha256": "9a3e714e25c5413d82f8ee929da0e52b35588691542d8860e5786c8ac4c51ba5",
+  "measurement_cell_source": "\"\"\"Full-root original/candidate comparison with separate bounded verification.\"\"\"\nimport hashlib,json,sys,time\nfrom pathlib import Path\nsource, case_json, mode, output = sys.argv[1:]\nsys.path.insert(0,source)\nfrom bj import ev,joint_ace_resplit,_enumeration\nfrom bj.bounded_ace_resplit import decide,rank\nfrom bj.common_shoe import reference_counts\nfrom bj.core import Rules\ncase=json.loads(case_json)\nrules=Rules(max_hands=3,resplit_aces=True,hit_split_aces=False,s17=case['s17'],das=case['das'])\nclass VerificationBudget:\n def __init__(self): self.counts={};self.attempted=0\n def enter(self,family):\n  self.attempted+=1\n  if self.attempted>500000: raise RuntimeError('separate original-arithmetic verification cap exceeded')\n  self.counts[family]=self.counts.get(family,0)+1\n def snapshot(self):\n  return {'verification_only':True,'limit':500000,'states':sum(self.counts.values()),'attempted_states':self.attempted,'state_counts':dict(sorted(self.counts.items()))}\ndef verification_limit(value):\n if type(value) is not int or value!=500000: raise ValueError('private verifier admits exactly the frozen500000 limit')\n return value\ntoken=None\nstart=time.perf_counter()\ntry:\n if mode=='original-verification':\n  budget=VerificationBudget();token=_enumeration._active.set(budget)\n  joint_ace_resplit.state_limit=verification_limit\n  _,values,_=ev.best_action(('A','A'),case['up'],shoe=tuple(case['counts']),rules=rules,can_double=True,can_split=False)\n  split=joint_ace_resplit.joint_ace_resplit_value(case['up'],reference_counts(case['counts']),\n       double_after_split=rules.das,stand_soft_17=rules.s17,max_states=500000)\n  values['P']=split.value;action,margin=rank(values);work=budget.snapshot()\n else:\n  action,values,margin,work=decide(('A','A'),case['up'],tuple(case['counts']),rules,max_states=100000)\n result={'status':'complete','action':action,'values_hex':{k:v.hex() for k,v in values.items()},'margin_hex':margin.hex(),'work':work}\nexcept Exception as exc:\n result={'status':'refused','type':type(exc).__name__,'reason':str(exc),'work':getattr(exc,'work',None)}\n if mode=='original-verification':result['verification_work']=budget.snapshot()\nfinally:\n if token is not None:_enumeration._active.reset(token)\nresult.update(case=case,mode=mode,elapsed_call_seconds=time.perf_counter()-start,\n product_limit_unchanged=_enumeration.MAX_STATES==100000,verification_bound_only=mode=='original-verification')\nresult['source_sha256']={name:hashlib.sha256(Path(source,name).read_text(encoding='utf-8-sig').replace('\\r\\n','\\n').encode()).hexdigest()\n for name in ('bj/joint_ace_resplit.py','bj/bounded_ace_resplit.py','bj/ev.py','bj/_enumeration.py')}\nwith Path(output).open('x',encoding='utf-8') as stream:json.dump(result,stream,indent=2,allow_nan=False);stream.write('\\n')\nprint(json.dumps({k:v for k,v in result.items() if k not in ('case','source_sha256')}))\n",
+  "current_reproduction_cell_source": "\"\"\"Full-root original/candidate comparison with separate bounded verification.\"\"\"\nimport hashlib,json,sys,time\nfrom pathlib import Path\nsource, case_json, mode, output = sys.argv[1:]\nsys.path.insert(0,source)\nfrom bj import ev,joint_ace_resplit,_enumeration\nfrom bj.bounded_ace_resplit import decide,rank\nfrom bj.common_shoe import reference_counts\nfrom bj.core import Rules\ncase=json.loads(case_json)\nrules=Rules(max_hands=3,resplit_aces=True,hit_split_aces=False,s17=case['s17'],das=case['das'])\nclass VerificationBudget:\n def __init__(self): self.counts={};self.attempted=0\n def enter(self,family):\n  self.attempted+=1\n  if self.attempted>500000: raise RuntimeError('separate original-arithmetic verification cap exceeded')\n  self.counts[family]=self.counts.get(family,0)+1\n def snapshot(self):\n  return {'verification_only':True,'limit':500000,'states':sum(self.counts.values()),'attempted_states':self.attempted,'state_counts':dict(sorted(self.counts.items()))}\ndef verification_limit(value):\n if type(value) is not int or value!=500000: raise ValueError('private verifier admits exactly the frozen500000 limit')\n return value\ntoken=None\noriginal_limit_validator=joint_ace_resplit.state_limit\nstart=time.perf_counter()\ntry:\n if mode=='original-verification':\n  budget=VerificationBudget();token=_enumeration._active.set(budget)\n  joint_ace_resplit.state_limit=verification_limit\n  _,values,_=ev.best_action(('A','A'),case['up'],shoe=tuple(case['counts']),rules=rules,can_double=True,can_split=False)\n  split=joint_ace_resplit.joint_ace_resplit_value(case['up'],reference_counts(case['counts']),\n       double_after_split=rules.das,stand_soft_17=rules.s17,max_states=500000)\n  values['P']=split.value;action,margin=rank(values);work=budget.snapshot()\n else:\n  action,values,margin,work=decide(('A','A'),case['up'],tuple(case['counts']),rules,max_states=100000)\n result={'status':'complete','action':action,'values_hex':{k:v.hex() for k,v in values.items()},'margin_hex':margin.hex(),'work':work}\nexcept Exception as exc:\n result={'status':'refused','type':type(exc).__name__,'reason':str(exc),'work':getattr(exc,'work',None)}\n if mode=='original-verification':result['verification_work']=budget.snapshot()\nfinally:\n if token is not None:_enumeration._active.reset(token)\n joint_ace_resplit.state_limit=original_limit_validator\nresult.update(case=case,mode=mode,elapsed_call_seconds=time.perf_counter()-start,\n product_limit_unchanged=_enumeration.MAX_STATES==100000,verification_bound_only=mode=='original-verification')\nresult['source_sha256']={name:hashlib.sha256(Path(source,name).read_text(encoding='utf-8-sig').replace('\\r\\n','\\n').encode()).hexdigest()\n for name in ('bj/joint_ace_resplit.py','bj/bounded_ace_resplit.py','bj/ev.py','bj/_enumeration.py')}\nwith Path(output).open('x',encoding='utf-8') as stream:json.dump(result,stream,indent=2,allow_nan=False);stream.write('\\n')\nprint(json.dumps({k:v for k,v in result.items() if k not in ('case','source_sha256')}))\n",
+  "post_collection_source_diff": [
+    "+original_limit_validator=joint_ace_resplit.state_limit",
+    "+ joint_ace_resplit.state_limit=original_limit_validator (inside finally)"
+  ],
+  "measurement_cell_note": "Executed source retained by undoing the explicit two-line post-collection addition shown here. Current reproduction source finally restores the original private alias as well as ContextVar. First28 fresh processes completed before that restoration addition; interpreter retirement already removed their temporary alias. Arithmetic and observed result unchanged. The recovered-source hash is not claimed as a precollection hash.",
+  "whole_product_limit": 100000,
+  "separate_original_verification_limit": 500000,
+  "coverage": [
+    {
+      "id": "ace-peek-h17",
+      "baseline_status": "refused",
+      "candidate_status": "refused",
+      "baseline_states": 100000,
+      "candidate_states": 100000,
+      "original_verification_states": 259540,
+      "exact_full_map": false
+    },
+    {
+      "id": "six-s17",
+      "baseline_status": "refused",
+      "candidate_status": "complete",
+      "baseline_states": 100000,
+      "candidate_states": 59669,
+      "original_verification_states": 121565,
+      "exact_full_map": true
+    },
+    {
+      "id": "ten-peek-s17",
+      "baseline_status": "complete",
+      "candidate_status": "complete",
+      "baseline_states": 51288,
+      "candidate_states": 40900,
+      "original_verification_states": 51288,
+      "exact_full_map": true
+    },
+    {
+      "id": "optional-slot-control",
+      "baseline_status": "complete",
+      "candidate_status": "complete",
+      "baseline_states": 46,
+      "candidate_states": 46,
+      "original_verification_states": 46,
+      "exact_full_map": true
+    }
+  ],
+  "observations": [
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 44224,
+          "ace_resplit_draw": 13,
+          "ace_resplit_play": 119,
+          "ace_resplit_settle": 95,
+          "root_dealer": 54474,
+          "root_distribution": 412,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "ace-peek-h17",
+        "up": "A",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": false,
+        "das": true
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.24873130000196397,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 0,
+      "variant": "baseline"
+    },
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 43304,
+          "ace_resplit_draw": 48,
+          "ace_resplit_play": 609,
+          "ace_resplit_settle": 490,
+          "root_dealer": 54474,
+          "root_distribution": 412,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "ace-peek-h17",
+        "up": "A",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": false,
+        "das": true
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.27842549997149035,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 0,
+      "variant": "candidate"
+    },
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 44224,
+          "ace_resplit_draw": 13,
+          "ace_resplit_play": 119,
+          "ace_resplit_settle": 95,
+          "root_dealer": 54474,
+          "root_distribution": 412,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "ace-peek-h17",
+        "up": "A",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": false,
+        "das": true
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.2500718000228517,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 1,
+      "variant": "baseline"
+    },
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 43304,
+          "ace_resplit_draw": 48,
+          "ace_resplit_play": 609,
+          "ace_resplit_settle": 490,
+          "root_dealer": 54474,
+          "root_distribution": 412,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "ace-peek-h17",
+        "up": "A",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": false,
+        "das": true
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.27406750002410263,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 1,
+      "variant": "candidate"
+    },
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 44224,
+          "ace_resplit_draw": 13,
+          "ace_resplit_play": 119,
+          "ace_resplit_settle": 95,
+          "root_dealer": 54474,
+          "root_distribution": 412,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "ace-peek-h17",
+        "up": "A",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": false,
+        "das": true
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.24186279997229576,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 2,
+      "variant": "baseline"
+    },
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 43304,
+          "ace_resplit_draw": 48,
+          "ace_resplit_play": 609,
+          "ace_resplit_settle": 490,
+          "root_dealer": 54474,
+          "root_distribution": 412,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "ace-peek-h17",
+        "up": "A",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": false,
+        "das": true
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.2804075999883935,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 2,
+      "variant": "candidate"
+    },
+    {
+      "status": "complete",
+      "action": "H",
+      "values_hex": {
+        "S": "-0x1.5c169153f2a34p-1",
+        "H": "0x1.bf9edbd5c53ccp-6",
+        "D": "-0x1.2cc1b8f43200dp-1",
+        "P": "-0x1.317c500abfae6p-3"
+      },
+      "margin_hex": "0x1.69702b8578560p-3",
+      "work": {
+        "verification_only": true,
+        "limit": 500000,
+        "states": 259540,
+        "attempted_states": 259540,
+        "state_counts": {
+          "ace_resplit_dealer": 202137,
+          "ace_resplit_draw": 64,
+          "ace_resplit_play": 995,
+          "ace_resplit_settle": 795,
+          "root_dealer": 54474,
+          "root_distribution": 412,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "ace-peek-h17",
+        "up": "A",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": false,
+        "das": true
+      },
+      "mode": "original-verification",
+      "elapsed_call_seconds": 0.6696205000043847,
+      "product_limit_unchanged": true,
+      "verification_bound_only": true,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      }
+    },
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 68179,
+          "ace_resplit_draw": 42,
+          "ace_resplit_play": 494,
+          "ace_resplit_settle": 396,
+          "root_dealer": 29815,
+          "root_distribution": 411,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "six-s17",
+        "up": "6",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          5
+        ],
+        "s17": true,
+        "das": true
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.2642749000224285,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 0,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.d50aeffd76b9ep-3",
+        "H": "0x1.8bad5720e5ee0p-3",
+        "D": "0x1.48070df0e5d1cp-4",
+        "P": "0x1.118ea81b61be8p-1"
+      },
+      "margin_hex": "0x1.5d46a4a650860p-2",
+      "work": {
+        "limit": 100000,
+        "states": 59669,
+        "attempted_states": 59669,
+        "state_counts": {
+          "ace_resplit_dealer": 26979,
+          "ace_resplit_draw": 63,
+          "ace_resplit_play": 968,
+          "ace_resplit_settle": 770,
+          "root_dealer": 29815,
+          "root_distribution": 411,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "six-s17",
+        "up": "6",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          5
+        ],
+        "s17": true,
+        "das": true
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.1771360999555327,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 0,
+      "variant": "candidate"
+    },
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 68179,
+          "ace_resplit_draw": 42,
+          "ace_resplit_play": 494,
+          "ace_resplit_settle": 396,
+          "root_dealer": 29815,
+          "root_distribution": 411,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "six-s17",
+        "up": "6",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          5
+        ],
+        "s17": true,
+        "das": true
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.2655406999983825,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 1,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.d50aeffd76b9ep-3",
+        "H": "0x1.8bad5720e5ee0p-3",
+        "D": "0x1.48070df0e5d1cp-4",
+        "P": "0x1.118ea81b61be8p-1"
+      },
+      "margin_hex": "0x1.5d46a4a650860p-2",
+      "work": {
+        "limit": 100000,
+        "states": 59669,
+        "attempted_states": 59669,
+        "state_counts": {
+          "ace_resplit_dealer": 26979,
+          "ace_resplit_draw": 63,
+          "ace_resplit_play": 968,
+          "ace_resplit_settle": 770,
+          "root_dealer": 29815,
+          "root_distribution": 411,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "six-s17",
+        "up": "6",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          5
+        ],
+        "s17": true,
+        "das": true
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.17634079995332286,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 1,
+      "variant": "candidate"
+    },
+    {
+      "status": "refused",
+      "type": "EnumerationLimitExceeded",
+      "reason": "whole-request enumeration state limit exceeded",
+      "work": {
+        "limit": 100000,
+        "states": 100000,
+        "attempted_states": 100001,
+        "state_counts": {
+          "ace_resplit_dealer": 68179,
+          "ace_resplit_draw": 42,
+          "ace_resplit_play": 494,
+          "ace_resplit_settle": 396,
+          "root_dealer": 29815,
+          "root_distribution": 411,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "six-s17",
+        "up": "6",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          5
+        ],
+        "s17": true,
+        "das": true
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.27036530000623316,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 2,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.d50aeffd76b9ep-3",
+        "H": "0x1.8bad5720e5ee0p-3",
+        "D": "0x1.48070df0e5d1cp-4",
+        "P": "0x1.118ea81b61be8p-1"
+      },
+      "margin_hex": "0x1.5d46a4a650860p-2",
+      "work": {
+        "limit": 100000,
+        "states": 59669,
+        "attempted_states": 59669,
+        "state_counts": {
+          "ace_resplit_dealer": 26979,
+          "ace_resplit_draw": 63,
+          "ace_resplit_play": 968,
+          "ace_resplit_settle": 770,
+          "root_dealer": 29815,
+          "root_distribution": 411,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "six-s17",
+        "up": "6",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          5
+        ],
+        "s17": true,
+        "das": true
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.17629009997472167,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 2,
+      "variant": "candidate"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.d50aeffd76b9ep-3",
+        "H": "0x1.8bad5720e5ee0p-3",
+        "D": "0x1.48070df0e5d1cp-4",
+        "P": "0x1.118ea81b61be8p-1"
+      },
+      "margin_hex": "0x1.5d46a4a650860p-2",
+      "work": {
+        "verification_only": true,
+        "limit": 500000,
+        "states": 121565,
+        "attempted_states": 121565,
+        "state_counts": {
+          "ace_resplit_dealer": 88875,
+          "ace_resplit_draw": 63,
+          "ace_resplit_play": 968,
+          "ace_resplit_settle": 770,
+          "root_dealer": 29815,
+          "root_distribution": 411,
+          "root_double": 1,
+          "root_draw": 331,
+          "root_hit": 331
+        }
+      },
+      "case": {
+        "id": "six-s17",
+        "up": "6",
+        "counts": [
+          1,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          5
+        ],
+        "s17": true,
+        "das": true
+      },
+      "mode": "original-verification",
+      "elapsed_call_seconds": 0.31124230002751574,
+      "product_limit_unchanged": true,
+      "verification_bound_only": true,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      }
+    },
+    {
+      "status": "complete",
+      "action": "H",
+      "values_hex": {
+        "S": "-0x1.18e1fd6fb6932p-1",
+        "H": "0x1.fbdcd81d36d5cp-4",
+        "D": "-0x1.49166fc3196e2p-2",
+        "P": "0x1.7de35b49fd4e6p-4"
+      },
+      "margin_hex": "0x1.f7e5f34ce61d8p-6",
+      "work": {
+        "limit": 100000,
+        "states": 51288,
+        "attempted_states": 51288,
+        "state_counts": {
+          "ace_resplit_dealer": 28712,
+          "ace_resplit_draw": 73,
+          "ace_resplit_play": 1244,
+          "ace_resplit_settle": 1008,
+          "root_dealer": 18971,
+          "root_distribution": 489,
+          "root_double": 1,
+          "root_draw": 395,
+          "root_hit": 395
+        }
+      },
+      "case": {
+        "id": "ten-peek-s17",
+        "up": "T",
+        "counts": [
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.14316369994776323,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 0,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "H",
+      "values_hex": {
+        "S": "-0x1.18e1fd6fb6932p-1",
+        "H": "0x1.fbdcd81d36d5cp-4",
+        "D": "-0x1.49166fc3196e2p-2",
+        "P": "0x1.7de35b49fd4e6p-4"
+      },
+      "margin_hex": "0x1.f7e5f34ce61d8p-6",
+      "work": {
+        "limit": 100000,
+        "states": 40900,
+        "attempted_states": 40900,
+        "state_counts": {
+          "ace_resplit_dealer": 18324,
+          "ace_resplit_draw": 73,
+          "ace_resplit_play": 1244,
+          "ace_resplit_settle": 1008,
+          "root_dealer": 18971,
+          "root_distribution": 489,
+          "root_double": 1,
+          "root_draw": 395,
+          "root_hit": 395
+        }
+      },
+      "case": {
+        "id": "ten-peek-s17",
+        "up": "T",
+        "counts": [
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.11263129999861121,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 0,
+      "variant": "candidate"
+    },
+    {
+      "status": "complete",
+      "action": "H",
+      "values_hex": {
+        "S": "-0x1.18e1fd6fb6932p-1",
+        "H": "0x1.fbdcd81d36d5cp-4",
+        "D": "-0x1.49166fc3196e2p-2",
+        "P": "0x1.7de35b49fd4e6p-4"
+      },
+      "margin_hex": "0x1.f7e5f34ce61d8p-6",
+      "work": {
+        "limit": 100000,
+        "states": 51288,
+        "attempted_states": 51288,
+        "state_counts": {
+          "ace_resplit_dealer": 28712,
+          "ace_resplit_draw": 73,
+          "ace_resplit_play": 1244,
+          "ace_resplit_settle": 1008,
+          "root_dealer": 18971,
+          "root_distribution": 489,
+          "root_double": 1,
+          "root_draw": 395,
+          "root_hit": 395
+        }
+      },
+      "case": {
+        "id": "ten-peek-s17",
+        "up": "T",
+        "counts": [
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.1360145999933593,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 1,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "H",
+      "values_hex": {
+        "S": "-0x1.18e1fd6fb6932p-1",
+        "H": "0x1.fbdcd81d36d5cp-4",
+        "D": "-0x1.49166fc3196e2p-2",
+        "P": "0x1.7de35b49fd4e6p-4"
+      },
+      "margin_hex": "0x1.f7e5f34ce61d8p-6",
+      "work": {
+        "limit": 100000,
+        "states": 40900,
+        "attempted_states": 40900,
+        "state_counts": {
+          "ace_resplit_dealer": 18324,
+          "ace_resplit_draw": 73,
+          "ace_resplit_play": 1244,
+          "ace_resplit_settle": 1008,
+          "root_dealer": 18971,
+          "root_distribution": 489,
+          "root_double": 1,
+          "root_draw": 395,
+          "root_hit": 395
+        }
+      },
+      "case": {
+        "id": "ten-peek-s17",
+        "up": "T",
+        "counts": [
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.11165839998284355,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 1,
+      "variant": "candidate"
+    },
+    {
+      "status": "complete",
+      "action": "H",
+      "values_hex": {
+        "S": "-0x1.18e1fd6fb6932p-1",
+        "H": "0x1.fbdcd81d36d5cp-4",
+        "D": "-0x1.49166fc3196e2p-2",
+        "P": "0x1.7de35b49fd4e6p-4"
+      },
+      "margin_hex": "0x1.f7e5f34ce61d8p-6",
+      "work": {
+        "limit": 100000,
+        "states": 51288,
+        "attempted_states": 51288,
+        "state_counts": {
+          "ace_resplit_dealer": 28712,
+          "ace_resplit_draw": 73,
+          "ace_resplit_play": 1244,
+          "ace_resplit_settle": 1008,
+          "root_dealer": 18971,
+          "root_distribution": 489,
+          "root_double": 1,
+          "root_draw": 395,
+          "root_hit": 395
+        }
+      },
+      "case": {
+        "id": "ten-peek-s17",
+        "up": "T",
+        "counts": [
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.13687749998643994,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 2,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "H",
+      "values_hex": {
+        "S": "-0x1.18e1fd6fb6932p-1",
+        "H": "0x1.fbdcd81d36d5cp-4",
+        "D": "-0x1.49166fc3196e2p-2",
+        "P": "0x1.7de35b49fd4e6p-4"
+      },
+      "margin_hex": "0x1.f7e5f34ce61d8p-6",
+      "work": {
+        "limit": 100000,
+        "states": 40900,
+        "attempted_states": 40900,
+        "state_counts": {
+          "ace_resplit_dealer": 18324,
+          "ace_resplit_draw": 73,
+          "ace_resplit_play": 1244,
+          "ace_resplit_settle": 1008,
+          "root_dealer": 18971,
+          "root_distribution": 489,
+          "root_double": 1,
+          "root_draw": 395,
+          "root_hit": 395
+        }
+      },
+      "case": {
+        "id": "ten-peek-s17",
+        "up": "T",
+        "counts": [
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.11037599999690428,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 2,
+      "variant": "candidate"
+    },
+    {
+      "status": "complete",
+      "action": "H",
+      "values_hex": {
+        "S": "-0x1.18e1fd6fb6932p-1",
+        "H": "0x1.fbdcd81d36d5cp-4",
+        "D": "-0x1.49166fc3196e2p-2",
+        "P": "0x1.7de35b49fd4e6p-4"
+      },
+      "margin_hex": "0x1.f7e5f34ce61d8p-6",
+      "work": {
+        "verification_only": true,
+        "limit": 500000,
+        "states": 51288,
+        "attempted_states": 51288,
+        "state_counts": {
+          "ace_resplit_dealer": 28712,
+          "ace_resplit_draw": 73,
+          "ace_resplit_play": 1244,
+          "ace_resplit_settle": 1008,
+          "root_dealer": 18971,
+          "root_distribution": 489,
+          "root_double": 1,
+          "root_draw": 395,
+          "root_hit": 395
+        }
+      },
+      "case": {
+        "id": "ten-peek-s17",
+        "up": "T",
+        "counts": [
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          2,
+          2,
+          2,
+          4
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "original-verification",
+      "elapsed_call_seconds": 0.1297914999886416,
+      "product_limit_unchanged": true,
+      "verification_bound_only": true,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      }
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.0000000000000p+0",
+        "H": "-0x1.0000000000000p+0",
+        "D": "-0x1.0000000000000p+1",
+        "P": "0x1.2aaaaaaaaaaabp+1"
+      },
+      "margin_hex": "0x1.aaaaaaaaaaaabp+1",
+      "work": {
+        "limit": 100000,
+        "states": 46,
+        "attempted_states": 46,
+        "state_counts": {
+          "ace_resplit_dealer": 4,
+          "ace_resplit_draw": 5,
+          "ace_resplit_play": 14,
+          "ace_resplit_settle": 4,
+          "root_dealer": 6,
+          "root_distribution": 4,
+          "root_double": 1,
+          "root_draw": 4,
+          "root_hit": 4
+        }
+      },
+      "case": {
+        "id": "optional-slot-control",
+        "up": "7",
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.0002606000052765012,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 0,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.0000000000000p+0",
+        "H": "-0x1.0000000000000p+0",
+        "D": "-0x1.0000000000000p+1",
+        "P": "0x1.2aaaaaaaaaaabp+1"
+      },
+      "margin_hex": "0x1.aaaaaaaaaaaabp+1",
+      "work": {
+        "limit": 100000,
+        "states": 46,
+        "attempted_states": 46,
+        "state_counts": {
+          "ace_resplit_dealer": 4,
+          "ace_resplit_draw": 5,
+          "ace_resplit_play": 14,
+          "ace_resplit_settle": 4,
+          "root_dealer": 6,
+          "root_distribution": 4,
+          "root_double": 1,
+          "root_draw": 4,
+          "root_hit": 4
+        }
+      },
+      "case": {
+        "id": "optional-slot-control",
+        "up": "7",
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.0002552999649196863,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 0,
+      "variant": "candidate"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.0000000000000p+0",
+        "H": "-0x1.0000000000000p+0",
+        "D": "-0x1.0000000000000p+1",
+        "P": "0x1.2aaaaaaaaaaabp+1"
+      },
+      "margin_hex": "0x1.aaaaaaaaaaaabp+1",
+      "work": {
+        "limit": 100000,
+        "states": 46,
+        "attempted_states": 46,
+        "state_counts": {
+          "ace_resplit_dealer": 4,
+          "ace_resplit_draw": 5,
+          "ace_resplit_play": 14,
+          "ace_resplit_settle": 4,
+          "root_dealer": 6,
+          "root_distribution": 4,
+          "root_double": 1,
+          "root_draw": 4,
+          "root_hit": 4
+        }
+      },
+      "case": {
+        "id": "optional-slot-control",
+        "up": "7",
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.0002502999850548804,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 1,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.0000000000000p+0",
+        "H": "-0x1.0000000000000p+0",
+        "D": "-0x1.0000000000000p+1",
+        "P": "0x1.2aaaaaaaaaaabp+1"
+      },
+      "margin_hex": "0x1.aaaaaaaaaaaabp+1",
+      "work": {
+        "limit": 100000,
+        "states": 46,
+        "attempted_states": 46,
+        "state_counts": {
+          "ace_resplit_dealer": 4,
+          "ace_resplit_draw": 5,
+          "ace_resplit_play": 14,
+          "ace_resplit_settle": 4,
+          "root_dealer": 6,
+          "root_distribution": 4,
+          "root_double": 1,
+          "root_draw": 4,
+          "root_hit": 4
+        }
+      },
+      "case": {
+        "id": "optional-slot-control",
+        "up": "7",
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.0002449000021442771,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 1,
+      "variant": "candidate"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.0000000000000p+0",
+        "H": "-0x1.0000000000000p+0",
+        "D": "-0x1.0000000000000p+1",
+        "P": "0x1.2aaaaaaaaaaabp+1"
+      },
+      "margin_hex": "0x1.aaaaaaaaaaaabp+1",
+      "work": {
+        "limit": 100000,
+        "states": 46,
+        "attempted_states": 46,
+        "state_counts": {
+          "ace_resplit_dealer": 4,
+          "ace_resplit_draw": 5,
+          "ace_resplit_play": 14,
+          "ace_resplit_settle": 4,
+          "root_dealer": 6,
+          "root_distribution": 4,
+          "root_double": 1,
+          "root_draw": 4,
+          "root_hit": 4
+        }
+      },
+      "case": {
+        "id": "optional-slot-control",
+        "up": "7",
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "baseline",
+      "elapsed_call_seconds": 0.0002462000120431185,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 2,
+      "variant": "baseline"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.0000000000000p+0",
+        "H": "-0x1.0000000000000p+0",
+        "D": "-0x1.0000000000000p+1",
+        "P": "0x1.2aaaaaaaaaaabp+1"
+      },
+      "margin_hex": "0x1.aaaaaaaaaaaabp+1",
+      "work": {
+        "limit": 100000,
+        "states": 46,
+        "attempted_states": 46,
+        "state_counts": {
+          "ace_resplit_dealer": 4,
+          "ace_resplit_draw": 5,
+          "ace_resplit_play": 14,
+          "ace_resplit_settle": 4,
+          "root_dealer": 6,
+          "root_distribution": 4,
+          "root_double": 1,
+          "root_draw": 4,
+          "root_hit": 4
+        }
+      },
+      "case": {
+        "id": "optional-slot-control",
+        "up": "7",
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "candidate",
+      "elapsed_call_seconds": 0.0002595999976620078,
+      "product_limit_unchanged": true,
+      "verification_bound_only": false,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "ea3c09763389a1aaac77b7b65efa68a121c2b3d6a0dea776854aed6142f50eef",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      },
+      "repetition": 2,
+      "variant": "candidate"
+    },
+    {
+      "status": "complete",
+      "action": "P",
+      "values_hex": {
+        "S": "-0x1.0000000000000p+0",
+        "H": "-0x1.0000000000000p+0",
+        "D": "-0x1.0000000000000p+1",
+        "P": "0x1.2aaaaaaaaaaabp+1"
+      },
+      "margin_hex": "0x1.aaaaaaaaaaaabp+1",
+      "work": {
+        "verification_only": true,
+        "limit": 500000,
+        "states": 46,
+        "attempted_states": 46,
+        "state_counts": {
+          "ace_resplit_dealer": 4,
+          "ace_resplit_draw": 5,
+          "ace_resplit_play": 14,
+          "ace_resplit_settle": 4,
+          "root_dealer": 6,
+          "root_distribution": 4,
+          "root_double": 1,
+          "root_draw": 4,
+          "root_hit": 4
+        }
+      },
+      "case": {
+        "id": "optional-slot-control",
+        "up": "7",
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ],
+        "s17": true,
+        "das": false
+      },
+      "mode": "original-verification",
+      "elapsed_call_seconds": 0.00024090002989396453,
+      "product_limit_unchanged": true,
+      "verification_bound_only": true,
+      "source_sha256": {
+        "bj/joint_ace_resplit.py": "3689095828687293db5b91bbaf405fcfbe5fbe8c3bcbf2dc2984ef8ca7accfaf",
+        "bj/bounded_ace_resplit.py": "1a10bc56ad9ad62a435793cc636f6eaec8dee5778470f53b74b17f413e21475f",
+        "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+        "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+      }
+    }
+  ],
+  "owned_receipt": {
+    "protocol_sha256": "4614e86b5a16f9cc1fd1283872dcf9845d562f9d2a64ace0fd72be810faf31b2",
+    "resources": {
+      "job_commit_bytes": 536870912,
+      "cleanup_seconds": 5,
+      "transport_limit_bytes": 2097152
+    },
+    "operations": [
+      {
+        "id": "ace-peek-h17-0-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.40600000001722947,
+        "stdout_bytes": 547,
+        "stderr_bytes": 0,
+        "stdout_sha256": "d4fea04830aef63166f56ea36dfdcd54e6f3229a36d1b6c8210fea0a0177ade8",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ace-peek-h17-0-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.42199999996228144,
+        "stdout_bytes": 549,
+        "stderr_bytes": 0,
+        "stdout_sha256": "b09adc6fc9ce8461d7455b1d40d3ccbe83a7bd2a4941acd8b103513174f85172",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "six-s17-0-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.40600000001722947,
+        "stdout_bytes": 547,
+        "stderr_bytes": 0,
+        "stdout_sha256": "b6ce07979bcc33ba63495558af6867d90c46897407378ee7de497e00794148ba",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "six-s17-0-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.3279999999795109,
+        "stdout_bytes": 637,
+        "stderr_bytes": 0,
+        "stdout_sha256": "77b3e9dff26bb216eac3c2068fa05114de81b6e585469345809428a779161d2e",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ten-peek-s17-0-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.28100000001722947,
+        "stdout_bytes": 640,
+        "stderr_bytes": 0,
+        "stdout_sha256": "f6df461e84b1087781a0a3718d293aa0d09bf40813128000677e6af04e776ed7",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ten-peek-s17-0-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.25,
+        "stdout_bytes": 641,
+        "stderr_bytes": 0,
+        "stdout_sha256": "7647ad7eda0e5d5723c89f227878dabe11ab36c93de1da54ef075f1d4346f447",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "optional-slot-control-0-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.125,
+        "stdout_bytes": 617,
+        "stderr_bytes": 0,
+        "stdout_sha256": "460c3c3ce4a9cd493d97ae1e8d89ce22ee32e052c7f69c103f3a556a9df85e36",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "optional-slot-control-0-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.125,
+        "stdout_bytes": 618,
+        "stderr_bytes": 0,
+        "stdout_sha256": "1c0f7aabc26b98ebf96dd2e3ba957dfcc3d0c33ccbf7b500286fad6b4a4b3cf5",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ace-peek-h17-1-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.40600000001722947,
+        "stdout_bytes": 549,
+        "stderr_bytes": 0,
+        "stdout_sha256": "bf01691ecd32d361ebae1f37549cd40d05a6f25db72ff0ee6dbd32d7c5e2ec3d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ace-peek-h17-1-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.4059999999590218,
+        "stdout_bytes": 546,
+        "stderr_bytes": 0,
+        "stdout_sha256": "9696eec89eaeefc5b5219c703f1305ae8b92b059352d4461df5a5b57efd77ce5",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "six-s17-1-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.3130000000237487,
+        "stdout_bytes": 638,
+        "stderr_bytes": 0,
+        "stdout_sha256": "80554c6102220a81eaddc20a1c65d3cefb69aada961dc92a8ee5a15043e3b3eb",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "six-s17-1-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.40600000001722947,
+        "stdout_bytes": 547,
+        "stderr_bytes": 0,
+        "stdout_sha256": "edcb6a8ebefba607d9b4775dabf8de419e340d96c72ab2072ba2cbbbb934d148",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ten-peek-s17-1-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.25,
+        "stdout_bytes": 641,
+        "stderr_bytes": 0,
+        "stdout_sha256": "17240a465ddd5385ce2cd2b1a7f2f5e3b0dd4a08cb69a866a6d211adbf20f4d3",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ten-peek-s17-1-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.2809999999590218,
+        "stdout_bytes": 639,
+        "stderr_bytes": 0,
+        "stdout_sha256": "afe1c0e8f6a5e7581d26d5f72700a31c4a32704c9266119182b1c724164c16a5",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "optional-slot-control-1-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.125,
+        "stdout_bytes": 618,
+        "stderr_bytes": 0,
+        "stdout_sha256": "14a538070b18631cb53923871003a7f561fd156212a15cfe0f7ad5545de30f3d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "optional-slot-control-1-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.14100000000325963,
+        "stdout_bytes": 617,
+        "stderr_bytes": 0,
+        "stdout_sha256": "867bdedb5ff18d88e659a85ff3cad117a0df95e465d7be5397e5c959853eb7ad",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ace-peek-h17-2-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.39100000000325963,
+        "stdout_bytes": 547,
+        "stderr_bytes": 0,
+        "stdout_sha256": "8cb8906d86eab9d2affd47057635738fb92c313b47c8e0cace7af4b4ac393165",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ace-peek-h17-2-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.4220000000204891,
+        "stdout_bytes": 548,
+        "stderr_bytes": 0,
+        "stdout_sha256": "9cdf1a655923476174a1676dcf646cc30589e7af646737125c751b6df44e9e29",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "six-s17-2-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.42099999997299165,
+        "stdout_bytes": 548,
+        "stderr_bytes": 0,
+        "stdout_sha256": "4d35df2d1385f34740f761bf55782767e3f9a1bb11b67c969a96f9e509c81b95",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "six-s17-2-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.3130000000237487,
+        "stdout_bytes": 638,
+        "stderr_bytes": 0,
+        "stdout_sha256": "6a3700f87ae550cefc1810e7c7b27333e69b78ef2dcdb0a91a4462c2b42fc42a",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ten-peek-s17-2-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.28100000001722947,
+        "stdout_bytes": 640,
+        "stderr_bytes": 0,
+        "stdout_sha256": "5f5f4de9523b4598f2cb1c8a0a0feb6588a505a027189be30af32104be8ee814",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "ten-peek-s17-2-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.25,
+        "stdout_bytes": 641,
+        "stderr_bytes": 0,
+        "stdout_sha256": "188113aa07e2b3e55a41c58f607e51b55709ab651f884fb26e64b8394b3db27d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "optional-slot-control-2-baseline",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.125,
+        "stdout_bytes": 617,
+        "stderr_bytes": 0,
+        "stdout_sha256": "c9a7afbe1ce229096e69757b7e7d1a55c46ac4320ee34e1eef14e23c1753fcbc",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "optional-slot-control-2-candidate",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.125,
+        "stdout_bytes": 618,
+        "stderr_bytes": 0,
+        "stdout_sha256": "15dcfa44ca6c9fc8397fc58c474d679af9d348549fd45601c0589d1a2bc4451c",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "original-ace-peek-h17",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.8119999999762513,
+        "stdout_bytes": 680,
+        "stderr_bytes": 0,
+        "stdout_sha256": "27ba6806b967ea1a6d0d69749d61a1867a63b5c267d3dadc962406550b867aa6",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "original-six-s17",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.4529999999795109,
+        "stdout_bytes": 678,
+        "stderr_bytes": 0,
+        "stdout_sha256": "5fc07f89318851547c3fb214a8b0e913471c8c270b1d16e6f7eb1b8766c21878",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "original-ten-peek-s17",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.26600000000325963,
+        "stdout_bytes": 678,
+        "stderr_bytes": 0,
+        "stdout_sha256": "7537274b6baec63126497548447378b139dbaf560d472a34d71bf12a660ac387",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      },
+      {
+        "id": "original-optional-slot-control",
+        "status": "returned",
+        "exit_code": 0,
+        "seconds": 0.14100000000325963,
+        "stdout_bytes": 657,
+        "stderr_bytes": 0,
+        "stdout_sha256": "16380f00e8c5f732457ec55d512f1f83808984742bcabf6baa2246f2038f6e9a",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "retired": true,
+        "job_empty": true,
+        "job_assigned_before_input": true
+      }
+    ]
+  },
+  "evidence_boundary": "Original verification compares unchanged arithmetic with explicitly private larger work bounds. Existing separate physical/Fraction tests provide independent mathematical checks. No refused/current-complete timing speed ratio."
+}

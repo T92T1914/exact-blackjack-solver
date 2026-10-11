@@ -44,6 +44,43 @@ Use a new output directory for each attempt. A refused, failed, cancelled,
 timed-out or resource-limited attempt has an explicit outcome and no completed
 decision. It does not replace an earlier successful record.
 
+## A mixed twenty-card calculation
+
+Save the [mixed ace request](../examples/bounded-ace-resplit-mixed-request.json)
+as `bounded-ace-resplit-mixed-request.json`. It supplies original A,A against
+6, S17, DAS enabled and twenty retained cards in the same explicit ace-resplit
+model. The counts still include the concealed dealer hole. Use an installed
+revision that includes this example and a fresh directory for each operation:
+
+```sh
+bj-calculate bounded-ace-resplit-mixed-request.json --output-dir ace-mixed-001 --wall-seconds 30
+bj-replay ace-mixed-001/result/decision.json --output-dir ace-mixed-replay-001 --wall-seconds 30
+bj-advise --replay ace-mixed-001/result/decision.json --json
+```
+
+The first command publishes a complete decision and receipt after its owned
+worker retires. The second recomputes the saved model through the existing
+protected replay owner. The third is direct replay in its caller. Both compare
+the saved values with a fresh calculation, without using them as calculation
+inputs. Open the completed `result/decision.json` in the existing local record
+inspector to examine its inputs, raw values and declared model.
+
+The complete S/H/D/P calculation selected P and entered 59,669 uncached states
+under the original 100,000 state cap in the frozen comparison. The previous
+computation refused at 100,000 admitted entries. Dealer memoization now shares
+equivalent low-total, ace-presence and remaining-count states. The
+[computation report](ace-resplit-dealer-computation.md) retains the complete
+binary64 comparison with the original arithmetic, which needed 121,565 entries
+under a separate verification-only bound. That larger bound is not a product
+option. No card ceiling, legal action, model or operational limit was raised.
+
+This is one additional useful calculation under the existing model. The frozen
+mixed A,A against A, H17 case still refuses at the product cap and publishes
+no completed decision. Twenty cards remains an admission ceiling, not a promise
+that every composition finishes. The result does not establish a general
+speedup, full-shoe coverage or a wagering advantage. DAS remains recorded
+context and does not enable double on a one-card-only ace child.
+
 ## Supply an original A,A and retained counts
 
 The model selector is:

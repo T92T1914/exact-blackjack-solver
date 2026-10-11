@@ -367,6 +367,8 @@ def main():
         ('ace-control-FT', ace_request('7', ace_hidden, double=False)),
         ('ace-control-FF', ace_request('7', ace_hidden, double=False, pair=False)),
         ('ace-extra', ace_request('7', [1]+[0]*8+[5])),
+        ('ace-mixed', ace_request('6', [1, 2, 1, 2, 2, 2, 2, 2, 1, 5],
+                                  rules={'s17': True, 'das': True})),
     ]
     rows = []
     for label, value in cases:
@@ -382,6 +384,16 @@ def main():
             require(evs == {'S': 1.25}, 'declared natural payout differs')
         elif label.startswith('split-'):
             require(evs == {'S': 1.0}, 'ordinary split-21 settlement differs')
+        elif label == 'ace-mixed':
+            require({a: v.hex() for a, v in evs.items()} == {
+                'S': '-0x1.d50aeffd76b9ep-3', 'H': '0x1.8bad5720e5ee0p-3',
+                'D': '0x1.48070df0e5d1cp-4', 'P': '0x1.118ea81b61be8p-1'},
+                'installed mixed ace map differs from frozen original arithmetic')
+            require(saved['decision']['action'] == 'P' and
+                    saved['decision']['margin'].hex() == '0x1.5d46a4a650860p-2' and
+                    saved['schema']['version'] == 6 and row['work']['limit'] == 100000 and
+                    row['work']['states'] == 59669,
+                    'mixed ace result changed action, margin, record family or bounded work')
         elif label.startswith('ace-'):
             reference = {
                 'ace-hidden': {'S': -1, 'H': -1, 'D': -2, 'P': Fraction(3, 10)},
