@@ -210,6 +210,10 @@ its recorded common-model state cap and schema 4 uses its late-surrender
 root-only cap. The calculation worker's deadline and
 memory policy do not silently apply to this later replay command.
 
+For an explicitly owned replay with visible wall and platform memory policy,
+use [protected replay](protected-replay.md). It captures the saved record once
+and retains the same original model and comparison semantics.
+
 Open the [existing project inspector](https://t92t1914.github.io/exact-blackjack-solver/)
 and select `result/decision.json` as local record A. Select another completed record
 as B to compare modeled inputs before raw recorded answers. This browser journey

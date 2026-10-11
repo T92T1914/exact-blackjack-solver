@@ -5,6 +5,10 @@ its modeled inputs and calculates the decision through the installed solver.
 The report shows the saved answer beside the new answer. Add `--json` for a
 machine-readable report with the same status and comparison.
 
+For an explicitly owned worker with a visible wall and platform memory policy,
+use [protected replay](protected-replay.md). The direct commands and APIs below
+retain caller-owned execution and their original comparison behavior.
+
 ```text
 bj-advise --replay saved-decision.json
 bj-advise --replay saved-decision.json --json

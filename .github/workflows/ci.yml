@@ -61,3 +61,6 @@ jobs:
           helper = pathlib.Path('tools/installed_calculation_smoke.py').resolve()
           subprocess.run([str(python), '-I', '-B', str(helper), str(root / 'journey')],
                          cwd=root, check=True, timeout=90)
+          replay_helper = pathlib.Path('tools/installed_replay_smoke.py').resolve()
+          subprocess.run([str(python), '-I', '-B', str(replay_helper), str(root / 'journey'),
+                          str(root / 'protected-replay')], cwd=root, check=True, timeout=90)

@@ -36,6 +36,7 @@ dev = ["pytest", "ruff"]
 [project.scripts]
 bj-advise = "bj.cli:main"
 bj-calculate = "bj.calculation:main"
+bj-replay = "bj.supervised_replay:main"
 
 [project.urls]
 Repository = "https://github.com/T92T1914/exact-blackjack-solver"
