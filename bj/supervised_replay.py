@@ -127,11 +127,16 @@ def _error(value, path):
         raise ValueError(f'{path} must contain string error fields')
 
 
-def _work(value, saved):
+def _work(value, saved, *, complete=False):
+    record = calculation.record
+    if saved['schema']['version'] == record.DEFERRED_SCHEMA_VERSION:
+        calculation._validated_deferred_work(
+            value, saved['model']['enumeration_state_limit'],
+            saved['model']['enumeration_seconds_limit'], complete=complete)
+        return
     from . import bounded_ace_resplit, bounded_resplit, late_surrender
     from ._enumeration import FAMILIES
 
-    record = calculation.record
     families = {
         record.COMMON_SCHEMA_VERSION: FAMILIES,
         record.SURRENDER_SCHEMA_VERSION: late_surrender.ROOT_FAMILIES,
@@ -141,7 +146,7 @@ def _work(value, saved):
     if families is None:
         raise ValueError('this recorded model has no enumeration work report')
     calculation._validated_work(value, saved['model']['enumeration_state_limit'],
-                                complete=False, families=families)
+                                complete=complete, families=families)
 
 
 def _current(saved, recomputed):
@@ -156,7 +161,14 @@ def _current(saved, recomputed):
     bounded = version in (record.COMMON_SCHEMA_VERSION, record.SURRENDER_SCHEMA_VERSION,
                           record.RESPLIT_SCHEMA_VERSION, record.ACE_RESPLIT_SCHEMA_VERSION)
     surrender = version == record.SURRENDER_SCHEMA_VERSION
-    if bounded:
+    deferred = version == record.DEFERRED_SCHEMA_VERSION
+    if deferred:
+        offered = {'S'}
+        if sum(unseen) >= 2:
+            offered.add('H')
+            if can_double:
+                offered.add('D')
+    elif bounded:
         offered = {'S', 'H'} | ({'D'} if can_double else set())
         if surrender:
             if saved['state']['action_controls']['can_surrender']:
@@ -186,11 +198,13 @@ def _current(saved, recomputed):
     values = {action: float(value) for action, value in recomputed['evs'].items()}
     if 'R' in values and values['R'] != -0.5:
         raise ValueError('recomputed late surrender must retain its half-wager loss')
-    order = ('S', 'H', 'D', 'R') if surrender else ('S', 'H', 'D', 'P')
+    order = ('S', 'H', 'D') if deferred else (
+        ('S', 'H', 'D', 'R') if surrender else ('S', 'H', 'D', 'P'))
     ranked = sorted(((action, values[action]) for action in order if action in values),
                     key=lambda item: item[1], reverse=True)
-    margin = ranked[0][1] - ranked[1][1] if len(ranked) > 1 else 0.0
-    if recomputed['action'] != ranked[0][0] or float(recomputed['margin']) != margin:
+    margin = ranked[0][1] - ranked[1][1] if len(ranked) > 1 else None if deferred else 0.0
+    actual_margin = None if recomputed['margin'] is None else float(recomputed['margin'])
+    if recomputed['action'] != ranked[0][0] or actual_margin != margin:
         raise ValueError('recomputed result contradicts its canonical ranking or margin')
 
 
@@ -255,21 +269,43 @@ def _validated_report(raw, captured, path, returncode, policy):
         agreement = (comparison['legal_actions']['matches'] and comparison['evs_match']
                      and comparison['recommendation']['matches']
                      and comparison['margin']['matches'])
-        if (status == 'agreement') != agreement or 'work' in report:
+        deferred = saved['schema']['version'] == calculation.record.DEFERRED_SCHEMA_VERSION
+        if (status == 'agreement') != agreement or ('work' in report) != deferred:
             raise ValueError('completed comparison status or work is inconsistent')
+        if deferred:
+            _work(report['work'], saved, complete=True)
     else:
         if report['recomputed'] is not None or report['comparison'] is not None:
             raise ValueError('incomplete replay must contain no recomputed answer or comparison')
         _error(report['error'], 'replay error')
         if status in ('invalid_input', 'unsupported_record') and admitted:
             raise ValueError('input refusal must not contain admitted data')
-        enumeration = report['error']['type'] == 'EnumerationLimitExceeded'
-        if enumeration and (status != 'resource_limited' or not admitted or 'work' not in report):
+        error_type = report['error']['type']
+        deferred = (admitted and
+                    saved['schema']['version'] == calculation.record.DEFERRED_SCHEMA_VERSION)
+        enumeration = error_type == 'EnumerationLimitExceeded'
+        timed = error_type == 'DeferredTimeLimitExceeded'
+        exhausted = error_type == 'UnsupportedContinuation'
+        if (timed or exhausted) and not deferred:
+            raise ValueError('deferred model refusal lacks its captured family')
+        if (enumeration or timed) and (
+                status != 'resource_limited' or not admitted or 'work' not in report):
             raise ValueError('enumeration refusal must retain its applicable work report')
+        if exhausted and (status != 'calculation_error' or 'work' not in report):
+            raise ValueError('deferred exhaustion must retain refused calculation work')
         if 'work' in report:
-            if status != 'resource_limited' or not admitted or not enumeration:
-                raise ValueError('model work belongs only to an admitted resource refusal')
+            expected_status = 'calculation_error' if exhausted else 'resource_limited'
+            if status != expected_status or not admitted or not (enumeration or timed or exhausted):
+                raise ValueError('model work belongs only to an admitted typed refusal')
             _work(report['work'], saved)
+            if deferred and enumeration:
+                limit = saved['model']['enumeration_state_limit']
+                if (report['work']['states'] != limit or
+                        report['work']['attempted_states'] != limit + 1):
+                    raise ValueError('deferred state refusal did not reach its recorded cap')
+            if (timed and report['work']['elapsed_seconds'] <
+                    saved['model']['enumeration_seconds_limit']):
+                raise ValueError('deferred deadline refusal did not reach its recorded allowance')
     return status, report, report['error']
 
 

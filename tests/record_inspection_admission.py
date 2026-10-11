@@ -1,6 +1,7 @@
-"""Test-only admission and eligibility parity, with all EV routines stubbed.
+"""Test-only admission and eligibility parity, without numerical evaluation.
 
-The action-key check is not independent numerical validation.
+Older action-key checks stub all EV routines. Schema 7 derives its restricted
+menu directly from admitted counts and permission. Neither validates an EV.
 """
 from contextlib import ExitStack
 import json
@@ -21,19 +22,28 @@ def main():
             saved = replay._parse(bytes(case["bytes"]))
             hand, up, unseen, rules, split, hands, double, pair = replay._admit(saved)
             status = "accepted"
-            # Keep existing eligibility branches and replace every valuation.
-            with ExitStack() as replacements:
-                for name in ("_stand_ev", "_hit_ev", "_double_ev", "_split_total_ev"):
-                    replacements.enter_context(patch.object(ev, name, return_value=0.0))
-                _, values, _ = ev.best_action(hand, up, shoe=unseen, rules=rules,
-                                              is_split_hand=split, hand_count=hands,
-                                              can_double=double, can_split=pair)
-            names = ACTION_NAMES
-            if saved['schema']['version'] == record.SURRENDER_SCHEMA_VERSION:
-                names = late_surrender.ACTION_NAMES
-                if saved['state']['action_controls']['can_surrender']:
-                    values['R'] = 0.0  # Eligibility only, not a terminal reward check.
-            permitted.append([action for action in names if action in values])
+            if saved['schema']['version'] == record.DEFERRED_SCHEMA_VERSION:
+                # Do not call the post-peek engine for this distinct timing.
+                actions = ['S']
+                if sum(unseen) >= 2:
+                    actions.append('H')
+                    if double:
+                        actions.append('D')
+                permitted.append(actions)
+            else:
+                # Keep existing eligibility branches and replace every valuation.
+                with ExitStack() as replacements:
+                    for name in ("_stand_ev", "_hit_ev", "_double_ev", "_split_total_ev"):
+                        replacements.enter_context(patch.object(ev, name, return_value=0.0))
+                    _, values, _ = ev.best_action(hand, up, shoe=unseen, rules=rules,
+                                                  is_split_hand=split, hand_count=hands,
+                                                  can_double=double, can_split=pair)
+                names = ACTION_NAMES
+                if saved['schema']['version'] == record.SURRENDER_SCHEMA_VERSION:
+                    names = late_surrender.ACTION_NAMES
+                    if saved['state']['action_controls']['can_surrender']:
+                        values['R'] = 0.0  # Eligibility only, not a terminal reward check.
+                permitted.append([action for action in names if action in values])
         except replay._UnsupportedRecord:
             status = "unsupported_record"
             permitted.append(None)
@@ -45,7 +55,9 @@ def main():
         "outcomes": outcomes,
         "permitted": permitted,
         "eligibility_scope": "best_action action keys with four EV routines stubbed to zero; "
-                             "schema 4 terminal R from admitted current permission",
+                             "schema 4 terminal R from admitted current permission; "
+                             "schema 7 S/H/initial-D menu from admitted counts and permission "
+                             "without EV evaluation",
         "contract": {
             "max_bytes": replay.MAX_RECORD_BYTES,
             "max_depth": replay.MAX_RECORD_DEPTH,
@@ -55,10 +67,12 @@ def main():
             "surrender_schema_version": record.SURRENDER_SCHEMA_VERSION,
             "resplit_schema_version": record.RESPLIT_SCHEMA_VERSION,
             "ace_resplit_schema_version": record.ACE_RESPLIT_SCHEMA_VERSION,
+            "deferred_schema_version": record.DEFERRED_SCHEMA_VERSION,
             "rule_fields": [field.name for field in fields(Rules)],
             "ranks": list(RANKS),
             "actions": ACTION_NAMES,
             "surrender_actions": late_surrender.ACTION_NAMES,
+            "deferred_actions": {'S': 'STAND', 'H': 'HIT', 'D': 'DOUBLE'},
             "models": {rank: record._model_record(rank) for rank in RANKS},
             "surrender_models": {rank: record._surrender_model_record(rank, 100000)
                                  for rank in RANKS},
@@ -66,6 +80,8 @@ def main():
                                for rank in RANKS},
             "ace_resplit_models": {rank: record._ace_resplit_model_record(rank, 100000)
                                    for rank in RANKS},
+            "deferred_models": {rank: record._deferred_model_record(rank, 100000, 10)
+                                for rank in RANKS},
         },
     }))
 

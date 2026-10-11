@@ -26,8 +26,9 @@ def state_limit(value):
 
 
 class _Budget:
-    def __init__(self, limit):
+    def __init__(self, limit, deadline_check=None):
         self.limit = state_limit(limit)
+        self.deadline_check = deadline_check
         self.counts = {}
         self.attempted = 0
         self.lock = Lock()
@@ -46,6 +47,10 @@ class _Budget:
             self.attempted += 1
             if self.attempted > self.limit:
                 raise EnumerationLimitExceeded(self._snapshot())
+            if self.deadline_check is not None:
+                # The hook must not inspect this locked budget. A caller can
+                # attach its snapshot after the refused entry unwinds.
+                self.deadline_check()
             self.counts[family] = self.counts.get(family, 0) + 1
 
 
@@ -57,8 +62,8 @@ def state(family):
 
 
 @contextmanager
-def scope(limit):
-    budget = _Budget(limit)
+def scope(limit, *, deadline_check=None):
+    budget = _Budget(limit, deadline_check)
     token = _active.set(budget)
     try:
         yield budget

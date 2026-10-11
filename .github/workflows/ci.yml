@@ -64,3 +64,6 @@ jobs:
           replay_helper = pathlib.Path('tools/installed_replay_smoke.py').resolve()
           subprocess.run([str(python), '-I', '-B', str(replay_helper), str(root / 'journey'),
                           str(root / 'protected-replay')], cwd=root, check=True, timeout=90)
+          deferred_helper = pathlib.Path('tools/installed_deferred_smoke.py').resolve()
+          subprocess.run([str(python), '-I', '-B', str(deferred_helper),
+                          str(root / 'deferred-dealer')], cwd=root, check=True, timeout=90)

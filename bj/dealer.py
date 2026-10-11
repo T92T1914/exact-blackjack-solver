@@ -123,6 +123,11 @@ def _resolve(total: int, soft: bool, shoe: Shoe, s17: bool) -> tuple[float, ...]
     handled by the caller, so it can never arise inside the draw loop.
     """
     _enumeration_state('root_dealer')
+    return _resolve_body(total, soft, shoe, s17, _resolve)
+
+
+def _resolve_body(total, soft, shoe, s17, resolve):
+    """Share the existing arithmetic across global and request-local caches."""
     if total > 21:
         return _BUST_VECTOR
     if total >= 18:
@@ -162,7 +167,7 @@ def _resolve(total: int, soft: bool, shoe: Shoe, s17: bool) -> tuple[float, ...]
                 # there was only ever one ace being counted high.
                 nt, ns = nt - 10, False
 
-        sub = _resolve(nt, ns, remove_card(shoe, i), s17)
+        sub = resolve(nt, ns, remove_card(shoe, i), s17)
         for k in range(6):
             acc[k] += p * sub[k]
     return tuple(acc)
@@ -182,6 +187,11 @@ def _distribution(up: str, shoe: Shoe, s17: bool, peek_resolved: bool) -> tuple[
     signature as stable for that reason.
     """
     _enumeration_state('root_distribution')
+    return _distribution_body(up, shoe, s17, peek_resolved, _resolve)
+
+
+def _distribution_body(up, shoe, s17, peek_resolved, resolve):
+    """Preserve draw order, natural handling and accumulation expressions."""
     n = shoe_size(shoe)
     if n == 0:
         raise ValueError('empty shoe: the dealer has no hole card to draw')
@@ -226,10 +236,48 @@ def _distribution(up: str, shoe: Shoe, s17: bool, peek_resolved: bool) -> tuple[
         if total > 21:  # only A,A = 22
             total -= 10
 
-        sub = _resolve(total, soft, remove_card(shoe, i), s17)
+        sub = resolve(total, soft, remove_card(shoe, i), s17)
         for k in range(6):
             acc[k] += p * sub[k]
     return tuple(acc)
+
+
+class _RequestLocalDealer:
+    """One owned pair of memo tables using the same dealer arithmetic bodies."""
+
+    def __init__(self, deadline_check):
+        self.deadline_check = deadline_check
+        self._cached_resolve = lru_cache(maxsize=None)(self._resolve)
+        self._cached_distribution = lru_cache(maxsize=None)(self._distribution)
+
+    def _resolve(self, total, soft, shoe, s17):
+        _enumeration_state('root_dealer')
+        return _resolve_body(total, soft, shoe, s17, self.resolve)
+
+    def resolve(self, total, soft, shoe, s17):
+        self.deadline_check()
+        return self._cached_resolve(total, soft, shoe, s17)
+
+    def _distribution(self, up, shoe, s17, peek_resolved):
+        _enumeration_state('root_distribution')
+        return _distribution_body(up, shoe, s17, peek_resolved, self.resolve)
+
+    def distribution(self, up, shoe, s17, peek_resolved):
+        self.deadline_check()
+        return self._cached_distribution(up, shoe, s17, peek_resolved)
+
+    def clear(self):
+        self._cached_resolve.cache_clear()
+        self._cached_distribution.cache_clear()
+
+    def cache_info(self):
+        return (self._cached_resolve.cache_info(),
+                self._cached_distribution.cache_info())
+
+
+def _request_local_cache(deadline_check):
+    """Create isolated caches without reading or clearing the legacy tables."""
+    return _RequestLocalDealer(deadline_check)
 
 
 def dealer_distribution(up, shoe: Shoe, rules: Rules = STANDARD, *,

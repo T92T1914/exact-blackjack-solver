@@ -2,8 +2,8 @@
 
 The record owns normalized copies of the visible cards, remaining rank counts
 and rules. Ordinary records retain the existing post-peek game. Explicit
-bounded records identify their two-hand, non-ace resplit, ace resplit or
-late-surrender model.
+bounded records identify their two-hand, non-ace resplit, ace resplit,
+late-surrender or deferred second-card model.
 No whole-game estimate, timestamp, filename or environment identifier is added.
 """
 from __future__ import annotations
@@ -22,9 +22,11 @@ from .ev import best_action, initial_shoe_for
 
 __all__ = ['SCHEMA_VERSION', 'CONTROLLED_SCHEMA_VERSION', 'COMMON_SCHEMA_VERSION',
            'SURRENDER_SCHEMA_VERSION', 'RESPLIT_SCHEMA_VERSION', 'ACE_RESPLIT_SCHEMA_VERSION',
+           'DEFERRED_SCHEMA_VERSION',
            'decision_record',
            'decision_json', 'common_shoe_record', 'late_surrender_record',
-           'bounded_resplit_record', 'bounded_ace_resplit_record']
+           'bounded_resplit_record', 'bounded_ace_resplit_record',
+           'deferred_second_card_record']
 
 SCHEMA_VERSION = 1
 CONTROLLED_SCHEMA_VERSION = 2
@@ -32,6 +34,7 @@ COMMON_SCHEMA_VERSION = 3
 SURRENDER_SCHEMA_VERSION = 4
 RESPLIT_SCHEMA_VERSION = 5
 ACE_RESPLIT_SCHEMA_VERSION = 6
+DEFERRED_SCHEMA_VERSION = 7
 
 
 class _UnsupportedRules(ValueError):
@@ -87,6 +90,37 @@ def _surrender_rules_record(rules: Rules) -> dict[str, Any]:
     except ValueError as exc:
         raise _UnsupportedRules(str(exc)) from exc
     return values
+
+
+def _deferred_rules_record(rules: Rules) -> dict[str, Any]:
+    from .deferred_second_card import validate_rules
+
+    values = _rule_values(rules)
+    try:
+        validate_rules(rules)
+    except ValueError as exc:
+        raise _UnsupportedRules(str(exc)) from exc
+    return values
+
+
+def _deferred_record_inputs(cards, dealer_up, rules, shoe, is_split_hand, hand_count):
+    """Normalize supplied stock without imposing the historical negative peek."""
+    if shoe is None:
+        raise ValueError('deferred second-card records require explicit retained unseen counts')
+    if type(is_split_hand) is not bool:
+        raise ValueError('is_split_hand must be a boolean')
+    if hand_count is None:
+        hand_count = 1
+    if not isinstance(hand_count, Integral) or isinstance(hand_count, bool):
+        raise ValueError('hand_count must be an integer')
+    if is_split_hand or hand_count != 1:
+        raise ValueError('deferred second-card records require one original unsplit hand')
+    hand, up, unseen = normalize_hand(cards), normalize(dealer_up), normalize_shoe(shoe)
+    if len(hand) != 2 or hand_total(hand)[0] >= 21:
+        raise ValueError('deferred second-card records require two nonnatural cards below 21')
+    if not 1 <= sum(unseen) <= 20:
+        raise ValueError('deferred second-card records require 1..20 retained unseen cards')
+    return hand, up, unseen, int(hand_count)
 
 
 def _record_inputs(cards, dealer_up, rules, shoe, is_split_hand, hand_count):
@@ -161,6 +195,12 @@ def _ace_resplit_model_record(up, max_states):
     return model_record(up, max_states)
 
 
+def _deferred_model_record(up, max_states, max_seconds):
+    from .deferred_second_card import model_record
+
+    return model_record(up, max_states, max_seconds)
+
+
 def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
                     rules: Rules = STANDARD, *, shoe: Shoe | None = None,
                     is_split_hand: bool = False,
@@ -198,7 +238,8 @@ def decision_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
 
 def _decision_document(hand, up, unseen, rule_values, is_split_hand, hand_count,
                        can_double, can_split, action, evs, margin, version, model, fresh,
-                       *, action_names=ACTION_NAMES, can_surrender=None):
+                       *, action_names=ACTION_NAMES, can_surrender=None,
+                       sole_action_margin_none=False, includes_hidden_hole=True):
     """Assemble the shared numerical record without calculating another answer."""
     if not evs or action not in evs or any(key not in action_names for key in evs):
         raise ValueError('solver returned an invalid action set')
@@ -207,10 +248,14 @@ def _decision_document(hand, up, unseen, rule_values, is_split_hand, hand_count,
         if not isinstance(value, Real) or isinstance(value, bool) or not math.isfinite(value):
             raise ValueError('solver returned a nonfinite or invalid action value')
         values[key] = float(value)
-    if not isinstance(margin, Real) or isinstance(margin, bool) or not math.isfinite(margin):
-        raise ValueError('solver returned a nonfinite or invalid decision margin')
     ranked = sorted(values.values(), reverse=True)
-    expected_margin = ranked[0] - ranked[1] if len(ranked) > 1 else 0.0
+    expected_margin = (ranked[0] - ranked[1] if len(ranked) > 1 else
+                       None if sole_action_margin_none else 0.0)
+    if expected_margin is None:
+        if margin is not None:
+            raise ValueError('a sole-action deferred decision has no runner-up margin')
+    elif not isinstance(margin, Real) or isinstance(margin, bool) or not math.isfinite(margin):
+        raise ValueError('solver returned a nonfinite or invalid decision margin')
     if values[action] != ranked[0] or margin != expected_margin:
         raise ValueError('solver returned an inconsistent recommendation or margin')
     total, soft = hand_total(hand)
@@ -227,13 +272,13 @@ def _decision_document(hand, up, unseen, rule_values, is_split_hand, hand_count,
             'shoe': {
                 'rank_order': list(RANKS), 'counts': list(unseen),
                 'source': 'fresh_minus_visible' if fresh else 'supplied_unseen',
-                'includes_hidden_hole': True, 'visible_cards_already_removed': True,
+                'includes_hidden_hole': includes_hidden_hole, 'visible_cards_already_removed': True,
             },
         },
         'rules': rule_values,
         'decision': {
             'action': action, 'action_name': action_names[action], 'evs': values,
-            'margin': float(margin), 'units': 'original_wager',
+            'margin': None if margin is None else float(margin), 'units': 'original_wager',
             'whole_game_estimate': None,
         },
         'model': model,
@@ -396,6 +441,56 @@ def bounded_ace_resplit_record(cards: str | Sequence[CardLike], dealer_up: CardL
     return _bounded_ace_resplit_record(cards, dealer_up, rules, shoe=shoe,
                                        can_double=can_double, can_split=can_split,
                                        max_states=max_states)[0]
+
+
+def _deferred_second_card_record(cards, dealer_up, rules, *, shoe, can_double=True,
+                                 can_split=False, max_states=100_000, max_seconds=10.0):
+    from . import deferred_second_card
+
+    for name, value in (('can_double', can_double), ('can_split', can_split)):
+        if type(value) is not bool:
+            raise ValueError(f'{name} must be a boolean')
+    rule_values = _deferred_rules_record(rules)
+    hand, up, unseen, hand_count = _deferred_record_inputs(
+        cards, dealer_up, rules, shoe, False, 1)
+    deferred_second_card.validate(hand, rules, unseen, False, hand_count, max_states,
+                                  can_split=can_split, max_seconds=max_seconds)
+    action, evs, margin, work = deferred_second_card.decide(
+        hand, up, unseen, rules, can_double=can_double, can_split=can_split,
+        max_states=max_states, max_seconds=max_seconds)
+    offered = {'S'} | ({'H'} | ({'D'} if can_double else set()) if sum(unseen) >= 2 else set())
+    if not isinstance(evs, dict) or set(evs) != offered:
+        raise ValueError('deferred solver did not complete every offered original action')
+    document = _decision_document(
+        hand, up, unseen, rule_values, False, hand_count, can_double, False,
+        action, evs, margin, DEFERRED_SCHEMA_VERSION,
+        _deferred_model_record(up, max_states, max_seconds), False,
+        action_names={key: ACTION_NAMES[key] for key in ('S', 'H', 'D')},
+        sole_action_margin_none=True, includes_hidden_hole=False)
+    values = document['decision']['evs']
+    ordered = sorted(values, key=lambda key: (-values[key], ('S', 'H', 'D').index(key)))
+    if action != ordered[0]:
+        raise ValueError('deferred solver recommendation contradicts its raw stable ranking')
+    return document, work
+
+
+def deferred_second_card_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
+                                rules: Rules, *, shoe: Shoe, can_double: bool = True,
+                                can_split: bool = False, max_states: int = 100_000,
+                                max_seconds: float = 10.0) -> dict[str, Any]:
+    """Record an optional original-hand deferred dealer S/H/D calculation.
+
+    Supply 1..20 unseen cards with visible cards already removed once and no
+    dealer second card removed. Require peek=False and explicitly forbid split
+    and surrender. Initial naturals are outside the model. Dealer natural loses
+    all committed units, including doubles. Any unpriced offered continuation
+    withholds the whole record. One retained card offers only S, with no margin.
+    Full rules retain context, while split, natural premiums and insurance are
+    unpriced. State/time checks are cooperative; this call has no process owner.
+    """
+    return _deferred_second_card_record(
+        cards, dealer_up, rules, shoe=shoe, can_double=can_double, can_split=can_split,
+        max_states=max_states, max_seconds=max_seconds)[0]
 
 
 def decision_json(cards: str | Sequence[CardLike], dealer_up: CardLike,
