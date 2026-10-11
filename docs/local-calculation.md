@@ -30,6 +30,11 @@ domain adds a whole-request enumeration cap and produces schema 3 records.
 For one original initial hand with post-peek late surrender, select the
 [version 3 late-surrender request](late-surrender-calculation.md). That bounded
 family produces schema 4 records with explicit current surrender permission.
+The existing [non-ace resplit guide](bounded-resplit-calculation.md),
+[one-card ace resplit guide](bounded-ace-resplit-calculation.md) and
+[deferred second-card guide](deferred-second-card-calculation.md) describe
+the separately selected later families. Each retains its own supported actions,
+information convention, work cap and saved-record model.
 
 ## Supply modeled inputs
 

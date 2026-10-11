@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "id": "joint-dealer-state-compression-v1",
+  "base_revision": "7f2cbe0900d4b88325984c00732d18c88290e17e",
+  "base_tree": "458623a81f831ec4889c458a70beab26b328af6f",
+  "model": "common_shoe_two_hand v1; sequential two hands no resplit, completed negative peek, binary64 S/H/D/P",
+  "candidate": "Only joint_split dealer memo key becomes (integer low total, boolean ace presence, remaining counts); captured S17, rank iteration, ordered outcome insertion, multiplication and fsum are unchanged. Player memo and all other model recurrences unchanged.",
+  "input_ceiling": 20,
+  "product_max_states": 100000,
+  "exploratory_already_profiled": [
+    {
+      "pair": "A",
+      "up": "2",
+      "counts": [
+        0,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        4
+      ],
+      "s17": true,
+      "das": true
+    },
+    {
+      "pair": "A",
+      "up": "A",
+      "counts": [
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        4
+      ],
+      "s17": false,
+      "das": true
+    },
+    {
+      "pair": "A",
+      "up": "2",
+      "counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        3,
+        3,
+        5
+      ],
+      "s17": true,
+      "das": true
+    }
+  ],
+  "deciding": [
+    {
+      "id": "mixed-3-s17",
+      "pair": "A",
+      "up": "3",
+      "counts": [
+        0,
+        3,
+        1,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        5
+      ],
+      "s17": true,
+      "das": true
+    },
+    {
+      "id": "mixed-6-h17",
+      "pair": "A",
+      "up": "6",
+      "counts": [
+        0,
+        2,
+        3,
+        1,
+        2,
+        2,
+        1,
+        2,
+        2,
+        5
+      ],
+      "s17": false,
+      "das": false
+    },
+    {
+      "id": "ace-peek-h17",
+      "pair": "A",
+      "up": "A",
+      "counts": [
+        2,
+        1,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        4
+      ],
+      "s17": false,
+      "das": true
+    },
+    {
+      "id": "ten-peek-s17",
+      "pair": "A",
+      "up": "T",
+      "counts": [
+        2,
+        2,
+        1,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        4
+      ],
+      "s17": true,
+      "das": false
+    }
+  ],
+  "exact_equivalence": "All previously complete cases compare ordered complete action maps and selected action/margin using float.hex, controls and input unchanged; no epsilon. Larger newly complete maps require bounded original arithmetic completion for comparison. Original root ev arithmetic plus original standalone joint_split_value may use an explicitly separate verification cap500000 joint entered bodies, never the installed product max100000. Retain all cap outcomes and refuse beyond that verifier bound.",
+  "independent_arithmetic": "Reuse existing physical permutations/Fraction joint oracle and original full root S/H/D reference tests; distinguish mathematical comparison tolerance from bitwise engine equivalence and strict saved float replay.",
+  "acceptance": "At least one predeclared useful twenty-card full S/H/D/P request previously refused at product100000 now complete at samecap; every complete map bitwise agrees with bounded original arithmetic; all unsupported/low-work/oldmodel contracts and installed record/direct/protected replay/inspection pass. If no coverage gain, require >=10% aggregate paired timing gain on predeclared previously complete families, otherwise reject. Coverage result is not speedup from refusal.",
+  "timing": "Fresh process per cell, 3 repetitions baseline/candidate alternating, time only complete common_shoe.decide call excluding imports/root/rules, output/serialization. No speedup ratio comparing refusal and completion. Report all timings and states.",
+  "resources": "One serial root-owned engineering runtime, 512MiB aggregate Windows Job committed memory, peroperation<=30sec/cleanup5sec, actual aggregate host load samples, userprocesses preserved. No worker changes or memory/RSS claim. Product original10sec cooperative/fullsupervisor unchanged.",
+  "failures": "Exclusive freshoutputs; preserve malformed/unsupported/time/cap/mismatch; no silentbranch omission/defaultchange/capincrease. Failed deciding objective remains visible and cannot be replaced by narrowdocrepair.",
+  "identity": "Freeze protocol before candidate; pin committed baseline/candidate/bodyhashes. Computation method name joint_dealer_low_ace_counts_binary64_v1 documented separately from unchanged mathematical model. Stable records remain current schemas, workcounts actualnewbodyentries change legitimately.",
+  "release": "Independent integratedsource/numericalreview, scopedexistingtests, currentrequiredCI/normalmerge, actualfreshinstalledgenerated/publishedconsumeracceptance. No README/profile edit."
+}

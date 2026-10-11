@@ -1,0 +1,1861 @@
+{
+  "measurement_cell_source": "\"\"\"Frozen full-map comparison; verification mode never changes product limits.\"\"\"\nimport hashlib\nimport json\nimport sys\nimport time\nfrom pathlib import Path\nsource, case_json, mode, output = sys.argv[1:]\nsys.path.insert(0,source)\nfrom bj import ev, joint_split\nfrom bj import _enumeration\nfrom bj.common_shoe import decide, reference_counts\nfrom bj.core import Rules\ncase=json.loads(case_json)\nrules=Rules(max_hands=2,resplit_aces=False,hit_split_aces=False,\n            s17=case['s17'],das=case['das'])\nhand=(case['pair'],case['pair'])\ncounts=tuple(case['counts'])\ntoken=None\nclass VerificationBudget:\n    \"\"\"Count original arithmetic entries without weakening installed scope().\"\"\"\n    def __init__(self):\n        self.counts={}\n        self.attempted=0\n    def enter(self,family):\n        self.attempted+=1\n        if self.attempted>500000:\n            raise RuntimeError('separate original-arithmetic verification cap exceeded')\n        self.counts[family]=self.counts.get(family,0)+1\n    def snapshot(self):\n        return {'verification_only':True,'limit':500000,'states':sum(self.counts.values()),\n                'attempted_states':self.attempted,'state_counts':dict(sorted(self.counts.items()))}\nstart=time.perf_counter()\ntry:\n    if mode=='original-verification':\n        budget=VerificationBudget()\n        token=_enumeration._active.set(budget)\n        _,values,_=ev.best_action(hand,case['up'],shoe=counts,rules=rules,\n                                 can_double=True,can_split=False)\n        split=joint_split.joint_split_value(case['pair'],case['up'],reference_counts(counts),\n                  double_after_split=rules.das,stand_soft_17=rules.s17,max_states=500000)\n        values['P']=split.value\n        ordered=sorted(values.items(),key=lambda row:row[1],reverse=True)\n        action=ordered[0][0]\n        margin=ordered[0][1]-ordered[1][1]\n        work=budget.snapshot()\n    else:\n        action,values,margin,work=decide(hand,case['up'],counts,rules,max_states=100000)\n    record={'status':'complete','action':action,'values_hex':{k:v.hex() for k,v in values.items()},\n            'margin_hex':margin.hex(),'work':work}\nexcept Exception as exc:\n    record={'status':'refused','type':type(exc).__name__,'reason':str(exc),\n            'work':getattr(exc,'work',None)}\nfinally:\n    if token is not None:\n        _enumeration._active.reset(token)\nrecord.update(case=case,mode=mode,elapsed_call_seconds=time.perf_counter()-start,\n              product_limit_unchanged=_enumeration.MAX_STATES==100000,\n              verification_bound_only=mode=='original-verification')\nrecord['source_sha256']={str(p.relative_to(source)).replace('\\\\','/'):\n   hashlib.sha256(p.read_text(encoding='utf-8-sig').replace('\\r\\n','\\n').encode()).hexdigest()\n   for p in [Path(source,'bj/joint_split.py'),Path(source,'bj/common_shoe.py'),\n             Path(source,'bj/ev.py'),Path(source,'bj/_enumeration.py')]}\nwith Path(output).open('x',encoding='utf-8') as stream:\n    json.dump(record,stream,indent=2,allow_nan=False)\n    stream.write('\\n')\nprint(json.dumps({k:v for k,v in record.items() if k not in ('source_sha256','case')}))\n",
+  "protocol_sha256": "6c600bb9585f3e5b1d520c97833031b8e48143b32f51772e7ff1735538e2ef34",
+  "records": [
+    {
+      "record": {
+        "status": "refused",
+        "type": "EnumerationLimitExceeded",
+        "reason": "whole-request enumeration state limit exceeded",
+        "work": {
+          "limit": 100000,
+          "states": 100000,
+          "attempted_states": 100001,
+          "state_counts": {
+            "joint_dealer": 37709,
+            "joint_draw": 3,
+            "joint_play": 22,
+            "joint_settle": 17,
+            "root_dealer": 61024,
+            "root_distribution": 468,
+            "root_double": 1,
+            "root_draw": 378,
+            "root_hit": 378
+          }
+        },
+        "case": {
+          "id": "ace-peek-h17",
+          "pair": "A",
+          "up": "A",
+          "counts": [
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": false,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.24528660002397373,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "4815cf5818681d9bfcb223a3b47662a849d1857b30b4064d2d5e5d1ba1511b2d",
+      "filename": "deciding-ace-peek-h17-0-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.5a111902c4bf3p-1",
+          "H": "0x1.f237d5793a25cp-6",
+          "D": "-0x1.2917e8ad4dcdap-1",
+          "P": "-0x1.875af261bdc11p-3"
+        },
+        "margin_hex": "0x1.c5a1ed10e505cp-3",
+        "work": {
+          "limit": 100000,
+          "states": 92358,
+          "attempted_states": 92358,
+          "state_counts": {
+            "joint_dealer": 29881,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 61024,
+            "root_distribution": 468,
+            "root_double": 1,
+            "root_draw": 378,
+            "root_hit": 378
+          }
+        },
+        "case": {
+          "id": "ace-peek-h17",
+          "pair": "A",
+          "up": "A",
+          "counts": [
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": false,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.23280520003754646,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "4d48a8f6607f6beb781897b1c92693b72f0607968c199614c9456b3f5b5310e7",
+      "filename": "deciding-ace-peek-h17-0-candidate.json"
+    },
+    {
+      "record": {
+        "status": "refused",
+        "type": "EnumerationLimitExceeded",
+        "reason": "whole-request enumeration state limit exceeded",
+        "work": {
+          "limit": 100000,
+          "states": 100000,
+          "attempted_states": 100001,
+          "state_counts": {
+            "joint_dealer": 37709,
+            "joint_draw": 3,
+            "joint_play": 22,
+            "joint_settle": 17,
+            "root_dealer": 61024,
+            "root_distribution": 468,
+            "root_double": 1,
+            "root_draw": 378,
+            "root_hit": 378
+          }
+        },
+        "case": {
+          "id": "ace-peek-h17",
+          "pair": "A",
+          "up": "A",
+          "counts": [
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": false,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.24545069999294356,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "bbd19b0539bb4af1b58ad88f795d3f935c94f371e7595f18e973f69003f3e984",
+      "filename": "deciding-ace-peek-h17-1-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.5a111902c4bf3p-1",
+          "H": "0x1.f237d5793a25cp-6",
+          "D": "-0x1.2917e8ad4dcdap-1",
+          "P": "-0x1.875af261bdc11p-3"
+        },
+        "margin_hex": "0x1.c5a1ed10e505cp-3",
+        "work": {
+          "limit": 100000,
+          "states": 92358,
+          "attempted_states": 92358,
+          "state_counts": {
+            "joint_dealer": 29881,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 61024,
+            "root_distribution": 468,
+            "root_double": 1,
+            "root_draw": 378,
+            "root_hit": 378
+          }
+        },
+        "case": {
+          "id": "ace-peek-h17",
+          "pair": "A",
+          "up": "A",
+          "counts": [
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": false,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.2358148000203073,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "0b9c5b811df000168e6d0883b047f5c008ce3f9166890a919435d427831e41fc",
+      "filename": "deciding-ace-peek-h17-1-candidate.json"
+    },
+    {
+      "record": {
+        "status": "refused",
+        "type": "EnumerationLimitExceeded",
+        "reason": "whole-request enumeration state limit exceeded",
+        "work": {
+          "limit": 100000,
+          "states": 100000,
+          "attempted_states": 100001,
+          "state_counts": {
+            "joint_dealer": 37709,
+            "joint_draw": 3,
+            "joint_play": 22,
+            "joint_settle": 17,
+            "root_dealer": 61024,
+            "root_distribution": 468,
+            "root_double": 1,
+            "root_draw": 378,
+            "root_hit": 378
+          }
+        },
+        "case": {
+          "id": "ace-peek-h17",
+          "pair": "A",
+          "up": "A",
+          "counts": [
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": false,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.25009899999713525,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "934adc572044fbe790f2e2cb9991b78246de1b6cf0165747271df28257f0bce2",
+      "filename": "deciding-ace-peek-h17-2-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.5a111902c4bf3p-1",
+          "H": "0x1.f237d5793a25cp-6",
+          "D": "-0x1.2917e8ad4dcdap-1",
+          "P": "-0x1.875af261bdc11p-3"
+        },
+        "margin_hex": "0x1.c5a1ed10e505cp-3",
+        "work": {
+          "limit": 100000,
+          "states": 92358,
+          "attempted_states": 92358,
+          "state_counts": {
+            "joint_dealer": 29881,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 61024,
+            "root_distribution": 468,
+            "root_double": 1,
+            "root_draw": 378,
+            "root_hit": 378
+          }
+        },
+        "case": {
+          "id": "ace-peek-h17",
+          "pair": "A",
+          "up": "A",
+          "counts": [
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": false,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.2522997999913059,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "1636240cc7e31c192a253ddcf36d053779f726e0f04b77545d6b035e5b6553d0",
+      "filename": "deciding-ace-peek-h17-2-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.244ef9a44ef9ap-2",
+          "H": "0x1.908532473374ap-3",
+          "D": "0x1.63f327e54c150p-4",
+          "P": "0x1.e3dec4fa1a0dbp-2"
+        },
+        "margin_hex": "0x1.1b9c2bd680536p-2",
+        "work": {
+          "limit": 100000,
+          "states": 88857,
+          "attempted_states": 88857,
+          "state_counts": {
+            "joint_dealer": 65637,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 22416,
+            "root_distribution": 236,
+            "root_double": 1,
+            "root_draw": 190,
+            "root_hit": 190
+          }
+        },
+        "case": {
+          "id": "mixed-3-s17",
+          "pair": "A",
+          "up": "3",
+          "counts": [
+            0,
+            3,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            5
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.23391199996694922,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "d66bc6894a7c2699ea4b22c68e10b99cbbf4970a8245bd40e033343b1191e593",
+      "filename": "deciding-mixed-3-s17-0-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.244ef9a44ef9ap-2",
+          "H": "0x1.908532473374ap-3",
+          "D": "0x1.63f327e54c150p-4",
+          "P": "0x1.e3dec4fa1a0dbp-2"
+        },
+        "margin_hex": "0x1.1b9c2bd680536p-2",
+        "work": {
+          "limit": 100000,
+          "states": 34001,
+          "attempted_states": 34001,
+          "state_counts": {
+            "joint_dealer": 10781,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 22416,
+            "root_distribution": 236,
+            "root_double": 1,
+            "root_draw": 190,
+            "root_hit": 190
+          }
+        },
+        "case": {
+          "id": "mixed-3-s17",
+          "pair": "A",
+          "up": "3",
+          "counts": [
+            0,
+            3,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            5
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.0935633999761194,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "4d512c57c35f1cc3ae5c8dfb6413362765ba9a8e3607ce8daf51fb1e6c7b6d02",
+      "filename": "deciding-mixed-3-s17-0-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.244ef9a44ef9ap-2",
+          "H": "0x1.908532473374ap-3",
+          "D": "0x1.63f327e54c150p-4",
+          "P": "0x1.e3dec4fa1a0dbp-2"
+        },
+        "margin_hex": "0x1.1b9c2bd680536p-2",
+        "work": {
+          "limit": 100000,
+          "states": 88857,
+          "attempted_states": 88857,
+          "state_counts": {
+            "joint_dealer": 65637,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 22416,
+            "root_distribution": 236,
+            "root_double": 1,
+            "root_draw": 190,
+            "root_hit": 190
+          }
+        },
+        "case": {
+          "id": "mixed-3-s17",
+          "pair": "A",
+          "up": "3",
+          "counts": [
+            0,
+            3,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            5
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.2393881999887526,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "d22858037849797835aacb744c7c12cd41d6013d611f70b775a838cc40dbeef3",
+      "filename": "deciding-mixed-3-s17-1-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.244ef9a44ef9ap-2",
+          "H": "0x1.908532473374ap-3",
+          "D": "0x1.63f327e54c150p-4",
+          "P": "0x1.e3dec4fa1a0dbp-2"
+        },
+        "margin_hex": "0x1.1b9c2bd680536p-2",
+        "work": {
+          "limit": 100000,
+          "states": 34001,
+          "attempted_states": 34001,
+          "state_counts": {
+            "joint_dealer": 10781,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 22416,
+            "root_distribution": 236,
+            "root_double": 1,
+            "root_draw": 190,
+            "root_hit": 190
+          }
+        },
+        "case": {
+          "id": "mixed-3-s17",
+          "pair": "A",
+          "up": "3",
+          "counts": [
+            0,
+            3,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            5
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.09071929997298867,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "87a1f611e676460298cf7316dfc4e0cb0e733c5e95fc0c5520d3465836ec3eef",
+      "filename": "deciding-mixed-3-s17-1-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.244ef9a44ef9ap-2",
+          "H": "0x1.908532473374ap-3",
+          "D": "0x1.63f327e54c150p-4",
+          "P": "0x1.e3dec4fa1a0dbp-2"
+        },
+        "margin_hex": "0x1.1b9c2bd680536p-2",
+        "work": {
+          "limit": 100000,
+          "states": 88857,
+          "attempted_states": 88857,
+          "state_counts": {
+            "joint_dealer": 65637,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 22416,
+            "root_distribution": 236,
+            "root_double": 1,
+            "root_draw": 190,
+            "root_hit": 190
+          }
+        },
+        "case": {
+          "id": "mixed-3-s17",
+          "pair": "A",
+          "up": "3",
+          "counts": [
+            0,
+            3,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            5
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.23601600003894418,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "f123f4ac89bbbd656f4dc6aa614ee2f9a7d2a6286abd96b558a541432f43b3b6",
+      "filename": "deciding-mixed-3-s17-2-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.244ef9a44ef9ap-2",
+          "H": "0x1.908532473374ap-3",
+          "D": "0x1.63f327e54c150p-4",
+          "P": "0x1.e3dec4fa1a0dbp-2"
+        },
+        "margin_hex": "0x1.1b9c2bd680536p-2",
+        "work": {
+          "limit": 100000,
+          "states": 34001,
+          "attempted_states": 34001,
+          "state_counts": {
+            "joint_dealer": 10781,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 22416,
+            "root_distribution": 236,
+            "root_double": 1,
+            "root_draw": 190,
+            "root_hit": 190
+          }
+        },
+        "case": {
+          "id": "mixed-3-s17",
+          "pair": "A",
+          "up": "3",
+          "counts": [
+            0,
+            3,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            5
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.09255810000468045,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "106c17213c77278cc26604754abbb45c19ef490c146e6b5c0de8bbcacd14dbc0",
+      "filename": "deciding-mixed-3-s17-2-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.7955675e62e08p-3",
+          "H": "0x1.c67c568bc34cap-3",
+          "D": "0x1.635c2c912bab3p-3",
+          "P": "0x1.18c64df085a17p-1"
+        },
+        "margin_hex": "0x1.4e4e709b299c9p-2",
+        "work": {
+          "limit": 100000,
+          "states": 38691,
+          "attempted_states": 38691,
+          "state_counts": {
+            "joint_dealer": 21135,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 16716,
+            "root_distribution": 250,
+            "root_double": 1,
+            "root_draw": 201,
+            "root_hit": 201
+          }
+        },
+        "case": {
+          "id": "mixed-6-h17",
+          "pair": "A",
+          "up": "6",
+          "counts": [
+            0,
+            2,
+            3,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            5
+          ],
+          "s17": false,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.09511669998755679,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "2c5bc53457f8005ed8ee9f41cc82368b31d9481cb725db4e4d7c0f725b9809a9",
+      "filename": "deciding-mixed-6-h17-0-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.7955675e62e08p-3",
+          "H": "0x1.c67c568bc34cap-3",
+          "D": "0x1.635c2c912bab3p-3",
+          "P": "0x1.18c64df085a17p-1"
+        },
+        "margin_hex": "0x1.4e4e709b299c9p-2",
+        "work": {
+          "limit": 100000,
+          "states": 24243,
+          "attempted_states": 24243,
+          "state_counts": {
+            "joint_dealer": 6687,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 16716,
+            "root_distribution": 250,
+            "root_double": 1,
+            "root_draw": 201,
+            "root_hit": 201
+          }
+        },
+        "case": {
+          "id": "mixed-6-h17",
+          "pair": "A",
+          "up": "6",
+          "counts": [
+            0,
+            2,
+            3,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            5
+          ],
+          "s17": false,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.05817659996682778,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "6226cb54be6af46a4348638dd31d93e55ff794f7f52cb976bf23473c5e5d4e69",
+      "filename": "deciding-mixed-6-h17-0-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.7955675e62e08p-3",
+          "H": "0x1.c67c568bc34cap-3",
+          "D": "0x1.635c2c912bab3p-3",
+          "P": "0x1.18c64df085a17p-1"
+        },
+        "margin_hex": "0x1.4e4e709b299c9p-2",
+        "work": {
+          "limit": 100000,
+          "states": 38691,
+          "attempted_states": 38691,
+          "state_counts": {
+            "joint_dealer": 21135,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 16716,
+            "root_distribution": 250,
+            "root_double": 1,
+            "root_draw": 201,
+            "root_hit": 201
+          }
+        },
+        "case": {
+          "id": "mixed-6-h17",
+          "pair": "A",
+          "up": "6",
+          "counts": [
+            0,
+            2,
+            3,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            5
+          ],
+          "s17": false,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.09720519999973476,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "926bb7e527a70becfd50f4f2243125228d10d9b15393a6190229a9bbf30de65c",
+      "filename": "deciding-mixed-6-h17-1-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.7955675e62e08p-3",
+          "H": "0x1.c67c568bc34cap-3",
+          "D": "0x1.635c2c912bab3p-3",
+          "P": "0x1.18c64df085a17p-1"
+        },
+        "margin_hex": "0x1.4e4e709b299c9p-2",
+        "work": {
+          "limit": 100000,
+          "states": 24243,
+          "attempted_states": 24243,
+          "state_counts": {
+            "joint_dealer": 6687,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 16716,
+            "root_distribution": 250,
+            "root_double": 1,
+            "root_draw": 201,
+            "root_hit": 201
+          }
+        },
+        "case": {
+          "id": "mixed-6-h17",
+          "pair": "A",
+          "up": "6",
+          "counts": [
+            0,
+            2,
+            3,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            5
+          ],
+          "s17": false,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.058072299987543374,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "11e1d56163500caac702ae0743cbfd11a27b8e940bf24569b5519fc7744c8a61",
+      "filename": "deciding-mixed-6-h17-1-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.7955675e62e08p-3",
+          "H": "0x1.c67c568bc34cap-3",
+          "D": "0x1.635c2c912bab3p-3",
+          "P": "0x1.18c64df085a17p-1"
+        },
+        "margin_hex": "0x1.4e4e709b299c9p-2",
+        "work": {
+          "limit": 100000,
+          "states": 38691,
+          "attempted_states": 38691,
+          "state_counts": {
+            "joint_dealer": 21135,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 16716,
+            "root_distribution": 250,
+            "root_double": 1,
+            "root_draw": 201,
+            "root_hit": 201
+          }
+        },
+        "case": {
+          "id": "mixed-6-h17",
+          "pair": "A",
+          "up": "6",
+          "counts": [
+            0,
+            2,
+            3,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            5
+          ],
+          "s17": false,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.09418650000588968,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "46dcca8fcd818b3bb71e6722f7037f69c264c522439f1011410e51fb035a87ec",
+      "filename": "deciding-mixed-6-h17-2-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.7955675e62e08p-3",
+          "H": "0x1.c67c568bc34cap-3",
+          "D": "0x1.635c2c912bab3p-3",
+          "P": "0x1.18c64df085a17p-1"
+        },
+        "margin_hex": "0x1.4e4e709b299c9p-2",
+        "work": {
+          "limit": 100000,
+          "states": 24243,
+          "attempted_states": 24243,
+          "state_counts": {
+            "joint_dealer": 6687,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 16716,
+            "root_distribution": 250,
+            "root_double": 1,
+            "root_draw": 201,
+            "root_hit": 201
+          }
+        },
+        "case": {
+          "id": "mixed-6-h17",
+          "pair": "A",
+          "up": "6",
+          "counts": [
+            0,
+            2,
+            3,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            5
+          ],
+          "s17": false,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.058340499992482364,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "0d03d8219e0d3a4bb34366fd73d60cbca11b44e13f7dbf93835095fa0bfc1a9c",
+      "filename": "deciding-mixed-6-h17-2-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.180d128fd1308p-1",
+          "H": "0x1.ed74a21e7178dp-4",
+          "D": "-0x1.4b8f2d5e45d20p-2",
+          "P": "-0x1.8bbaa32ee90bcp-6"
+        },
+        "margin_hex": "0x1.2831a57515ddep-3",
+        "work": {
+          "limit": 100000,
+          "states": 32083,
+          "attempted_states": 32083,
+          "state_counts": {
+            "joint_dealer": 10195,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 20297,
+            "root_distribution": 522,
+            "root_double": 1,
+            "root_draw": 420,
+            "root_hit": 420
+          }
+        },
+        "case": {
+          "id": "ten-peek-s17",
+          "pair": "A",
+          "up": "T",
+          "counts": [
+            2,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": true,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.06866990000708029,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "e12a44f26b9c8e64e8a84a20ff5a7913289bd350f45796e7be1c3070b222b14c",
+      "filename": "deciding-ten-peek-s17-0-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.180d128fd1308p-1",
+          "H": "0x1.ed74a21e7178dp-4",
+          "D": "-0x1.4b8f2d5e45d20p-2",
+          "P": "-0x1.8bbaa32ee90bcp-6"
+        },
+        "margin_hex": "0x1.2831a57515ddep-3",
+        "work": {
+          "limit": 100000,
+          "states": 28046,
+          "attempted_states": 28046,
+          "state_counts": {
+            "joint_dealer": 6158,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 20297,
+            "root_distribution": 522,
+            "root_double": 1,
+            "root_draw": 420,
+            "root_hit": 420
+          }
+        },
+        "case": {
+          "id": "ten-peek-s17",
+          "pair": "A",
+          "up": "T",
+          "counts": [
+            2,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": true,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.05797219998203218,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "30678a32cc5d79e665200662e9e130a8ea36ce224c0aa5b06032bddc3ad17a84",
+      "filename": "deciding-ten-peek-s17-0-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.180d128fd1308p-1",
+          "H": "0x1.ed74a21e7178dp-4",
+          "D": "-0x1.4b8f2d5e45d20p-2",
+          "P": "-0x1.8bbaa32ee90bcp-6"
+        },
+        "margin_hex": "0x1.2831a57515ddep-3",
+        "work": {
+          "limit": 100000,
+          "states": 32083,
+          "attempted_states": 32083,
+          "state_counts": {
+            "joint_dealer": 10195,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 20297,
+            "root_distribution": 522,
+            "root_double": 1,
+            "root_draw": 420,
+            "root_hit": 420
+          }
+        },
+        "case": {
+          "id": "ten-peek-s17",
+          "pair": "A",
+          "up": "T",
+          "counts": [
+            2,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": true,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.07207039999775589,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "09d3b4dd8153de2850f8962a8e40f9dcd33cb5148c336c5154fb03a6186e1646",
+      "filename": "deciding-ten-peek-s17-1-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.180d128fd1308p-1",
+          "H": "0x1.ed74a21e7178dp-4",
+          "D": "-0x1.4b8f2d5e45d20p-2",
+          "P": "-0x1.8bbaa32ee90bcp-6"
+        },
+        "margin_hex": "0x1.2831a57515ddep-3",
+        "work": {
+          "limit": 100000,
+          "states": 28046,
+          "attempted_states": 28046,
+          "state_counts": {
+            "joint_dealer": 6158,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 20297,
+            "root_distribution": 522,
+            "root_double": 1,
+            "root_draw": 420,
+            "root_hit": 420
+          }
+        },
+        "case": {
+          "id": "ten-peek-s17",
+          "pair": "A",
+          "up": "T",
+          "counts": [
+            2,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": true,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.057604100031312555,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "adf4e7adf0f39d305b88e427a48756896fcf44786d11d5cc4ee911a5c1fa536e",
+      "filename": "deciding-ten-peek-s17-1-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.180d128fd1308p-1",
+          "H": "0x1.ed74a21e7178dp-4",
+          "D": "-0x1.4b8f2d5e45d20p-2",
+          "P": "-0x1.8bbaa32ee90bcp-6"
+        },
+        "margin_hex": "0x1.2831a57515ddep-3",
+        "work": {
+          "limit": 100000,
+          "states": 32083,
+          "attempted_states": 32083,
+          "state_counts": {
+            "joint_dealer": 10195,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 20297,
+            "root_distribution": 522,
+            "root_double": 1,
+            "root_draw": 420,
+            "root_hit": 420
+          }
+        },
+        "case": {
+          "id": "ten-peek-s17",
+          "pair": "A",
+          "up": "T",
+          "counts": [
+            2,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": true,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.07012270000996068,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "30d64d51652f6411241c0704b7be54b82abe6e92152afd3e0bb9e5d05c9ca700",
+      "filename": "deciding-ten-peek-s17-2-baseline.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.180d128fd1308p-1",
+          "H": "0x1.ed74a21e7178dp-4",
+          "D": "-0x1.4b8f2d5e45d20p-2",
+          "P": "-0x1.8bbaa32ee90bcp-6"
+        },
+        "margin_hex": "0x1.2831a57515ddep-3",
+        "work": {
+          "limit": 100000,
+          "states": 28046,
+          "attempted_states": 28046,
+          "state_counts": {
+            "joint_dealer": 6158,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 20297,
+            "root_distribution": 522,
+            "root_double": 1,
+            "root_draw": 420,
+            "root_hit": 420
+          }
+        },
+        "case": {
+          "id": "ten-peek-s17",
+          "pair": "A",
+          "up": "T",
+          "counts": [
+            2,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": true,
+          "das": false
+        },
+        "mode": "product",
+        "elapsed_call_seconds": 0.05744070000946522,
+        "product_limit_unchanged": true,
+        "verification_bound_only": false,
+        "source_sha256": {
+          "bj/joint_split.py": "72981958adb08ff7dcec294a1409de0d2b02602de9ef7f15df6e2d0627df0676",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "a144d837a3211a52b21beee8d0b4981b8d2e4eb258bdadc9cc7e729725f830f8",
+      "filename": "deciding-ten-peek-s17-2-candidate.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.5a111902c4bf3p-1",
+          "H": "0x1.f237d5793a25cp-6",
+          "D": "-0x1.2917e8ad4dcdap-1",
+          "P": "-0x1.875af261bdc11p-3"
+        },
+        "margin_hex": "0x1.c5a1ed10e505cp-3",
+        "work": {
+          "verification_only": true,
+          "limit": 500000,
+          "states": 232005,
+          "attempted_states": 232005,
+          "state_counts": {
+            "joint_dealer": 169528,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 61024,
+            "root_distribution": 468,
+            "root_double": 1,
+            "root_draw": 378,
+            "root_hit": 378
+          }
+        },
+        "case": {
+          "id": "ace-peek-h17",
+          "pair": "A",
+          "up": "A",
+          "counts": [
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": false,
+          "das": true
+        },
+        "mode": "original-verification",
+        "elapsed_call_seconds": 0.5937250999850221,
+        "product_limit_unchanged": true,
+        "verification_bound_only": true,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "3c424fe0d62c258f5ada3431d22bca6fba1cee3b546a2af45afeaa8f59c7dc4a",
+      "filename": "original-ace-peek-h17.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.67b2d5440ca86p-1",
+          "H": "0x1.b4fb3fa0a2834p-6",
+          "D": "-0x1.7de4ca7c35a20p-1",
+          "P": "-0x1.52e4f3ec702e6p-2"
+        },
+        "margin_hex": "0x1.6e34a7e67a569p-2",
+        "work": {
+          "verification_only": true,
+          "limit": 500000,
+          "states": 207929,
+          "attempted_states": 207929,
+          "state_counts": {
+            "joint_dealer": 137860,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 68561,
+            "root_distribution": 491,
+            "root_double": 1,
+            "root_draw": 394,
+            "root_hit": 394
+          }
+        },
+        "case": {
+          "id": "explore-ace-h17",
+          "pair": "A",
+          "up": "A",
+          "counts": [
+            1,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            1,
+            4
+          ],
+          "s17": false,
+          "das": true
+        },
+        "mode": "original-verification",
+        "elapsed_call_seconds": 0.531478299992159,
+        "product_limit_unchanged": true,
+        "verification_bound_only": true,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "a9c12694efac1122690d1ffc145a487ebd909f5a92f238d23e42f3d7aa42685b",
+      "filename": "original-explore-ace-h17.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.6db6db6db6db8p-1",
+          "H": "0x1.08f377f1ada68p-2",
+          "D": "-0x1.6816816816820p-6",
+          "P": "0x1.4bf4bf4bf4bf4p-1"
+        },
+        "margin_hex": "0x1.8ef606a63bd80p-2",
+        "work": {
+          "verification_only": true,
+          "limit": 500000,
+          "states": 534,
+          "attempted_states": 534,
+          "state_counts": {
+            "joint_dealer": 230,
+            "joint_draw": 5,
+            "joint_play": 25,
+            "joint_settle": 16,
+            "root_dealer": 222,
+            "root_distribution": 13,
+            "root_double": 1,
+            "root_draw": 11,
+            "root_hit": 11
+          }
+        },
+        "case": {
+          "id": "explore-high",
+          "pair": "A",
+          "up": "2",
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            3,
+            3,
+            5
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "original-verification",
+        "elapsed_call_seconds": 0.0013700000126846135,
+        "product_limit_unchanged": true,
+        "verification_bound_only": true,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "26a29ecfbb25fc8ef1e06d30653ef4e6d8f0b94685769761ee5431ed2383cea3",
+      "filename": "original-explore-high.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.93667cf1b7548p-2",
+          "H": "0x1.8de3dae982d84p-3",
+          "D": "-0x1.ee84e9420e574p-5",
+          "P": "0x1.caeb2082291b1p-3"
+        },
+        "margin_hex": "0x1.e83a2cc532168p-6",
+        "work": {
+          "verification_only": true,
+          "limit": 500000,
+          "states": 159506,
+          "attempted_states": 159506,
+          "state_counts": {
+            "joint_dealer": 124754,
+            "joint_draw": 10,
+            "joint_play": 100,
+            "joint_settle": 81,
+            "root_dealer": 33858,
+            "root_distribution": 268,
+            "root_double": 1,
+            "root_draw": 217,
+            "root_hit": 217
+          }
+        },
+        "case": {
+          "id": "explore-mixed-2",
+          "pair": "A",
+          "up": "2",
+          "counts": [
+            0,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "original-verification",
+        "elapsed_call_seconds": 0.40358739998191595,
+        "product_limit_unchanged": true,
+        "verification_bound_only": true,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "3a2a1477c1e5345e2d6f36ea35fa4b6bf28bca2b7cb53bd2bb2d12c4c3b20c46",
+      "filename": "original-explore-mixed-2.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.244ef9a44ef9ap-2",
+          "H": "0x1.908532473374ap-3",
+          "D": "0x1.63f327e54c150p-4",
+          "P": "0x1.e3dec4fa1a0dbp-2"
+        },
+        "margin_hex": "0x1.1b9c2bd680536p-2",
+        "work": {
+          "verification_only": true,
+          "limit": 500000,
+          "states": 88857,
+          "attempted_states": 88857,
+          "state_counts": {
+            "joint_dealer": 65637,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 22416,
+            "root_distribution": 236,
+            "root_double": 1,
+            "root_draw": 190,
+            "root_hit": 190
+          }
+        },
+        "case": {
+          "id": "mixed-3-s17",
+          "pair": "A",
+          "up": "3",
+          "counts": [
+            0,
+            3,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            5
+          ],
+          "s17": true,
+          "das": true
+        },
+        "mode": "original-verification",
+        "elapsed_call_seconds": 0.21705819998169318,
+        "product_limit_unchanged": true,
+        "verification_bound_only": true,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "01bcf477653521419ad5f2da2cb8e074764e19cba7b75b6b02c3ba2cc7c543ac",
+      "filename": "original-mixed-3-s17.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "P",
+        "values_hex": {
+          "S": "-0x1.7955675e62e08p-3",
+          "H": "0x1.c67c568bc34cap-3",
+          "D": "0x1.635c2c912bab3p-3",
+          "P": "0x1.18c64df085a17p-1"
+        },
+        "margin_hex": "0x1.4e4e709b299c9p-2",
+        "work": {
+          "verification_only": true,
+          "limit": 500000,
+          "states": 38691,
+          "attempted_states": 38691,
+          "state_counts": {
+            "joint_dealer": 21135,
+            "joint_draw": 10,
+            "joint_play": 98,
+            "joint_settle": 79,
+            "root_dealer": 16716,
+            "root_distribution": 250,
+            "root_double": 1,
+            "root_draw": 201,
+            "root_hit": 201
+          }
+        },
+        "case": {
+          "id": "mixed-6-h17",
+          "pair": "A",
+          "up": "6",
+          "counts": [
+            0,
+            2,
+            3,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            5
+          ],
+          "s17": false,
+          "das": false
+        },
+        "mode": "original-verification",
+        "elapsed_call_seconds": 0.09045369998784736,
+        "product_limit_unchanged": true,
+        "verification_bound_only": true,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "1bd1162c674f0b70fcf7f76446c1e9b6b4862861fb3c9fbc506ec20fbcd8dc0e",
+      "filename": "original-mixed-6-h17.json"
+    },
+    {
+      "record": {
+        "status": "complete",
+        "action": "H",
+        "values_hex": {
+          "S": "-0x1.180d128fd1308p-1",
+          "H": "0x1.ed74a21e7178dp-4",
+          "D": "-0x1.4b8f2d5e45d20p-2",
+          "P": "-0x1.8bbaa32ee90bcp-6"
+        },
+        "margin_hex": "0x1.2831a57515ddep-3",
+        "work": {
+          "verification_only": true,
+          "limit": 500000,
+          "states": 32083,
+          "attempted_states": 32083,
+          "state_counts": {
+            "joint_dealer": 10195,
+            "joint_draw": 11,
+            "joint_play": 119,
+            "joint_settle": 98,
+            "root_dealer": 20297,
+            "root_distribution": 522,
+            "root_double": 1,
+            "root_draw": 420,
+            "root_hit": 420
+          }
+        },
+        "case": {
+          "id": "ten-peek-s17",
+          "pair": "A",
+          "up": "T",
+          "counts": [
+            2,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            4
+          ],
+          "s17": true,
+          "das": false
+        },
+        "mode": "original-verification",
+        "elapsed_call_seconds": 0.06546919996617362,
+        "product_limit_unchanged": true,
+        "verification_bound_only": true,
+        "source_sha256": {
+          "bj/joint_split.py": "0549de42b307ec1ed809e3d09818c6f21a3bb1a82dadf29e3d7a03102b7aecbe",
+          "bj/common_shoe.py": "eba5b2cf048443ffacda6fa6f90aef97ba1ce035226a6de445f7c4e88b7ee530",
+          "bj/ev.py": "b6a726096875309dd76fdfc2e82c95e81c84a867254bb2e166463188871854c9",
+          "bj/_enumeration.py": "9dac2c9ec6914e912d7b4f72a42b042874ece0a36d9a2698af867fb5d44f7435"
+        }
+      },
+      "original_sha256": "e7b95cfae7d560e21cc23033251004d181eecd79de2b16b19e053023c5232afc",
+      "filename": "original-ten-peek-s17.json"
+    }
+  ],
+  "original_revision": "7f2cbe0900d4b88325984c00732d18c88290e17e",
+  "timer_actual": "calculation plus small hexadecimal answer assembly; imports, rules, serialization, startup and retirement excluded",
+  "schema_version": 1,
+  "candidate_numerical_revision": "f3b996ed05749c9ee7457a15a728b429735c5b40",
+  "verifier_bound_actual": "500000 combined root and joint entries; installed product remains100000",
+  "measurement_cell_sha256": "928b1d369b8a13340671257a392d01f2cf51f379819c33b521802fd4f7c4addf"
+}

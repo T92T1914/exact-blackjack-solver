@@ -325,6 +325,8 @@ def main():
                double=double, pair=pair))
               for label, double, pair in [('TT', True, True), ('FT', False, True),
                                          ('TF', True, False), ('FF', False, False)]]
+    cases += [('common-mixed', common_request(['A', 'A'], 'A',
+                [2, 1, 2, 1, 2, 2, 2, 2, 2, 4], rules={'s17': False}))]
     cases += [
         ('late-winning', surrender_request(['T', '6'], 'T', [0]*9+[3])),
         ('late-disabled', surrender_request(['T', '6'], 'T', [0]*9+[3], surrender=False)),
@@ -418,6 +420,14 @@ def main():
                         'lawful ace price collapsed into the known-hole control')
             if label == 'ace-optional':
                 require(evs['P'] != -3, 'ace optional choice became a forced extra resplit')
+        elif label == 'common-mixed':
+            require({a: v.hex() for a, v in evs.items()} == {
+                'S': '-0x1.5a111902c4bf3p-1', 'H': '0x1.f237d5793a25cp-6',
+                'D': '-0x1.2917e8ad4dcdap-1', 'P': '-0x1.875af261bdc11p-3'},
+                'installed mixed common map differs from frozen original arithmetic')
+            require(saved['decision']['action'] == 'H' and
+                    saved['schema']['version'] == 3 and row['work']['limit'] == 100000,
+                    'mixed common result changed action, model or product cap')
         elif label in ('common-hidden', 'common-double', 'common-aces', 'common-h17'):
             require(saved['schema']['version'] == 3 and
                     saved['model']['split'] == common_shoe.SPLIT_MODEL,

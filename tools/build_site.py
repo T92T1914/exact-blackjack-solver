@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import json
+import re
 import shutil
 import sys
 
@@ -37,6 +38,12 @@ FILES = {
     "examples/deferred-second-card-request.json": "deferred-second-card-request.json",
     "docs/deferred-second-card-calculation.md": "deferred-second-card-calculation.md",
     "docs/protected-replay.md": "protected-replay.md",
+    "examples/common-shoe-mixed-request.json": "common-shoe-mixed-request.json",
+    "docs/common-shoe-calculation.md": "common-shoe-calculation.md",
+    "docs/common-shoe-dealer-computation.md": "common-shoe-dealer-computation.md",
+    "docs/common-shoe-dealer-protocol.json": "common-shoe-dealer-protocol.json",
+    "docs/common-shoe-dealer-results.json": "common-shoe-dealer-results.json",
+    "docs/local-calculation.md": "local-calculation.md",
     "docs/visual-example-data.json": "data.json",
     "docs/blackjack-composition-example.svg": "example.svg",
     "docs/blackjack-composition-clair.png": "composition-clair.png",
@@ -45,6 +52,25 @@ FILES = {
     "docs/blackjack-composition-obscur.svg": "composition-obscur.svg",
     "docs/blackjack-composition-figure.json": "composition-figure.json",
 }
+
+
+def public_guide(source: str, text: str) -> str:
+    """Keep source-relative guides usable after their flat Pages copy."""
+    def link(match):
+        target = match.group(2)
+        if '://' in target or target.startswith('#'):
+            return match.group(0)
+        relative, separator, fragment = target.partition('#')
+        resolved = ((ROOT / source).parent / relative).resolve()
+        repo_path = resolved.relative_to(ROOT).as_posix()
+        if not resolved.is_file():
+            raise ValueError('Missing guide target: ' + repo_path)
+        public = FILES.get(repo_path)
+        if public is None:
+            public = 'https://github.com/T92T1914/exact-blackjack-solver/blob/main/' + repo_path
+        return '[' + match.group(1) + '](' + public + separator + fragment + ')'
+
+    return re.sub(r'\[([^\]]+)\]\(([^\s)]+)\)', link, text)
 
 
 def main():
@@ -66,7 +92,11 @@ def main():
         path = ROOT / source
         if not path.is_file() or path.is_symlink():
             raise ValueError("Expected a regular source file: " + source)
-        shutil.copyfile(path, OUT / target)
+        if path.suffix == '.md':
+            (OUT / target).write_text(public_guide(source, path.read_text(encoding='utf-8')),
+                                      encoding='utf-8', newline='\n')
+        else:
+            shutil.copyfile(path, OUT / target)
     (OUT / "appearance.css").write_text(css, encoding="utf-8", newline="\n")
     for target, content in report.items():
         (OUT / target).write_bytes(content)

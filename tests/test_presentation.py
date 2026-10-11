@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -37,7 +38,15 @@ def test_build_preserves_retained_evidence_and_allowlist(tmp_path, monkeypatch):
         "appearance.css"
     } | set(build_site.render_outputs())
     for source, target in build_site.FILES.items():
-        assert (tmp_path / target).read_bytes() == (ROOT / source).read_bytes()
+        if source.endswith('.md'):
+            guide = (tmp_path / target).read_text(encoding='utf-8')
+            for url in re.findall(r'\]\(([^\s)]+)\)', guide):
+                if '://' not in url and not url.startswith('#'):
+                    assert (tmp_path / url.partition('#')[0]).is_file()
+            assert guide == build_site.public_guide(
+                source, (ROOT / source).read_text(encoding='utf-8'))
+        else:
+            assert (tmp_path / target).read_bytes() == (ROOT / source).read_bytes()
     assert (tmp_path / "appearance.css").read_text() == presentation.appearance_css()
     data = json.loads((tmp_path / "data.json").read_text())
     assert data["source_commit"] == "23a42e6"
