@@ -107,8 +107,10 @@ class _WindowsJob:
                 raise ctypes.WinError(ctypes.get_last_error())
 
 
-def execute(payload, policy, directory, cancellation):
+def execute(payload, policy, directory, cancellation, *, worker='bj._calculation_worker'):
     """Return captured bytes and retirement observations, never a decision claim."""
+    if worker not in ('bj._calculation_worker', 'bj._replay_worker'):
+        raise ValueError('only fixed calculation and replay workers are admitted')
     process = job = None
     job_assigned = False
     threads = []
@@ -171,7 +173,7 @@ def execute(payload, policy, directory, cancellation):
             options = {'creationflags': 0x08000000 | 0x200} if os.name == 'nt' else {
                 'start_new_session': True}
             process = subprocess.Popen(
-                [sys.executable, '-I', '-B', '-m', 'bj._calculation_worker'],
+                [sys.executable, '-I', '-B', '-m', worker],
                 cwd=directory, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, bufsize=0, **options)
             if job is not None:
