@@ -27,6 +27,33 @@ registry. For a reproduced release, use the wheel built from the identified
 reviewed source. The [local calculation guide](local-calculation.md) describes
 installation, outcome files and supported platforms.
 
+## A mixed twenty-card calculation
+
+The [mixed request](../examples/common-shoe-mixed-request.json) supplies original
+A,A against A, H17, and twenty retained cards in the same explicit common-shoe
+model. Its counts include the reserved hidden hole. Save it as
+`common-shoe-mixed-request.json` and use a fresh attempt directory:
+
+```sh
+bj-calculate common-shoe-mixed-request.json --output-dir mixed-001 --wall-seconds 30
+bj-replay mixed-001/result/decision.json --output-dir mixed-replay-001 --wall-seconds 30
+```
+
+Open the completed `result/decision.json` in the existing record inspector.
+The complete S/H/D/P calculation uses the original 100,000 state cap. The
+dealer memoization method now shares equivalent summary states instead of
+separate ordered draw histories. This request completed in 92,358 uncached
+state entries in the frozen comparison. The previous computation refused at
+100,000 admitted entries. The [computation report](common-shoe-dealer-computation.md)
+retains the exact-value comparison and its verification-only larger baseline
+bound. No input ceiling, legal action, mathematical model or operational limit
+was raised to obtain this result. Twenty cards remains an admission ceiling,
+not a promise that every composition finishes.
+
+This is a computational coverage example. Its selected action is H under the
+declared model. It does not change the ordinary split approximation or claim
+that any action provides a wagering advantage.
+
 ## What this model changes
 
 The ordinary solver retains its independent-hand split approximation and shared
@@ -124,6 +151,16 @@ entry and two attempted entries. Entry counts do not say that every entered
 state finished. State families identify root and joint work separately.
 
 Cached results can reduce actual uncached work in direct API calls and replay.
+The current common-shoe dealer computation is
+`joint_dealer_low_ace_counts_binary64_v1`. Its memo key contains integer low
+total, ace presence and remaining counts, with S17/H17 fixed by the request.
+The `joint_dealer` counter counts actual uncached summary bodies. Historical
+ordered-history counts and refusal thresholds can therefore differ while
+complete values remain identical. Computation method and mathematical model
+identity are separate. Historical records and the strict four-field work
+receipt retain their schemas. Those receipts do not identify source bytes or
+the computation method by themselves. Use the pinned source and report when
+reproducing computational measurements.
 Every owned calculation starts in a fresh fixed worker. The counter is scoped
 to the explicit common call and inactive during ordinary legacy calls. Its
 finite fanout and small admitted shoe give an algorithmic work bound. A state

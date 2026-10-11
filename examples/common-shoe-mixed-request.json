@@ -1,0 +1,15 @@
+{
+  "schema": {"name": "solver-calculation-request", "version": 2},
+  "model": {"name": "common_shoe_two_hand", "version": 1},
+  "limits": {"max_states": 100000},
+  "rules": {"max_hands": 2, "resplit_aces": false, "hit_split_aces": false, "s17": false},
+  "input": {
+    "cards": ["A", "A"],
+    "dealer_up": "A",
+    "unseen_counts": [2, 1, 2, 1, 2, 2, 2, 2, 2, 4],
+    "is_split_hand": false,
+    "hand_count": 1,
+    "can_double": true,
+    "can_split": true
+  }
+}
