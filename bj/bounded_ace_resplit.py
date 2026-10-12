@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from . import ev, joint_ace_resplit
-from ._enumeration import MAX_STATES, scope, state_limit
+from ._enumeration import MAX_STATES, EnumerationLimitExceeded, scope, state_limit
 from .core import RANKS, SPLIT
 
 MODEL = {'name': 'common_shoe_bounded_ace_resplit', 'version': 1}
@@ -71,19 +71,42 @@ def rank(values):
 def decide(hand, up, unseen, rules, *, can_double=True, can_split=True,
            max_states=MAX_STATES):
     """Complete original S/H/D pricing and the optional joint ace continuation."""
+    return _decide(hand, up, unseen, rules, can_double=can_double,
+                   can_split=can_split, max_states=max_states, diagnostics=False)
+
+
+def _decide_with_diagnostics(hand, up, unseen, rules, *, can_double=True,
+                             can_split=True, max_states=MAX_STATES):
+    """Share pricing and return detached reuse diagnostics after retirement."""
+    return _decide(hand, up, unseen, rules, can_double=can_double,
+                   can_split=can_split, max_states=max_states, diagnostics=True)
+
+
+def _decide(hand, up, unseen, rules, *, can_double, can_split, max_states,
+            diagnostics):
     for name, value in (('can_double', can_double), ('can_split', can_split)):
         if type(value) is not bool:
             raise ValueError(f'{name} must be a boolean')
     validate(hand, rules, unseen, False, 1, max_states)
-    with scope(max_states) as budget:
-        _, values, _ = ev.best_action(hand, up, shoe=unseen, rules=rules,
-                                      can_double=can_double, can_split=False)
-        if can_split:
-            by_rank = dict(zip(RANKS, unseen, strict=True))
-            result = joint_ace_resplit.joint_ace_resplit_value(
-                up, tuple(by_rank[rank] for rank in joint_ace_resplit.RANKS),
-                double_after_split=rules.das, stand_soft_17=rules.s17,
-                max_states=max_states)
-            values[SPLIT] = result.value
-        action, margin = rank(values)
-        return action, values, margin, budget.snapshot()
+    budget = None
+    try:
+        with scope(max_states, terminal_reuse=can_split) as budget:
+            _, values, _ = ev.best_action(hand, up, shoe=unseen, rules=rules,
+                                          can_double=can_double, can_split=False)
+            if can_split:
+                budget.freeze_terminal_reuse()
+                by_rank = dict(zip(RANKS, unseen, strict=True))
+                result = joint_ace_resplit.joint_ace_resplit_value(
+                    up, tuple(by_rank[rank] for rank in joint_ace_resplit.RANKS),
+                    double_after_split=rules.das, stand_soft_17=rules.s17,
+                    max_states=max_states)
+                values[SPLIT] = result.value
+            action, margin = rank(values)
+            work = budget.snapshot()
+    except EnumerationLimitExceeded as exc:
+        if diagnostics and can_split and budget is not None:
+            exc.work = {**exc.work, 'terminal_reuse': budget.terminal_reuse_snapshot()}
+        raise
+    if diagnostics and can_split:
+        work = {**work, 'terminal_reuse': budget.terminal_reuse_snapshot()}
+    return action, values, margin, work

@@ -145,8 +145,11 @@ def _work(value, saved, *, complete=False):
     }.get(saved['schema']['version'])
     if families is None:
         raise ValueError('this recorded model has no enumeration work report')
-    calculation._validated_work(value, saved['model']['enumeration_state_limit'],
-                                complete=complete, families=families)
+    calculation._validated_work(
+        value, saved['model']['enumeration_state_limit'], complete=complete, families=families,
+        terminal_reuse=(type(value) is dict and 'terminal_reuse' in value
+                        and saved['schema']['version'] == record.ACE_RESPLIT_SCHEMA_VERSION
+                        and saved['state']['action_controls']['can_split'] is True))
 
 
 def _current(saved, recomputed):

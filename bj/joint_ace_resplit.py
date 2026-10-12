@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from functools import cache
 from time import perf_counter
 
-from ._enumeration import state as _enumeration_state, state_limit
+from ._enumeration import state as _enumeration_state, state_limit, _ace_terminal_result
 from .joint_split import ReferenceLimitExceeded, UnsupportedShoeError
 
 RANKS = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'A')
@@ -116,6 +116,12 @@ def joint_ace_resplit_value(dealer_up, shoe, *, double_after_split=True,
 
     @cache
     def dealer(low, has_ace, remaining):
+        prior = _ace_terminal_result(low, has_ace, remaining, stand_soft_17)
+        if prior is not None:
+            return prior
+        return dealer_body(low, has_ace, remaining)
+
+    def dealer_body(low, has_ace, remaining):
         tick('dealer')
         soft = has_ace and low + 10 <= 21
         total = low + (10 if soft else 0)

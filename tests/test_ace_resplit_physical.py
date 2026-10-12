@@ -125,6 +125,20 @@ def test_complete_original_result_matches_physical_deals(
         assert saved["model"]["hole_rank_excluded_by_peek"] == "T"
 
 
+def test_ace_upcard_s17_and_h17_match_complete_six_card_physical_maps():
+    cards = ("6", "7", "8", "9", "T", "T")
+    for s17, stand in ((True, Fraction(-1)), (False, Fraction(-7, 10))):
+        reference = qualify_case("A", cards, s17=s17)
+        assert reference["evidence_scope"] == "complete original decision"
+        assert tuple(exact_values(reference)) == ACTION_ORDER
+        assert exact_values(reference)["S"] == stand
+        assert reference["diagnostics"]["physical_deals_before_peek"] == factorial(6)
+        assert reference["diagnostics"]["physical_permutations_considered"] == factorial(6)
+        assert reference["diagnostics"]["physical_deals_after_peek"] == 480
+        saved = assert_complete_comparison(reference, "A", cards, s17=s17)
+        assert saved["rules"]["s17"] is s17
+
+
 @pytest.mark.parametrize("double,split", [(True, True), (False, True),
                                         (True, False), (False, False)])
 def test_original_controls_remove_only_original_actions(double, split):

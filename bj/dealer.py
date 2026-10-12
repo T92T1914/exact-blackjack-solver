@@ -69,7 +69,7 @@ APPROXIMATIONS
 from __future__ import annotations
 
 from functools import lru_cache
-from ._enumeration import state as _enumeration_state
+from ._enumeration import state as _enumeration_state, _seed_root_terminal
 
 from .core import (
     STANDARD,
@@ -123,7 +123,9 @@ def _resolve(total: int, soft: bool, shoe: Shoe, s17: bool) -> tuple[float, ...]
     handled by the caller, so it can never arise inside the draw loop.
     """
     _enumeration_state('root_dealer')
-    return _resolve_body(total, soft, shoe, s17, _resolve)
+    result = _resolve_body(total, soft, shoe, s17, _resolve)
+    _seed_root_terminal(total, soft, shoe, s17, result)
+    return result
 
 
 def _resolve_body(total, soft, shoe, s17, resolve):
