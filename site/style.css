@@ -82,7 +82,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 #record-inspector button,#record-inspector input::file-selector-button{font:inherit;color:var(--text);background:var(--control);border:1px solid var(--border);border-radius:6px;padding:9px 12px;min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 #record-inspector button:hover,#record-inspector input::file-selector-button:hover{background:var(--hover)}
 #record-inspector input:focus-visible{outline:3px solid var(--focus);outline-offset:5px}
-#record-inspector p,#record-inspector h3,#record-inspector label,#record-inspector legend{overflow-wrap:anywhere}
+#record-inspector p,#record-inspector h3,#record-inspector label,#record-inspector legend,#record-inspector summary{overflow-wrap:anywhere}
 #record-inspector section{margin-top:30px;min-width:0}
 .record-table table{min-width:32rem;font-variant-numeric:tabular-nums}
 .record-table th,.record-table td{overflow-wrap:anywhere}
