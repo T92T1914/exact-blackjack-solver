@@ -68,7 +68,7 @@
     "presentation/tokens.json": "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7",
     "tools/presentation.py": "1055ef87d159d87c05b96817cab172d6b41d23f8f723d660d094f8e0d3589109",
     "tools/render_composition_figure.py": "bc996c1e3104ffdc4fdbbef3fa490ebf5c4c382fed41f91d6812021983ae2ecf",
-    "tools/render_evidence_figure.py": "ab863a68adcb8e6047f90e1d37897a0d022390c3bfbce1b551a3e1b37aa900ce"
+    "tools/render_evidence_figure.py": "00a699f02aaee7744b4b03c94c2e73e595c1410b4c36e0d0b681fd25b5dda3e6"
   },
   "editions": {
     "clair": {
@@ -80,7 +80,7 @@
       },
       "svg": {
         "path": "docs/ace-terminal-reuse-clair.svg",
-        "sha256": "2f50bc7a5b0fa7e8d7df65a9ea16d591653a40cb16b945caea8076825ee9070e"
+        "sha256": "4d20e98284977f02213410e96f4a18b8c30d7bd76e61c2590109bc16caf2ba1e"
       }
     },
     "obscur": {
@@ -92,7 +92,7 @@
       },
       "svg": {
         "path": "docs/ace-terminal-reuse-obscur.svg",
-        "sha256": "35c5dd6ac0e1447f780f4ff6c3b45964fd4fe5cf6782ad79bdb0344d0b851712"
+        "sha256": "ce3ec5bce63bd019a72d18d135d843115545515e9ac70bf317f860890e4a1fe5"
       }
     }
   },
