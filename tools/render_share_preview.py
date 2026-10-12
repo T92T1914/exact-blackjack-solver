@@ -55,7 +55,7 @@ def content(config):
             for hand in data["hands"]
         ]
         context = "Both total 16 | Dealer shows 10 | Saved six-deck example"
-        footer = "Exact hit / stand / double. Split values approximate."
+        footer = "Original split path approximate. Bounded models have own limits."
     elif kind == "mcts":
         panels = [
             ["Same forest", "Sequential", "independent roots"],
