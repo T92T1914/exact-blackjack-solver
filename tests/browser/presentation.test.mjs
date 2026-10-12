@@ -282,6 +282,10 @@ test('named model routes expose supported requests and contracts before schema h
     for (const link of await route.locator('tbody a').all()) {
       const box=await link.boundingBox();assert.ok(box && box.x>=0 && box.x+box.width<=320);
     }
+    if (process.env.SOLVER_SCREENSHOT_DIR) {
+      await mkdir(process.env.SOLVER_SCREENSHOT_DIR,{recursive:true});
+      await route.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR,`model-routes-${mode}-320-enlarged.png`)});
+    }
   }
 });
 
@@ -319,6 +323,10 @@ test('same-cap H17 figure keeps source values and both appearance editions',asyn
     }
     await page.setViewportSize({width:320,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+    if (process.env.SOLVER_SCREENSHOT_DIR) {
+      await mkdir(process.env.SOLVER_SCREENSHOT_DIR,{recursive:true});
+      await figure.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR,`h17-figure-${mode}-320.png`)});
+    }
   }
 });
 
