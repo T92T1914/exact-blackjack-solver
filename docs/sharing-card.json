@@ -2,7 +2,7 @@
   "repo": "exact-blackjack-solver",
   "title": "Exact Blackjack Solver",
   "subtitle": "Same total. Different decision.",
-  "description": "Compare saved action values from the remaining cards. Stand, hit and double are exact within the supported model. Split valuation remains approximate.",
+  "description": "Compare saved action values from the remaining cards. The original/default path approximates split hands. Separately selected bounded common-shoe models enumerate their declared joint continuations in binary floating point.",
   "helper": "render_composition_figure",
   "tokens": "presentation/tokens.json",
   "source": "docs/visual-example-data.json",

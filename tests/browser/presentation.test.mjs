@@ -233,6 +233,103 @@ test('record replacement errors remove the old answer and allow recovery',async 
   }
 });
 
+test('named model routes expose supported requests and contracts before schema history',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  const route=page.locator('#model-route');
+  const rows=route.locator('tbody tr');assert.equal(await rows.count(),6);
+  assert.match(await route.textContent(),/original\/default path/i);
+  assert.match(await route.textContent(),/binary floating point, not symbolic fractions/);
+  assert.match(await rows.nth(5).textContent(),/No peek or split/);
+  const cases=[
+    ['calculation-request.json',1,undefined,6,'local-calculation.md'],
+    ['common-shoe-request.json',2,'common_shoe_two_hand',7,'common-shoe-calculation.md'],
+    ['late-surrender-request.json',3,'post_peek_late_surrender',3,'late-surrender-calculation.md'],
+    ['bounded-resplit-request.json',4,'common_shoe_bounded_resplit',8,'bounded-resplit-calculation.md'],
+    ['bounded-ace-resplit-request.json',5,'common_shoe_bounded_ace_resplit',5,'bounded-ace-resplit-calculation.md'],
+    ['deferred-second-card-request.json',6,'deferred_second_card_all_wagers_sdh',8,'deferred-second-card-calculation.md'],
+  ];
+  for (let i=0;i<cases.length;i++) {
+    const [name,version,model,count,guide]=cases[i];
+    assert.equal(await rows.nth(i).locator(`a[href="${name}"][download]`).count(),1);
+    assert.equal(await rows.nth(i).locator(`a[href="${guide}"]`).count(),1);
+    const response=await page.request.get(base+'/'+name);assert.equal(response.status(),200);
+    const buffer=await response.body();
+    assert.deepEqual(buffer,await readFile(new URL('../../examples/'+name,import.meta.url)));
+    const request=JSON.parse(buffer);assert.equal(request.schema.version,version);
+    assert.equal(request.model?.name,model);
+    assert.equal(request.input.unseen_counts.reduce((sum,value)=>sum+value,0),count);
+    const received=await page.request.get(base+'/'+guide);assert.equal(received.status(),200);
+    const text=await received.text();assert.equal(text,await readFile(path.join(root,guide),'utf8'));
+    for (const match of text.matchAll(/\]\(([^\s)]+)\)/g)) {
+      const target=match[1];if (target.includes('://') || target.startsWith('#')) continue;
+      const linked=await page.request.get(base+'/'+target.split('#')[0]);
+      assert.equal(linked.status(),200,`${guide} -> ${target}`);
+    }
+  }
+  const history=page.locator('#record-inspector details').first();
+  assert.equal(await history.getAttribute('open'),null);
+  assert.match(await history.textContent(),/Schema 7 is an original-hand S\/H\/D family, not a split model/);
+  const intro=page.locator('#record-inspector > p').nth(1);
+  assert.doesNotMatch(await intro.textContent(),/Schema[s]? [1-7]/);
+  for (const mode of ['clair','obscur']) {
+    await page.locator('#appearance').selectOption(mode);
+    await route.locator('a[download]').first().focus();
+    assert.equal(await route.locator('a[download]').first().evaluate(e=>document.activeElement===e),true);
+    await page.setViewportSize({width:320,height:844});
+    if (mode==='clair') await page.addStyleTag({content:'#model-route,#h17-completion{font-size:34px}#model-route .fine,#h17-completion .fine{font-size:28px}#model-route th,#h17-completion th{font-size:30px}'});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+    assert.equal(await route.isVisible(),true);
+    for (const link of await route.locator('tbody a').all()) {
+      const box=await link.boundingBox();assert.ok(box && box.x>=0 && box.x+box.width<=320);
+    }
+    if (process.env.SOLVER_SCREENSHOT_DIR) {
+      await mkdir(process.env.SOLVER_SCREENSHOT_DIR,{recursive:true});
+      await route.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR,`model-routes-${mode}-320-enlarged.png`)});
+    }
+  }
+});
+
+test('same-cap H17 figure keeps source values and both appearance editions',async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  const response=await page.request.get(base+'/ace-terminal-reuse-figure.json');
+  assert.equal(response.status(),200);
+  const bytes=await response.body();
+  assert.deepEqual(bytes,await readFile(path.join(root,'ace-terminal-reuse-figure.json')));
+  const data=JSON.parse(bytes);
+  assert.equal(data.source_commit,'3cbc80c5ce81d5a806f4fa3de8b30b04665f33c8');
+  assert.deepEqual(data.values,{entered_states:82780,state_cap:100000,action_count:4,one_cold_request:true});
+  assert.equal(data.source.path,'docs/ace-terminal-reuse.md');
+  const figure=page.locator('#ace-terminal-figure');
+  assert.equal(await figure.locator(`a[href="${data.source.url}"]`).count(),1);
+  assert.match(await figure.textContent(),/one cold completion, not a before\/after timing benchmark/);
+  for (const mode of ['clair','obscur']) {
+    await page.locator('#appearance').selectOption(mode);
+    const image=figure.locator('img:visible');assert.equal(await image.count(),1);
+    assert.equal(await image.getAttribute('src'),`ace-terminal-reuse-${mode}.png`);
+    await image.evaluate(e=>{e.loading='eager';return e.decode();});
+    assert.deepEqual(await image.evaluate(e=>[e.naturalWidth,e.naturalHeight]),[1440,720]);
+    assert.match(await image.getAttribute('alt'),/82,780 entered states/);
+    assert.match(await image.getAttribute('alt'),/unchanged 100,000-state cap/);
+    for (const format of ['png','svg']) {
+      const name=`ace-terminal-reuse-${mode}.${format}`;
+      assert.equal(await figure.locator(`a[href="${name}"][download]`).count(),1);
+      const received=await page.request.get(base+'/'+name);assert.equal(received.status(),200);
+      const exported=await received.body();
+      assert.equal(createHash('sha256').update(exported).digest('hex'),data.editions[mode][format].sha256);
+      if (format==='svg') {
+        const text=exported.toString('utf8');assert.match(text,/<title[ >]/);assert.match(text,/<desc[ >]/);
+        assert.match(text,/82,780/);assert.match(text,/100,000/);
+      }
+    }
+    await page.setViewportSize({width:320,height:844});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+    if (process.env.SOLVER_SCREENSHOT_DIR) {
+      await mkdir(process.env.SOLVER_SCREENSHOT_DIR,{recursive:true});
+      await figure.screenshot({path:path.join(process.env.SOLVER_SCREENSHOT_DIR,`h17-figure-${mode}-320.png`)});
+    }
+  }
+});
+
 test('mixed common request and generated guidance retain the complete consumer route',async t=>{
   const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
   const name='common-shoe-mixed-request.json';
@@ -694,6 +791,16 @@ test('installed H17 ace request and complete saved record remain usable on mobil
   for (const [key,value] of Object.entries(request.rules)) assert.equal(saved.rules[key],value,key);
   assert.deepEqual(Object.keys(saved.decision.evs).sort(),['D','H','P','S']);
   assert.equal(saved.decision.action,'H');
+  const complete=page.locator('#h17-completion');
+  assert.equal(await complete.locator(`a[href="${name}"][download]`).count(),1);
+  assert.match(await complete.textContent(),/82,780 states/);
+  assert.match(await complete.textContent(),/100,000-state cap/);
+  for (const [action,value] of Object.entries(saved.decision.evs)) {
+    assert.equal(await complete.locator(`[data-h17-action="${action}"]`).textContent(),String(value));
+  }
+  assert.match(await complete.locator('caption').textContent(),new RegExp(String(saved.decision.margin).replaceAll('.','\\.')));
+  assert.match(await complete.textContent(),/not a general latency improvement/);
+  assert.match(await complete.textContent(),/Warm and cold callers can enter different work/);
   await page.evaluate(async()=>{
     for (const image of document.images) image.loading='eager';
     await Promise.all(Array.from(document.images,image=>image.decode()));
@@ -1181,7 +1288,11 @@ test('no JavaScript keeps Auto, original evidence and model boundaries available
   await page.locator('#composition-figure img:visible').scrollIntoViewIfNeeded();
   await page.waitForFunction(() => [...document.querySelectorAll('#composition-figure img')]
     .filter(e => getComputedStyle(e).display !== 'none').every(e => e.complete && e.naturalWidth > 0));
-  assert.match(await page.locator('body').textContent(), /Split valuation elsewhere in the project is approximate/);
+  assert.match(await page.locator('body').textContent(), /The original\/default split path is approximate/);
+  assert.equal(await page.locator('#model-route').isVisible(),true);
+  assert.equal(await page.locator('#h17-completion').isVisible(),true);
+  assert.equal(await page.locator('#h17-completion [data-h17-action]').count(),4);
+  assert.match(await page.locator('#model-route').textContent(),/binary floating point, not symbolic fractions/);
   assert.equal(await page.locator('a[href="data.json"]').first().isVisible(), true);
   await page.emulateMedia({colorScheme:'light'});
   assert.equal(await background(page), 'rgb(248, 247, 243)');
@@ -1195,7 +1306,7 @@ for (const mode of ['clair','obscur']) test(`${mode} preserves loss values and e
     await page.locator('#choice').selectOption(String(index));
     const hand = evidence.hands[index];
     const values = Object.values(hand.values).sort((a,b) => b-a).map(n => n.toFixed(6));
-    assert.deepEqual(await page.locator('tbody td:last-child').allTextContents(), values);
+    assert.deepEqual(await page.locator('#table tbody td:last-child').allTextContents(), values);
     assert.equal(await page.locator('.metric strong').nth(1).textContent(), hand.values[hand.action].toFixed(6));
     assert.equal(await page.locator('.metric strong').nth(2).textContent(), hand.margin.toFixed(6));
     assert.match(await page.locator('#finding').textContent(), /expected loss/);
@@ -1221,8 +1332,8 @@ for (const mode of ['clair','obscur']) test(`${mode} preserves loss values and e
   assert.equal(await page.locator('#choice').evaluate(e => getComputedStyle(e).outlineStyle), 'solid');
   await page.addStyleTag({content:'body{font-size:34px !important}'});
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await page.locator('.table-wrap').focus();
-  assert.equal(await page.locator('.table-wrap').evaluate(e => getComputedStyle(e).outlineStyle), 'solid');
+  await page.locator('#table').focus();
+  assert.equal(await page.locator('#table').evaluate(e => getComputedStyle(e).outlineStyle), 'solid');
 });
 
 test('print uses Clair and forced colors preserve focus without changing the preference', async t => {

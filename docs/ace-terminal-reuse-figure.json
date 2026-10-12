@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repository": "T92T1914/exact-blackjack-solver",
+    "revision": "3cbc80c5ce81d5a806f4fa3de8b30b04665f33c8",
+    "path": "docs/ace-terminal-reuse.md",
+    "url": "https://github.com/T92T1914/exact-blackjack-solver/blob/3cbc80c5ce81d5a806f4fa3de8b30b04665f33c8/docs/ace-terminal-reuse.md",
+    "sha256": "310e8949f7448671468d8ae7bba3d8b2af7ed9c0fb56131cb296a0993a00fcb1"
+  },
+  "source_commit": "3cbc80c5ce81d5a806f4fa3de8b30b04665f33c8",
+  "values": {
+    "entered_states": 82780,
+    "state_cap": 100000,
+    "action_count": 4,
+    "one_cold_request": true
+  },
+  "request": {
+    "path": "examples/bounded-ace-resplit-h17-request.json",
+    "sha256": "8fc3c209a9f65fd87b4ee2cdda8aa6d57456c7748aea57331fe4f26892436cb4",
+    "schema": {
+      "name": "solver-calculation-request",
+      "version": 5
+    },
+    "model": {
+      "name": "common_shoe_bounded_ace_resplit",
+      "version": 1
+    },
+    "rules": {
+      "max_hands": 3,
+      "resplit_aces": true,
+      "hit_split_aces": false,
+      "das": true,
+      "s17": false
+    },
+    "input": {
+      "cards": [
+        "A",
+        "A"
+      ],
+      "dealer_up": "A",
+      "unseen_counts": [
+        1,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        4
+      ],
+      "is_split_hand": false,
+      "hand_count": 1,
+      "can_double": true,
+      "can_split": true
+    },
+    "complete_actions": [
+      "S",
+      "H",
+      "D",
+      "P"
+    ]
+  },
+  "source_sha256_lf": {
+    "docs/ace-terminal-reuse.md": "310e8949f7448671468d8ae7bba3d8b2af7ed9c0fb56131cb296a0993a00fcb1",
+    "examples/bounded-ace-resplit-h17-request.json": "8fc3c209a9f65fd87b4ee2cdda8aa6d57456c7748aea57331fe4f26892436cb4",
+    "presentation/tokens.json": "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7",
+    "tools/presentation.py": "1055ef87d159d87c05b96817cab172d6b41d23f8f723d660d094f8e0d3589109",
+    "tools/render_composition_figure.py": "bc996c1e3104ffdc4fdbbef3fa490ebf5c4c382fed41f91d6812021983ae2ecf",
+    "tools/render_evidence_figure.py": "00a699f02aaee7744b4b03c94c2e73e595c1410b4c36e0d0b681fd25b5dda3e6"
+  },
+  "editions": {
+    "clair": {
+      "png": {
+        "path": "docs/ace-terminal-reuse-clair.png",
+        "sha256": "565af095c5e709fd290dc296dac8b49dd54c827538a3a73f0daa11f305cfe144",
+        "width": 1440,
+        "height": 720
+      },
+      "svg": {
+        "path": "docs/ace-terminal-reuse-clair.svg",
+        "sha256": "4d20e98284977f02213410e96f4a18b8c30d7bd76e61c2590109bc16caf2ba1e"
+      }
+    },
+    "obscur": {
+      "png": {
+        "path": "docs/ace-terminal-reuse-obscur.png",
+        "sha256": "45fb44d6215538211af85a3207146c636b73e998d0c74e6fd43a881458cfd518",
+        "width": 1440,
+        "height": 720
+      },
+      "svg": {
+        "path": "docs/ace-terminal-reuse-obscur.svg",
+        "sha256": "ce3ec5bce63bd019a72d18d135d843115545515e9ac70bf317f860890e4a1fe5"
+      }
+    }
+  },
+  "rendering": {
+    "renderer": "tools/render_evidence_figure.py",
+    "version": 1,
+    "matplotlib": "3.11.1",
+    "backend": "Agg",
+    "new_measurement": false,
+    "series_role": "accent",
+    "cap_role": "warning",
+    "axis": [
+      0,
+      112000
+    ],
+    "token_revision": "7a57fe750ff50205a17e1d342106a0d3f2777159",
+    "theme_roles": {
+      "clair": {
+        "canvas": "#f8f7f3",
+        "panel": "#fdfcf8",
+        "text": "#242424",
+        "muted": "#595854",
+        "divider": "#b8b6ae",
+        "control": "#ecebe6",
+        "hover": "#e0ded7",
+        "selected": "#e7e4da",
+        "border": "#7f7d76",
+        "accent": "#365f78",
+        "on_accent": "#ffffff",
+        "focus": "#315977",
+        "success": "#276548",
+        "warning": "#805100",
+        "error": "#a32e32",
+        "code": "#eeece5",
+        "disabled": "#686760"
+      },
+      "obscur": {
+        "canvas": "#090909",
+        "panel": "#151515",
+        "text": "#f4f4f4",
+        "muted": "#bcbcbc",
+        "divider": "#494949",
+        "control": "#252525",
+        "hover": "#373737",
+        "selected": "#333333",
+        "border": "#858585",
+        "accent": "#b3c8d8",
+        "on_accent": "#15212c",
+        "focus": "#c2d7e6",
+        "success": "#8ecb9b",
+        "warning": "#e3bf79",
+        "error": "#f2a3a3",
+        "code": "#111111",
+        "disabled": "#a4a4a4"
+      }
+    }
+  },
+  "typography": {
+    "source": "Six official static Inter faces supplied by --font-dir",
+    "files": {
+      "Regular": {
+        "sha256": "40d692fce188e4471e2b3cba937be967878f631ad3ebbbdcd587687c7ebe0c82",
+        "postscript": "Inter-Regular",
+        "weight": 400,
+        "italic": false
+      },
+      "SemiBold": {
+        "sha256": "78a843fade9d4612a5567302fb595b56976eb5fcebf4fea5a5912d638bafcde3",
+        "postscript": "Inter-SemiBold",
+        "weight": 600,
+        "italic": false
+      },
+      "Bold": {
+        "sha256": "288316099b1e0a47a4716d159098005eef7c0066921f34e3200393dbdb01947f",
+        "postscript": "Inter-Bold",
+        "weight": 700,
+        "italic": false
+      },
+      "Italic": {
+        "sha256": "bbc051dd204b5019a1aa0bc0ae2aa8a05ab13e7a3f979fa357631dc7feb6833a",
+        "postscript": "Inter-Italic",
+        "weight": 400,
+        "italic": true
+      },
+      "SemiBoldItalic": {
+        "sha256": "eff2930c3d3b35d3fcf5f76252b6baef4c3e907d9d2fde1d16cf5d417f8deef4",
+        "postscript": "Inter-SemiBoldItalic",
+        "weight": 600,
+        "italic": true
+      },
+      "BoldItalic": {
+        "sha256": "948405a16cdc62701da5f4005ed068ca5f4d27061d98f7974ccfc37831d9581d",
+        "postscript": "Inter-BoldItalic",
+        "weight": 700,
+        "italic": true
+      }
+    },
+    "painted_faces": [
+      "Regular",
+      "SemiBold",
+      "Bold"
+    ],
+    "png": "Rasterized from the validated static Inter files",
+    "svg": "Real text; visitor resolves local Inter or browser fallback",
+    "font_binaries_distributed": false
+  }
+}

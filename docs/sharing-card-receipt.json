@@ -16,17 +16,17 @@
       ]
     ],
     "context": "Both total 16 | Dealer shows 10 | Saved six-deck example",
-    "footer": "Exact hit / stand / double. Split values approximate.",
+    "footer": "Original split path approximate. Bounded models have own limits.",
     "source_sha256": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c"
   },
   "inputs_sha256_lf": {
-    "tools/render_share_preview.py": "3d05d0d5d220eee7d0cda84cbd3c4136b1ecc9a28434458b166369aa22e8894f",
-    "docs/sharing-card.json": "d1c248ddd3b02a5eb210639953fa69522a86948b43b4f380d03ca037868f1792",
+    "tools/render_share_preview.py": "1f7359d8a8077de7b3271b6af1360d51b96e3513649e3e70534865184dcf2db7",
+    "docs/sharing-card.json": "d258dbe25e040ece9342003855215626d087cbad7c63af1bfe89aee5b5a624d3",
     "docs/visual-example-data.json": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c",
     "presentation/tokens.json": "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7",
     "tools/render_composition_figure.py": "bc996c1e3104ffdc4fdbbef3fa490ebf5c4c382fed41f91d6812021983ae2ecf"
   },
-  "png_sha256": "bcc6899d5961c4bd61d5d0fec8f2fc80a41015c62e811d6bbdd23cf13de770d6",
+  "png_sha256": "40dcd4f22e8fad06cf08b5f4cef28a13b89079d6774b44e8a920113778b7e70e",
   "dimensions": [
     1280,
     640
@@ -175,12 +175,12 @@
       "size": 30
     },
     {
-      "text": "Exact hit / stand / double. Split values approximate.",
+      "text": "Original split path approximate. Bounded models have own limits.",
       "face": "Inter-Italic",
       "bounds": [
         68,
         548,
-        799,
+        998,
         578
       ],
       "size": 30

@@ -51,6 +51,29 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 .figure-wide{display:none}
 @container(min-width:560px){.figure-narrow{display:none}.figure-wide{display:block}}
 
+/* The new state-count figure has its own source and leaves older diagrams intact. */
+#ace-terminal-figure{max-width:960px;margin-inline:auto}
+#ace-terminal-figure img{width:100%}
+.ace-figure-obscur{display:none}
+:root[data-appearance="obscur"] .ace-figure-clair{display:none}
+:root[data-appearance="obscur"] .ace-figure-obscur{display:block}
+@media(prefers-color-scheme:dark){
+:root:not([data-appearance="clair"]):not([data-appearance="obscur"]) .ace-figure-clair{display:none}
+:root:not([data-appearance="clair"]):not([data-appearance="obscur"]) .ace-figure-obscur{display:block}
+}
+@media print{#ace-terminal-figure .ace-figure-clair{display:block}#ace-terminal-figure .ace-figure-obscur{display:none}}
+#model-route p,#model-route th,#model-route td,#h17-completion p{overflow-wrap:anywhere}
+#model-route th:first-child{min-width:9rem}
+#model-route td:last-child{min-width:8rem}
+#h17-completion td{font-variant-numeric:tabular-nums}
+@media(max-width:650px){
+#model-route table,#model-route caption,#model-route tbody,#model-route tbody tr,#model-route tbody th,#model-route tbody td{display:block}
+#model-route thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#model-route tbody tr{border-bottom:1px solid var(--divider);padding-block:12px}
+#model-route tbody th,#model-route tbody td{min-width:0;border-bottom:0;padding:6px 0}
+#model-route td:last-child a{display:inline-flex;align-items:center;min-height:44px;max-width:100%}
+}
+
 /* Imported quantitative values scroll locally and never widen the page. */
 .record-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-block:24px}
 .record-controls fieldset{min-width:0;border:1px solid var(--border);border-radius:7px;padding:16px}
@@ -59,7 +82,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible,
 #record-inspector button,#record-inspector input::file-selector-button{font:inherit;color:var(--text);background:var(--control);border:1px solid var(--border);border-radius:6px;padding:9px 12px;min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 #record-inspector button:hover,#record-inspector input::file-selector-button:hover{background:var(--hover)}
 #record-inspector input:focus-visible{outline:3px solid var(--focus);outline-offset:5px}
-#record-inspector p,#record-inspector h3,#record-inspector label,#record-inspector legend{overflow-wrap:anywhere}
+#record-inspector p,#record-inspector h3,#record-inspector label,#record-inspector legend,#record-inspector summary{overflow-wrap:anywhere}
 #record-inspector section{margin-top:30px;min-width:0}
 .record-table table{min-width:32rem;font-variant-numeric:tabular-nums}
 .record-table th,.record-table td{overflow-wrap:anywhere}

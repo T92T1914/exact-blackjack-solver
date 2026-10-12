@@ -10,10 +10,12 @@ try:
     from .presentation import appearance_css
     from .render_joint_report import render_outputs
     from .render_composition_figure import check_outputs
+    from .render_evidence_figure import check_outputs as check_evidence_figure
 except ImportError:
     from presentation import appearance_css
     from render_joint_report import render_outputs
     from render_composition_figure import check_outputs
+    from render_evidence_figure import check_outputs as check_evidence_figure
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -31,6 +33,10 @@ FILES = {
     "site/record-inspector-ui.mjs": "record-inspector-ui.mjs",
     "site/selection-state.mjs": "selection-state.mjs",
     "site/appearance.js": "appearance.js",
+    "examples/calculation-request.json": "calculation-request.json",
+    "examples/common-shoe-request.json": "common-shoe-request.json",
+    "examples/late-surrender-request.json": "late-surrender-request.json",
+    "docs/late-surrender-calculation.md": "late-surrender-calculation.md",
     "examples/bounded-resplit-request.json": "bounded-resplit-request.json",
     "docs/bounded-resplit-calculation.md": "bounded-resplit-calculation.md",
     "examples/bounded-ace-resplit-request.json": "bounded-ace-resplit-request.json",
@@ -39,6 +45,11 @@ FILES = {
         "bounded-ace-resplit-h17-request.json",
     "docs/bounded-ace-resplit-calculation.md": "bounded-ace-resplit-calculation.md",
     "docs/ace-terminal-reuse.md": "ace-terminal-reuse.md",
+    "docs/ace-terminal-reuse-clair.png": "ace-terminal-reuse-clair.png",
+    "docs/ace-terminal-reuse-obscur.png": "ace-terminal-reuse-obscur.png",
+    "docs/ace-terminal-reuse-clair.svg": "ace-terminal-reuse-clair.svg",
+    "docs/ace-terminal-reuse-obscur.svg": "ace-terminal-reuse-obscur.svg",
+    "docs/ace-terminal-reuse-figure.json": "ace-terminal-reuse-figure.json",
     "docs/ace-resplit-dealer-computation.md": "ace-resplit-dealer-computation.md",
     "docs/ace-resplit-dealer-protocol.json": "ace-resplit-dealer-protocol.json",
     "docs/ace-resplit-dealer-results.json": "ace-resplit-dealer-results.json",
@@ -88,6 +99,7 @@ def main():
     if not data.get("source_commit"):
         raise ValueError("Example data must retain its source revision.")
     check_outputs()
+    check_evidence_figure()
     OUT.mkdir(exist_ok=True)
     css = appearance_css()
     report = render_outputs()
