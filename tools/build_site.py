@@ -35,7 +35,10 @@ FILES = {
     "docs/bounded-resplit-calculation.md": "bounded-resplit-calculation.md",
     "examples/bounded-ace-resplit-request.json": "bounded-ace-resplit-request.json",
     "examples/bounded-ace-resplit-mixed-request.json": "bounded-ace-resplit-mixed-request.json",
+    "examples/bounded-ace-resplit-h17-request.json":
+        "bounded-ace-resplit-h17-request.json",
     "docs/bounded-ace-resplit-calculation.md": "bounded-ace-resplit-calculation.md",
+    "docs/ace-terminal-reuse.md": "ace-terminal-reuse.md",
     "docs/ace-resplit-dealer-computation.md": "ace-resplit-dealer-computation.md",
     "docs/ace-resplit-dealer-protocol.json": "ace-resplit-dealer-protocol.json",
     "docs/ace-resplit-dealer-results.json": "ace-resplit-dealer-results.json",

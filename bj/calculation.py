@@ -322,7 +322,9 @@ def _validated_decision(raw, captured, digest, returncode, policy):
                                          captured['limits']['max_seconds'], complete=False)
             else:
                 _validated_work(message['work'], captured['limits']['max_states'], complete=False,
-                                 families=work_families)
+                                 families=work_families,
+                                 terminal_reuse=(ace_resplit and
+                                                 captured['input']['can_split'] is True))
         if bounded and message['error']['type'] == 'EnumerationLimitExceeded' and (
                 status != 'resource_limited' or message['work'] is None):
             raise ValueError('enumeration refusal must identify its resource limit and work')
@@ -430,16 +432,26 @@ def _validated_decision(raw, captured, digest, returncode, policy):
                                      captured['limits']['max_seconds'], complete=True)
         else:
             _validated_work(message['work'], captured['limits']['max_states'], complete=True,
-                             families=work_families)
+                             families=work_families,
+                             terminal_reuse=(ace_resplit and
+                                             captured['input']['can_split'] is True))
     return status, result, None, message.get('work')
 
 
-def _validated_work(work, limit, *, complete, families=None):
+def _validated_work(work, limit, *, complete, families=None, terminal_reuse=False):
     from ._enumeration import FAMILIES
 
     allowed = FAMILIES if families is None else families
 
-    replay._object(work, ('limit', 'states', 'attempted_states', 'state_counts'), 'worker work')
+    keys = ('limit', 'states', 'attempted_states', 'state_counts')
+    has_reuse = isinstance(work, dict) and 'terminal_reuse' in work
+    if has_reuse:
+        from . import bounded_ace_resplit
+
+        if terminal_reuse is not True or families != bounded_ace_resplit.FAMILIES:
+            raise ValueError('terminal reuse work requires the captured split-enabled ace model')
+        keys += ('terminal_reuse',)
+    replay._object(work, keys, 'worker work')
     for key in ('limit', 'states', 'attempted_states'):
         if type(work[key]) is not int:
             raise ValueError('worker work counters must be integer tokens')
@@ -452,6 +464,30 @@ def _validated_work(work, limit, *, complete, families=None):
             or states != sum(counts.values())
             or attempted != states + (0 if complete else 1)):
         raise ValueError('worker work differs from the captured state cap/accounting')
+    if has_reuse:
+        _validated_terminal_reuse(work['terminal_reuse'], counts, attempted - states)
+
+
+def _validated_terminal_reuse(value, counts, refused_entries):
+    """Validate detached terminal reuse accounting without pricing a state."""
+    from ._enumeration import TERMINAL_REUSE_METHOD, TERMINAL_REUSE_SCOPE
+
+    replay._object(value, ('computation_method', 'cache_scope', 'cache_retired',
+                           'root_terminal_keys', 'registry_lookups', 'registry_hits',
+                           'unique_reused_keys'), 'terminal reuse work')
+    counters = ('root_terminal_keys', 'registry_lookups', 'registry_hits', 'unique_reused_keys')
+    if any(type(value[key]) is not int or value[key] < 0 for key in counters):
+        raise ValueError('terminal reuse counters must be nonnegative integer tokens')
+    if (value['computation_method'] != TERMINAL_REUSE_METHOD
+            or value['cache_scope'] != TERMINAL_REUSE_SCOPE
+            or value['cache_retired'] is not True):
+        raise ValueError('terminal reuse work does not identify its retired computation policy')
+    seeded, lookups, hits, unique = (value[key] for key in counters)
+    if (not 0 <= unique <= hits <= lookups
+            or unique > seeded or seeded > counts.get('root_dealer', 0)
+            or (hits == 0) != (unique == 0)
+            or lookups - hits > counts.get('ace_resplit_dealer', 0) + refused_entries):
+        raise ValueError('terminal reuse counters contradict entered/reused state accounting')
 
 
 def _validated_deferred_work(work, limit, max_seconds, *, complete):

@@ -2,11 +2,13 @@
 
 [Calculation guide](bounded-ace-resplit-calculation.md) | [Frozen protocol](ace-resplit-dealer-protocol.json) | [Every observation](ace-resplit-dealer-results.json)
 
-A mixed twenty-card request in the existing bounded ace-resplit model now
-finishes under the original 100,000 whole-request state cap. This is a
-computational improvement to the same declared model. The card ceiling,
-offered actions, hidden information and optional shared resplit slot are
-unchanged. Some twenty-card requests still refuse.
+This report preserves the historical PR47 dealer-summary comparison. In
+that frozen source snapshot, a mixed twenty-card request completed under
+the original 100,000 whole-request state cap. The card ceiling, offered
+actions, hidden information and optional shared resplit slot were unchanged.
+The later [terminal reuse calculation](ace-terminal-reuse.md) completes the
+supplied A,A against A, H17 request under the same cap. Its evidence is
+separate from this frozen table and its original verification allowance.
 
 ## Dealer summaries and the player boundary
 
@@ -27,14 +29,16 @@ card. Stand and resplit both finish their hidden-hole expectations before
 the visible-history maximum. All completed wagers still settle against one
 dealer hand. A required unavailable continuation refuses the entire value.
 
-## Frozen coverage comparison
+## Historical PR47 frozen coverage comparison
 
-The protocol was frozen before the candidate or deciding observations.
+The protocol was frozen before that candidate or its deciding observations.
 Original source was `72ae11f40094ba2318e56d0a3ad5aed309419a14`, with candidate
 numerical source `69ea000843a39187e40d99440e7857b6411aec08`. The raw evidence
 retains all three fresh baseline/current repetitions per input, alternating
 order, plus one original-arithmetic verification per input. Counts below are
-the actual whole-request root and joint entries.
+the actual whole-request root and joint entries in that snapshot. The
+"Current product" column names its candidate, not a later installed engine.
+The table and linked frozen observations are retained unchanged.
 
 | Frozen request | Original product | Current product | Original arithmetic verification |
 | --- | ---: | ---: | ---: |
@@ -43,11 +47,14 @@ the actual whole-request root and joint entries.
 | A,A / A, H17, mixed twenty cards | Refused at 100,000 / 100,001 attempted | Still refused at 100,000 / 100,001 attempted | Complete at 259,540 |
 | A,A / 7, one retained ace and five tens | Complete at 46 | Complete at 46 | Complete at 46 |
 
-All nine current complete maps match the original ordered S/H/D/P hexadecimal
-values, selected action and margin exactly. The six-upcard case is a complete
-new product calculation, including actual retained aces and the optional
-resplit continuation. The ace-upcard verification is not an installed result
-under the product cap. Its current refusal remains an explicit boundary.
+All nine candidate complete maps in that comparison match the original
+ordered S/H/D/P hexadecimal values, selected action and margin exactly.
+The six-upcard case established additional complete coverage, including
+retained aces and the optional resplit continuation. Its ace-upcard
+verification was not an installed result under the product cap. That
+snapshot's refusal is preserved here. See the [terminal reuse note](ace-terminal-reuse.md)
+for the later cold H17 completion. The historical 259,540 entries are not
+a current full-request work denominator or an installed allowance.
 
 The private original-arithmetic verifier admits at most 500,000 combined
 root and ace entries. Only its fresh imported joint limit validator and

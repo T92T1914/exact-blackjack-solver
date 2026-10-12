@@ -403,7 +403,7 @@ def bounded_resplit_record(cards: str | Sequence[CardLike], dealer_up: CardLike,
 
 
 def _bounded_ace_resplit_record(cards, dealer_up, rules, *, shoe, can_double=True,
-                                can_split=True, max_states=100_000):
+                                can_split=True, max_states=100_000, _diagnostics=True):
     from . import bounded_ace_resplit
 
     if shoe is None:
@@ -414,7 +414,9 @@ def _bounded_ace_resplit_record(cards, dealer_up, rules, *, shoe, can_double=Tru
     rule_values = _rules_record(rules)
     hand, up, unseen, hand_count = _record_inputs(cards, dealer_up, rules, shoe, False, 1)
     bounded_ace_resplit.validate(hand, rules, unseen, False, hand_count, max_states)
-    action, evs, margin, work = bounded_ace_resplit.decide(
+    decide = (bounded_ace_resplit._decide_with_diagnostics if _diagnostics
+              else bounded_ace_resplit.decide)
+    action, evs, margin, work = decide(
         hand, up, unseen, rules, can_double=can_double, can_split=can_split,
         max_states=max_states)
     document = _decision_document(
@@ -440,7 +442,7 @@ def bounded_ace_resplit_record(cards: str | Sequence[CardLike], dealer_up: CardL
     """
     return _bounded_ace_resplit_record(cards, dealer_up, rules, shoe=shoe,
                                        can_double=can_double, can_split=can_split,
-                                       max_states=max_states)[0]
+                                       max_states=max_states, _diagnostics=False)[0]
 
 
 def _deferred_second_card_record(cards, dealer_up, rules, *, shoe, can_double=True,

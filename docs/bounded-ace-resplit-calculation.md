@@ -65,21 +65,54 @@ the saved values with a fresh calculation, without using them as calculation
 inputs. Open the completed `result/decision.json` in the existing local record
 inspector to examine its inputs, raw values and declared model.
 
-The complete S/H/D/P calculation selected P and entered 59,669 uncached states
-under the original 100,000 state cap in the frozen comparison. The previous
-computation refused at 100,000 admitted entries. Dealer memoization now shares
-equivalent low-total, ace-presence and remaining-count states. The
-[computation report](ace-resplit-dealer-computation.md) retains the complete
-binary64 comparison with the original arithmetic, which needed 121,565 entries
-under a separate verification-only bound. That larger bound is not a product
-option. No card ceiling, legal action, model or operational limit was raised.
+In the historical PR47 comparison, the complete S/H/D/P calculation selected
+P and entered 59,669 uncached states under the original 100,000 state cap.
+The earlier computation refused at 100,000 admitted entries. Dealer
+memoization shares equivalent low-total, ace-presence and remaining-count
+states. The [computation report](ace-resplit-dealer-computation.md) preserves
+that frozen source snapshot and its complete binary64 comparison with the
+original arithmetic. The separate verification used 121,565 entries. That
+larger bound is not a product option, and those historical counts do not
+predict work in a different source revision or cache state.
 
-This is one additional useful calculation under the existing model. The frozen
-mixed A,A against A, H17 case still refuses at the product cap and publishes
-no completed decision. Twenty cards remains an admission ceiling, not a promise
-that every composition finishes. The result does not establish a general
-speedup, full-shoe coverage or a wagering advantage. DAS remains recorded
-context and does not enable double on a one-card-only ace child.
+## A mixed twenty-card H17 calculation
+
+Save the [H17 ace request](../examples/bounded-ace-resplit-h17-request.json)
+as `bounded-ace-resplit-h17-request.json`. It supplies original A,A against
+A after a completed negative peek, H17, DAS enabled and twenty retained
+cards. Counts in `A,2,3,4,5,6,7,8,9,T` order are
+`[1,2,1,2,2,2,2,2,2,4]`. They already exclude visible cards and still include
+the concealed dealer hole. Use them once, without removing another upcard
+or selecting a known hole.
+
+Use an installed revision that includes this request and the
+[terminal reuse method](ace-terminal-reuse.md), with a new directory for
+each owned operation:
+
+```sh
+bj-calculate bounded-ace-resplit-h17-request.json --output-dir ace-h17-001 --wall-seconds 30
+bj-replay ace-h17-001/result/decision.json --output-dir ace-h17-replay-001 --wall-seconds 30
+bj-advise --replay ace-h17-001/result/decision.json --json
+```
+
+The first two commands use the existing calculation and protected replay
+owners. Direct `bj-advise` replay remains caller-owned. Open the complete
+calculation record in the [local record inspector](https://t92t1914.github.io/exact-blackjack-solver/#record-inspector)
+to inspect its original actions, counts, rules and saved values. The page
+reads the record locally and does not reprice it.
+
+The retained cold source calculation completed every offered S/H/D/P value
+under the original 100,000 state cap, entered 82,780 states and selected H.
+Its ordered binary64 values and margin matched the retained original
+arithmetic map. This H17 request refused in the historical PR47 snapshot.
+The new method reuses only exact terminal dealer point masses within the
+same bounded ace request. The [method note](ace-terminal-reuse.md) explains
+the observed work, detached receipt diagnostics and cache limits.
+
+Twenty cards remains an admission ceiling, not a promise that every
+composition finishes. Neither calculation establishes a general speedup,
+full-shoe coverage or a wagering advantage. DAS remains recorded context
+and does not enable double on a one-card-only ace child.
 
 ## Supply an original A,A and retained counts
 

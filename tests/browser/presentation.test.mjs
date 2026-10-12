@@ -651,6 +651,69 @@ test('mixed ace request download and raw completed record remain usable at 390px
   await capture(page,'bounded-ace-resplit-mixed-390',false);
 });
 
+test('installed H17 ace request and complete saved record remain usable on mobile',
+  {skip:!process.env.SOLVER_RECORD_ACE_H17},async t=>{
+  const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
+  const name='bounded-ace-resplit-h17-request.json';
+  const received=await page.request.get(base+'/'+name);assert.equal(received.status(),200);
+  const downloaded=await received.body();
+  assert.deepEqual(downloaded,await readFile(new URL('../../examples/'+name,import.meta.url)));
+  const request=JSON.parse(downloaded);
+  assert.deepEqual(request.schema,{name:'solver-calculation-request',version:5});
+  assert.deepEqual(request.model,{name:'common_shoe_bounded_ace_resplit',version:1});
+  assert.deepEqual(request.input,{cards:['A','A'],dealer_up:'A',
+    unseen_counts:[1,2,1,2,2,2,2,2,2,4],is_split_hand:false,hand_count:1,
+    can_double:true,can_split:true});
+  assert.deepEqual(request.rules,{max_hands:3,resplit_aces:true,hit_split_aces:false,das:true,s17:false});
+  assert.deepEqual(request.limits,{max_states:100000});
+  for (const guide of ['bounded-ace-resplit-calculation.md','ace-terminal-reuse.md']) {
+    const response=await page.request.get(base+'/'+guide);assert.equal(response.status(),200);
+    const text=await response.text();assert.equal(text,await readFile(path.join(root,guide),'utf8'));
+    assert.ok(text.includes(guide.startsWith('bounded-') ?
+      `[H17 ace request](${name})` : `[H17 request](${name})`));
+    for (const match of text.matchAll(/\]\(([^\s)]+)\)/g)) {
+      const target=match[1];if (target.includes('://') || target.startsWith('#')) continue;
+      const linked=await page.request.get(base+'/'+target.split('#')[0]);
+      assert.equal(linked.status(),200,`Generated H17 guide link must resolve: ${target}`);
+    }
+  }
+  const source=process.env.SOLVER_RECORD_ACE_H17,buffer=await readFile(source);
+  const saved=JSON.parse(buffer),hash=createHash('sha256').update(buffer).digest('hex');
+  console.log('H17 ace inspection input:',JSON.stringify({base_url:base+'/',site_directory:root,
+    published:Boolean(process.env.SOLVER_BROWSER_BASE_URL),path:source,
+    origin:'provided installed output',bytes:buffer.length,sha256:hash}));
+  assert.equal(saved.schema.version,6);
+  assert.equal(saved.model.name,request.model.name);assert.equal(saved.model.version,request.model.version);
+  assert.equal(saved.model.enumeration_state_limit,request.limits.max_states);
+  assert.deepEqual(saved.state.cards,request.input.cards);assert.equal(saved.state.dealer_up,request.input.dealer_up);
+  assert.deepEqual(saved.state.shoe.rank_order,['A','2','3','4','5','6','7','8','9','T']);
+  assert.deepEqual(saved.state.shoe.counts,request.input.unseen_counts);
+  assert.equal(saved.state.is_split_hand,request.input.is_split_hand);
+  assert.equal(saved.state.hand_count,request.input.hand_count);
+  assert.deepEqual(saved.state.action_controls,{can_double:true,can_split:true});
+  for (const [key,value] of Object.entries(request.rules)) assert.equal(saved.rules[key],value,key);
+  assert.deepEqual(Object.keys(saved.decision.evs).sort(),['D','H','P','S']);
+  assert.equal(saved.decision.action,'H');
+  await page.evaluate(async()=>{
+    for (const image of document.images) image.loading='eager';
+    await Promise.all(Array.from(document.images,image=>image.decode()));
+  });
+  await page.waitForLoadState('networkidle');
+  const requests=[];page.on('request',request=>requests.push(request.url()));
+  await acceptedRecord(page,'a',buffer,'ace-h17-decision.json');
+  await assertCompleteRecord(page,'a',buffer,['S','H','D','P']);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  await capture(page,'bounded-ace-resplit-h17-390',false);
+  await page.locator('#record-file-a').focus();await page.keyboard.press('Tab');
+  assert.equal(await page.locator('#record-clear-a').evaluate(e=>document.activeElement===e),true);
+  await page.setViewportSize({width:320,height:844});
+  await page.addStyleTag({content:'#record-inspector{font-size:34px}#record-inspector .fine{font-size:28px}#record-inspector th{font-size:30px}#record-inspector h3{font-size:40px}'});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  await capture(page,'bounded-ace-resplit-h17-320-enlarged',false);
+  assert.deepEqual(requests,[],'Local H17 import triggers no requests');
+  assert.equal(createHash('sha256').update(await readFile(source)).digest('hex'),hash);
+});
+
 test('one-card ace installed results, family comparisons and generated artifacts remain usable on mobile',async t=>{
   const page=await fixture(t,{viewport:{width:390,height:844}});await ready(page);
   for (const name of ['bounded-ace-resplit-request.json','bounded-ace-resplit-calculation.md']) {

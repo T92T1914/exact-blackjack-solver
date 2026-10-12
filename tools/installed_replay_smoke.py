@@ -1,4 +1,4 @@
-"""Reuse six genuine installed calculation records through protected replay."""
+"""Reuse seven genuine installed calculation records through protected replay."""
 from __future__ import annotations
 
 import argparse
@@ -163,7 +163,8 @@ def main():
     root.mkdir(exist_ok=False)
     journey = args.calculation_journey.absolute()
     selections = [('ordinary', 1), ('control-FF', 2), ('common-hidden', 3),
-                  ('late-winning', 4), ('resplit-hidden', 5), ('ace-hidden', 6)]
+                  ('late-winning', 4), ('resplit-hidden', 5), ('ace-hidden', 6),
+                  ('ace-h17', 6)]
     rows = []
     for label, schema in selections:
         path = journey / label / 'result/decision.json'
@@ -195,8 +196,8 @@ def main():
     rows.append(snapshot_case(root, ace_path))
     result = {
         'status': 'passed', 'installed_origin': str(origin), 'platform': sys.platform,
-        'records': rows, 'boundary': 'Six genuine completed inputs and separately labeled derived '
-        'comparison/refusal cases, plus a controlled same-worker snapshot witness. '
+        'records': rows, 'boundary': 'Seven genuine completed inputs and separately labeled '
+        'derived comparison/refusal cases, plus a controlled same-worker snapshot witness. '
         'This checks protected installed reuse, '
         'not independent numerical '
         'correctness, memory stress, full-shoe feasibility or native/browser behavior.',

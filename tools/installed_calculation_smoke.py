@@ -185,6 +185,11 @@ def calculate(root, label, value):
             require(value['input']['can_split'] or
                     set(work['state_counts']) <= bounded_ace_resplit.ROOT_FAMILIES,
                     'disabled original ace split entered a joint continuation')
+            if 'terminal_reuse' in work:
+                calc._validated_work(
+                    work, value['limits']['max_states'], complete=True,
+                    families=bounded_ace_resplit.FAMILIES,
+                    terminal_reuse=value['input']['can_split'] is True)
     require(saved['state']['cards'] == value['input']['cards'] and
             saved['state']['shoe']['counts'] == value['input']['unseen_counts'],
             'card order or supplied counts changed')
@@ -369,6 +374,8 @@ def main():
         ('ace-extra', ace_request('7', [1]+[0]*8+[5])),
         ('ace-mixed', ace_request('6', [1, 2, 1, 2, 2, 2, 2, 2, 1, 5],
                                   rules={'s17': True, 'das': True})),
+        ('ace-h17', ace_request('A', [1, 2, 1, 2, 2, 2, 2, 2, 2, 4],
+                                rules={'s17': False, 'das': True})),
     ]
     rows = []
     for label, value in cases:
@@ -392,8 +399,19 @@ def main():
             require(saved['decision']['action'] == 'P' and
                     saved['decision']['margin'].hex() == '0x1.5d46a4a650860p-2' and
                     saved['schema']['version'] == 6 and row['work']['limit'] == 100000 and
-                    row['work']['states'] == 59669,
+                    0 < row['work']['states'] <= 59669,
                     'mixed ace result changed action, margin, record family or bounded work')
+        elif label == 'ace-h17':
+            require(list(evs) == ['S', 'H', 'D', 'P'] and
+                    {a: v.hex() for a, v in evs.items()} == {
+                        'S': '-0x1.5c169153f2a34p-1', 'H': '0x1.bf9edbd5c53ccp-6',
+                        'D': '-0x1.2cc1b8f43200dp-1', 'P': '-0x1.317c500abfae6p-3'},
+                    'installed H17 ace map differs from frozen original arithmetic')
+            require(saved['decision']['action'] == 'H' and
+                    saved['decision']['margin'].hex() == '0x1.69702b8578560p-3' and
+                    saved['schema']['version'] == 6 and row['work']['limit'] == 100000 and
+                    0 < row['work']['states'] <= 100000,
+                    'H17 ace result changed action, margin, record family or bounded work')
         elif label.startswith('ace-'):
             reference = {
                 'ace-hidden': {'S': -1, 'H': -1, 'D': -2, 'P': Fraction(3, 10)},
@@ -553,6 +571,9 @@ def main():
                  5, 'calculation_error'),
                 ('ace-state-limit', ace_request('7', [0]*9+[4], limit=1),
                  4, 'resource_limited'),
+                ('ace-h17-state-limit', ace_request('A', [1, 2, 1, 2, 2, 2, 2, 2, 2, 4],
+                                                    rules={'s17': False, 'das': True},
+                                                    limit=82779), 4, 'resource_limited'),
                 ('ace-dealer-exhaustion', ace_request('6', [0]*9+[3]),
                  5, 'calculation_error'),
                 ('ace-mandatory-exhaustion', ace_request('7', [3]+[0]*9),
@@ -569,7 +590,19 @@ def main():
         retired(receipt)
         require(receipt['status'] == expected_status and receipt['record'] is None and
                 not (directory / 'result').exists(), 'bounded refusal published a partial answer')
-        if expected_exit == 4:
+        if label == 'ace-h17-state-limit':
+            work = receipt['work']
+            require(receipt['error']['type'] == 'EnumerationLimitExceeded' and
+                    work['limit'] == work['states'] == 82779 and
+                    work['attempted_states'] == 82780 and
+                    work['states'] == sum(work['state_counts'].values()) and
+                    set(work['state_counts']) <= bounded_ace_resplit.FAMILIES,
+                    'H17 ace boundary did not retain its actual refused work')
+            if 'terminal_reuse' in work:
+                calc._validated_work(
+                    work, 82779, complete=False, families=bounded_ace_resplit.FAMILIES,
+                    terminal_reuse=True)
+        elif expected_exit == 4:
             require(receipt['error']['type'] == 'EnumerationLimitExceeded' and
                     receipt['work']['limit'] == receipt['work']['states'] == 1 and
                     receipt['work']['attempted_states'] == 2 and
