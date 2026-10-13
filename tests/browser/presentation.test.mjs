@@ -1571,20 +1571,35 @@ test('composition editions follow Auto and overrides without changing saved evid
 
 test('maintained Markdown pictures select the portable editions at narrow size', async t => {
   const page=await fixture(t,{viewport:{width:390,height:844},colorScheme:'light'});
+  const expected={
+    'README.md':{'blackjack-composition':{published:'composition',width:960},
+      'ace-terminal-reuse':{published:'ace-terminal-reuse',width:1440}},
+    'docs/visual-example.md':{'blackjack-composition':{published:'composition',width:960}},
+  };
   for (const name of ['README.md','docs/visual-example.md']) {
     const raw=await readFile(new URL('../../'+name,import.meta.url),'utf8');
-    let picture=raw.match(/<picture>[\s\S]*?<\/picture>/)[0];
-    picture=picture.replace(/(?:docs\/)?blackjack-composition-(clair|obscur)\.png/g,
-      (_,mode)=>base+`/composition-${mode}.png`);
-    await page.setContent('<!doctype html><html lang="en"><head><title>Authored picture check</title>'+
-      '<style>body{margin:20px}img{max-width:100%;height:auto}</style></head><body>'+picture+'</body></html>');
-    for (const [scheme,mode] of [['light','clair'],['dark','obscur']]) {
-      await page.emulateMedia({colorScheme:scheme});
-      await page.waitForFunction(mode => document.querySelector('img').currentSrc.endsWith(
-        `composition-${mode}.png`) && document.querySelector('img').complete,mode);
-      assert.equal(await page.locator('img').evaluate(e=>e.naturalWidth),960);
-      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    const seen=[];
+    // Verify every declared figure without depending on README picture order.
+    for (const match of raw.matchAll(/<picture>[\s\S]*?<\/picture>/g)) {
+      let picture=match[0];
+      const source=picture.match(/\bsrc="(?:docs\/)?(blackjack-composition|ace-terminal-reuse)-(?:clair|obscur)\.png"/);
+      assert.ok(source,`Unqualified Markdown picture in ${name}`);
+      const family=source[1],spec=expected[name][family];
+      assert.ok(spec,`Unexpected Markdown picture ${family} in ${name}`);
+      seen.push(family);
+      picture=picture.replace(/(?:docs\/)?(blackjack-composition|ace-terminal-reuse)-(clair|obscur)\.png/g,
+        (_,kind,mode)=>base+`/${expected[name][kind].published}-${mode}.png`);
+      await page.setContent('<!doctype html><html lang="en"><head><title>Authored picture check</title>'+
+        '<style>body{margin:20px}img{max-width:100%;height:auto}</style></head><body>'+picture+'</body></html>');
+      for (const [scheme,mode] of [['light','clair'],['dark','obscur']]) {
+        await page.emulateMedia({colorScheme:scheme});
+        await page.waitForFunction(file => document.querySelector('img').currentSrc.endsWith(file) &&
+          document.querySelector('img').complete,`${spec.published}-${mode}.png`);
+        assert.equal(await page.locator('img').evaluate(e=>e.naturalWidth),spec.width);
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      }
     }
+    assert.deepEqual(seen.sort(),Object.keys(expected[name]).sort(),`All maintained pictures in ${name}`);
   }
 });
 
