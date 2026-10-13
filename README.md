@@ -4,19 +4,21 @@
 [![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](.github/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-A composition dependent blackjack solver with exact enumeration for hit,
-stand, and double against the remaining shoe. **Split valuation is approximate:**
-it values the split hands independently and uses a greedy shared resplit budget.
-Those limits apply to derived strategy and whole game estimates too; see
-[the model details](#how-it-works). The answer is deterministic enumeration,
-not a Monte Carlo sample or a trained model.
+A composition dependent blackjack solver that enumerates action values from
+the remaining cards using binary floating point. The original/default path
+approximates split hands independently with a greedy shared resplit budget.
+Separately selected bounded common shoe models carry shared depletion and
+completed wagers through their declared joint continuations. Each has an
+explicit model identity, supported subset and complete result or refusal.
+These calculations enumerate finite models. They are not symbolic real
+arithmetic, Monte Carlo estimates or learned predictions.
 
 **The same total can call for different decisions.** I wanted to follow
 that difference down to the cards left in the shoe, then check the calculations
 with an independent simulation. The tool shows each action value and the
 margin between the best two choices so a close decision is visible.
 
-[Run it](#run-it) | [A worked decision](#a-worked-decision) | [How it works](#how-it-works) | [The derived chart](#the-chart-the-solver-derives) | [What this does not prove](#what-this-does-not-prove)
+[Run it](#run-it) | [Supported calculation models](#supported-calculation-models) | [A complete H17 ace calculation](#a-complete-h17-ace-calculation) | [A worked decision](#a-worked-decision) | [How it works](#how-it-works) | [The derived chart](#the-chart-the-solver-derives) | [What this does not prove](#what-this-does-not-prove)
 
 I extracted and generalized this from a larger private project. This repository
 contains the solver, dealer model and verification harness, with a standalone
@@ -26,7 +28,8 @@ network connection to calculate a decision.
 The solver uses dynamic programming. It walks the possible continuations
 of a hand, weights them by the remaining cards and caches repeated states.
 The dealer follows a fixed drawing rule. There are no learned weights or
-opponent predictions, and the split approximations still apply.
+opponent predictions. The original split approximation remains the default
+and still applies to the derived chart and whole game estimates.
 
 [Explore the browser demo](https://t92t1914.github.io/exact-blackjack-solver/) · [Open in Codespaces](https://codespaces.new/T92T1914/exact-blackjack-solver)
 
@@ -42,6 +45,21 @@ bytes. The interface uses locally installed Inter when available, with a system
 font fallback for other visitors. It does not download fonts.
 
 ## Run it
+
+Install the reviewed source without a development checkout:
+
+```sh
+python -m pip install "https://github.com/T92T1914/exact-blackjack-solver/archive/56abec59bab328c8856c824eac36f0e00775c18d.zip"
+bj-advise T,4 T --unseen 2,3,7,8,9,T --json
+```
+
+This pins the accepted source rather than a package version label. It requires
+network access, pip's build support and dependency installation. The installed
+engine needs no account or network connection to calculate a decision. The
+[local calculation guide](docs/local-calculation.md) also describes installation
+from a reviewed wheel and the floating `main` source archive.
+
+For development from this repository:
 
 ```sh
 python -m pip install -e ".[dev]"
@@ -101,8 +119,10 @@ the round state. These reports omit the
 fresh-shoe whole-game estimate because it describes a different starting
 state. The ordinary command and its recorded example remain unchanged.
 A shortage that prevents required dealer draws is an error, not an invented
-settlement or reshuffle. Explicit shoes make constructed cases inspectable,
-but do not remove the split approximation or establish a full-shoe error bound.
+settlement or reshuffle. Explicit shoes make constructed cases inspectable. In
+this ordinary command, they do not remove the original split approximation or
+establish a full shoe error bound. Select a named model below for a supported
+joint calculation.
 
 For a portable record of one decision, add `--json`:
 
@@ -133,7 +153,7 @@ action, values, margin = best_action(
 )
 ```
 
-`bj.record.decision_json` serializes this object. Schema version 1 includes the
+`bj.record.decision_json` serializes this original/default record. Schema version 1 includes the
 package version and the model qualifications. The hole stays hidden, values
 assume the dealer peek has ruled out a natural, and ten value ranks collapse to
 T. Insurance is not priced in a hand decision. Split still uses independent
@@ -142,6 +162,113 @@ record refuses unsupported no-peek, surrender, restricted-double and distinct
 ten-pair rules instead of labeling them as implemented. Invalid states and
 nonfinite results also fail before a JSON record is emitted. These checks belong
 to the record interface and do not change the existing solver arithmetic.
+
+Later records declare their separately selected model. The bounded late
+surrender and deferred second card families do not change what an older record
+means. [Saved record replay](docs/saved-record-replay.md) validates the recorded
+inputs and recomputes through the installed engine without trusting the saved
+answer. [Protected replay](docs/protected-replay.md) adds the existing disposable
+worker owner. The browser inspector reads and compares files locally without
+recomputing or uploading them.
+
+## Supported calculation models
+
+Save a request from the appropriate guide, then use `bj-calculate` in your
+installed environment. Successful results use the same record, replay and
+[local inspector](https://t92t1914.github.io/exact-blackjack-solver/#record-inspector)
+interfaces. A different model is identified before saved values are compared.
+
+| Selected calculation | Declared scope | Guide and small request |
+| --- | --- | --- |
+| Original/default | Post peek stand, hit and double, with the existing independent hand split approximation | [Calculation guide](docs/local-calculation.md), [request 1](examples/calculation-request.json) |
+| `common_shoe_two_hand`, version 1 | An original pair, exactly two split hands, no resplitting and one shared shoe | [Common shoe guide](docs/common-shoe-calculation.md), [request 2](examples/common-shoe-request.json) |
+| `post_peek_late_surrender`, version 1 | One original hand with explicitly permitted late surrender after a negative peek | [Late surrender guide](docs/late-surrender-calculation.md), [request 3](examples/late-surrender-request.json) |
+| `common_shoe_bounded_resplit`, version 1 | An original non ace pair, up to three hands and one shared extra resplit slot | [Non ace resplit guide](docs/bounded-resplit-calculation.md), [request 4](examples/bounded-resplit-request.json) |
+| `common_shoe_bounded_ace_resplit`, version 1 | Original A,A, up to three hands, one optional shared ace resplit and one mandatory card per child | [Ace resplit guide](docs/bounded-ace-resplit-calculation.md), [request 5](examples/bounded-ace-resplit-request.json) |
+| `deferred_second_card_all_wagers_sdh`, version 1 | One original hand below 21, stand/hit/optional double, dealer second card dealt after player completion and every committed wager lost to dealer natural | [Deferred second card guide](docs/deferred-second-card-calculation.md), [request 6](examples/deferred-second-card-request.json) |
+
+The post peek families retain the concealed dealer hole in the supplied counts
+and condition on the completed negative peek. Visible cards are already removed.
+The engine uses those counts once. Joint split choices use visible information
+and settle completed wagers against the same dealer. Their declared sequential
+deal order is part of the model.
+
+The deferred second card family instead has no hole card already removed and
+no negative peek. It excludes split, surrender, insurance and initial naturals.
+Its all wagers settlement is a specific supported no peek convention, not a
+general switch that extends the older post peek model.
+
+Bounded families enumerate their admitted continuations in binary floating
+point. Required but unavailable cards, unsupported rules and exceeded limits
+refuse a complete answer. An admission ceiling is not a completion guarantee.
+The existing default approximation remains useful for its broader ordinary
+interface, with no general split error bound.
+
+`bj-calculate` captures immutable input and computes in an owned worker. Use a
+fresh output directory for each attempt. On Windows, the default 256 MiB limit
+is Job committed memory, not resident memory. Linux support is wall only with
+uncapped memory. Cancellation, timeout, resource refusal, computation failure
+and unresolved cleanup have visible outcomes and withhold a completed result.
+The [calculation guide](docs/local-calculation.md) and
+[protected replay guide](docs/protected-replay.md) explain the separate work,
+wall and cleanup policies. Direct APIs and `bj-advise --replay` remain caller
+owned.
+
+## A complete H17 ace calculation
+
+Save the [H17 request](examples/bounded-ace-resplit-h17-request.json) as
+`bounded-ace-resplit-h17-request.json`, then use the installed engine:
+
+```sh
+bj-calculate bounded-ace-resplit-h17-request.json --output-dir ace-h17-001 --wall-seconds 30
+bj-replay ace-h17-001/result/decision.json --output-dir ace-h17-replay-001 --wall-seconds 30
+bj-advise --replay ace-h17-001/result/decision.json --json
+```
+
+The accepted cold calculation completed all original stand, hit, double and
+split values in 82,780 entered states under the unchanged 100,000 state cap.
+Original A,A faced dealer A after a negative peek, with H17 and DAS enabled.
+Counts were `[1,2,1,2,2,2,2,2,2,4]` in `A,2,3,4,5,6,7,8,9,T` order. They
+already excluded visible cards and retained the concealed hole. A ten valued
+hole was excluded by the peek, without exposing the actual eligible hole.
+
+The model is `common_shoe_bounded_ace_resplit`, version 1, calculation request 5
+and decision record 6. Split children take one card and cannot hit or double.
+They share one optional extra ace resplit, at most three resulting hands and
+one dealer settlement. The original double action remains offered.
+
+| Original action | Saved binary64 expected return in original wager units |
+| --- | ---: |
+| S, stand | -0.6798596777892443 |
+| H, hit | 0.027320589716584284 |
+| D, double | -0.5874154851999279 |
+| P, split | -0.14916288883974643 |
+
+The complete map selects H with margin `0.17648347855633073`. Request local
+reuse accepts only already completed terminal dealer point masses. It preserves
+the original action values and margin while leaving nonterminal arithmetic and
+player choices unchanged. The [computation guide](docs/ace-terminal-reuse.md)
+records the source, method, counters and installed calculation/replay acceptance.
+
+<a href="docs/ace-terminal-reuse.md">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/ace-terminal-reuse-obscur.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/ace-terminal-reuse-clair.png">
+    <img src="docs/ace-terminal-reuse-obscur.png" alt="One cold H17 ace request completed all four original action values in 82,780 entered states under the unchanged 100,000 state cap. This is work versus a cap, not a timing comparison or a guarantee for other shoes." width="900">
+  </picture>
+</a>
+
+These accepted Clair and Obscur figures show the retained numerical result,
+with [source data and rendering evidence](docs/ace-terminal-reuse-figure.json).
+The four values remain selectable text above. Open the completed decision in
+the [local inspector](https://t92t1914.github.io/exact-blackjack-solver/#record-inspector)
+to inspect its inputs or compare it with another saved result.
+
+The original whole request cap and ten second joint cooperative allowance
+remain. The owned command has its separate wall policy. Warm callers can enter
+different work because existing caches may bypass terminal seeds. This is
+completion of one qualified cold input, not a general speedup, a promise for
+every twenty card composition, full shoe coverage or exact real arithmetic.
 
 ## A worked decision
 
@@ -198,7 +325,7 @@ prints the margin between available actions alongside each recommendation.
 Both hands total 16, but the cards remaining in the shoe differ. Under the same six deck rules, the solver recommends hitting 10 + 6 and standing on 8 + 5 + 3. Both decisions still have negative expected returns.
 [Reproduce and inspect the values](docs/visual-example.md).
 
-One hand is a single agent, finite horizon Markov decision process, and the
+The original/default path below treats one hand as a single agent, finite horizon Markov decision process, and the
 solver is the dynamic program that values it. The state is the player's
 (total, softness), the dealer's upcard and the exact composition of the cards
 nobody has seen; an action is stand, hit, double or split; a transition is one
@@ -240,7 +367,7 @@ Three details carry most of the weight, and each has a test with its name on it:
   The hole card is never *read*, a solver that maximised over it would report
   +0.1867 for hitting 11 vs A instead of the correct +0.1476, and that number
   is pinned so the mistake cannot come back (`test_eleven_vs_ace_is_not_played_clairvoyantly`).
-* **Memoisation on an immutable shoe tuple.** Every cached value is keyed on
+* **Memoisation on an immutable shoe tuple.** Dealer resolution is keyed on
   `(total, soft, shoe, s17)`, and a tuple of counts cannot be mutated out from
   under the cache, so 2,3 and 3,2 collapse into one subproblem and clearing the
   caches reproduces every number bit for bit
@@ -252,7 +379,7 @@ retain cold, repeated, cleared and varied-query results with separate process
 memory and instrumentation costs. Clearing tables does not promise a lower
 process memory reading or change the supported numerical model.
 
-Split hands are valued independently against the shoe at the split, and
+In the original/default path, split hands are valued independently against the shoe at the split, and
 the shared resplit budget uses a greedy decision rule. The notes in `bj/ev.py`
 describe comparisons for the studied rules and hands. Those measured
 differences are not a proven error bound for every possible configuration.
@@ -261,6 +388,11 @@ the independent hand model. It does not bound shared shoe depletion or the
 information carried between hands. The separate [bounded joint reference](docs/joint-split.md)
 models exactly two hands without resplitting and leaves the production default
 unchanged. Its enumeration uses floating point, not symbolic exact arithmetic.
+
+The supported common shoe calculation families above expose joint computation
+through named requests and saved model identities. Their declared resplit,
+information, dealing and exhaustion rules remain distinct from this original
+approximation and from one another.
 
 The [retained 48 condition comparison](https://t92t1914.github.io/exact-blackjack-solver/joint-split.html)
 completed both declared eight card toy shoes without exclusions. The largest
@@ -279,7 +411,8 @@ to hit or double raises `ValueError`. After the last drawable card, hit
 valuation settles the hand instead of trying to take the hole card. A split
 needs at least two drawable cards. If the dealer still needs a card that is
 unavailable, the solver raises rather than inventing a settlement or reshuffle.
-The split approximation above still applies to these small shoes.
+The original/default split approximation still applies to these small shoes
+when using that ordinary interface.
 
 ## What's in the box
 
@@ -306,6 +439,12 @@ independent way: it plays hands under fresh randomness and its long run figures
 must land on the enumerated ones. `chart.py` and `cli.py` are the presentation
 layer: the chart below and the worked decision are both their output, and both
 are checked against the solver by the tests.
+
+The named calculation families add explicit model wrappers and request scoped
+joint continuations. `record.py` exports their supported records, `replay.py`
+dispatches by the original recorded model, and `calculation.py` and
+`supervised_replay.py` share the existing disposable worker owner. The browser
+inspector admits and displays saved files without invoking numerical code.
 
 ## The chart the solver derives
 
@@ -420,7 +559,7 @@ separate from this command. Current results are available in the linked CI run.
   and the −0.4044% are a single six deck, S17, 3:2 table. Changing the rules
   requires recalculating the values. `--decks`, `--h17` and `--no-das` select
   those changes on the command line.
-* **It models one hand, not a session.** The CLI starts with a fresh shoe minus
+* **It models a declared hand or round, not a session.** The ordinary CLI starts with a fresh shoe minus
   the visible cards. The Python API also accepts an explicit remaining shoe;
   callers are responsible for its card counts. There is no automatic tracking
   across hands, account connection or live table integration.
@@ -429,8 +568,10 @@ separate from this command. Current results are available in the linked CI run.
   here exists because it is restricted to legitimate information.
 * **Two of the split rules were conservative defaults** in the original table
   (resplit aces, hit split aces), and the solver's defaults follow them. The EV
-  of a table that allows them can be requested, subject to the independent hand
-  and shared resplit budget approximations; it is not the default.
+  of a table that allows them can be requested through the original interface,
+  subject to its independent hand and shared resplit budget approximations.
+  The separately selected bounded ace family has its own one card child and
+  shared slot contract. Neither route promises completion for every shoe.
 
 ## Where the reference numbers come from
 
@@ -457,7 +598,7 @@ This project gives me a concrete way to work on dynamic programming, state repre
 
 - **State and caching.** Follow the composition-dependent calculation and memoized states. [Inspect the work](README.md#how-it-works).
 - **Independent checks.** Read how exact calculations and simulation are compared. [Inspect the work](README.md#what-is-verified-and-how).
-- **Model boundaries.** Inspect the split approximation and the assumptions behind an action value. [Inspect the work](README.md#what-this-does-not-prove).
+- **Model boundaries.** Compare the original split approximation with separately selected joint and deferred dealer models. [Inspect the work](README.md#supported-calculation-models).
 
 The transferable work is numerical software and verification. A correct result inside this rule model does not establish a model for financial risk or another real-world decision.
 
