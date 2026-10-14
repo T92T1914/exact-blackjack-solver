@@ -15,7 +15,8 @@ import pytest
 from bj import calculation as calc, common_shoe, record
 from bj import _calculation_worker as worker
 from bj.caches import clear_all_caches
-from test_calculation import (altered_action_map, historical_action_map_is_passive_and_unchanged,
+from test_calculation import (altered_action_map, assert_canonical_tie_completion,
+                              historical_action_map_is_passive_and_unchanged,
                               no_parent_pricing, policy, request, returned_message, run)
 
 
@@ -242,5 +243,18 @@ def test_common_ace_pair_keeps_root_actions_and_one_card_split_ace_model():
                 calc._json_bytes(message), captured, message['request_sha256'], code, selected)
         assert status == 'completed' and error is None
         assert json.loads(raw) == decision
+    finally:
+        clear_all_caches()
+
+
+def test_common_canonical_tie_preserves_values_and_historical_comparison(tmp_path):
+    value = common_request()
+    value['input'].update(dealer_up='T', unseen_counts=[0] * 9 + [8])
+    value['rules']['das'] = False
+    clear_all_caches()
+    try:
+        code, message, _, _ = fixed_message(value)
+        assert code == 0 and message['status'] == 'completed'
+        assert_canonical_tie_completion(tmp_path, value, message, code)
     finally:
         clear_all_caches()

@@ -112,6 +112,96 @@ def historical_action_map_is_passive_and_unchanged(decision):
     assert calc._json_bytes(decision) == raw
 
 
+def assert_canonical_tie_completion(tmp_path, value, message, code):
+    from bj import common_shoe
+
+    decision = message['decision']
+    answer = decision['decision']
+    assert answer['evs'] == {'S': 0.0, 'H': -1.0, 'D': -2.0, 'P': 0.0}
+    assert answer['action'] == 'S' and answer['action_name'] == 'STAND'
+    assert answer['margin'] == 0.0
+    original = calc._json_bytes(message)
+    original_evs = {action: float(number).hex() for action, number in answer['evs'].items()}
+    input_bytes = calc._json_bytes(value)
+    reversed_message = copy.deepcopy(message)
+    reversed_answer = reversed_message['decision']['decision']
+    reversed_answer['evs'] = dict(reversed(list(answer['evs'].items())))
+    assert list(reversed_answer['evs']) == list(reversed(answer['evs']))
+    for name, output in [('original', message), ('reversed', reversed_message)]:
+        directory = tmp_path / name
+        directory.mkdir()
+        before = calc._json_bytes(output)
+        with (
+            patch.object(common_shoe, 'decide',
+                         side_effect=AssertionError('parent must not price')),
+            no_parent_pricing(),
+        ):
+            result = run(directory, value=value, worker=returned_message(output, code))
+        assert result['status'] == 'completed'
+        committed_bytes = (directory / 'attempt/result/decision.json').read_bytes()
+        assert committed_bytes == calc._json_bytes(output['decision'])
+        committed = json.loads(committed_bytes)['decision']
+        assert committed['action'] == 'S' and committed['margin'] == 0.0
+        assert {action: float(number).hex() for action, number in committed['evs'].items()} == (
+            original_evs)
+        assert (directory / 'request.json').read_bytes() == input_bytes
+        assert (directory / 'attempt/request-source.json').read_bytes() == input_bytes
+        assert calc._json_bytes(output) == before
+
+    altered = copy.deepcopy(message)
+    altered['decision']['decision'].update(action='P', action_name='SPLIT')
+    assert altered['decision']['decision']['evs'] == answer['evs']
+    assert altered['decision']['decision']['margin'] == answer['margin']
+    with patch.object(common_shoe, 'decide', side_effect=AssertionError('must not price')):
+        historical_action_map_is_passive_and_unchanged(altered['decision'])
+    historical = tmp_path / 'historical-tied-decision.json'
+    historical_bytes = calc._json_bytes(altered['decision'])
+    historical.write_bytes(historical_bytes)
+    comparison = replay.replay_file(historical)
+    assert comparison['status'] == 'differences'
+    assert comparison['comparison']['legal_actions']['matches'] is True
+    assert comparison['comparison']['evs_match'] is True
+    assert comparison['comparison']['margin']['matches'] is True
+    assert comparison['comparison']['recommendation'] == {
+        'recorded': 'P', 'recomputed': 'S', 'matches': False}
+    assert historical.read_bytes() == historical_bytes
+    assert {action: float(number).hex()
+            for action, number in comparison['recorded']['evs'].items()} == original_evs
+    assert {action: float(number).hex()
+            for action, number in comparison['recomputed']['evs'].items()} == original_evs
+
+    refused = tmp_path / 'noncanonical'
+    refused.mkdir()
+    with (
+        patch.object(common_shoe, 'decide', side_effect=AssertionError('parent must not price')),
+        no_parent_pricing(),
+    ):
+        result = run(refused, value=value, worker=returned_message(altered, code))
+    assert result['status'] == 'worker_failed'
+    assert result['record'] is None and result['error']['type'] == 'ValueError'
+    assert not (refused / 'attempt/result').exists()
+    assert (refused / 'request.json').read_bytes() == input_bytes
+    assert (refused / 'attempt/request-source.json').read_bytes() == input_bytes
+    assert calc._json_bytes(message) == original
+    assert historical.read_bytes() == historical_bytes
+
+
+def test_original_canonical_tie_preserves_values_and_historical_comparison(tmp_path):
+    from bj.caches import clear_all_caches
+    from test_common_calculation import fixed_message
+
+    value = request()
+    value['input'].update(cards=['T', 'T'], dealer_up='T', unseen_counts=[0] * 9 + [8])
+    value['rules']['das'] = False
+    clear_all_caches()
+    try:
+        code, message, _, _ = fixed_message(value)
+        assert code == 0 and message['status'] == 'completed'
+        assert_canonical_tie_completion(tmp_path, value, message, code)
+    finally:
+        clear_all_caches()
+
+
 @pytest.mark.parametrize('remove,add', [
     (('S',), ()), (('H',), ()), (('D',), ()), (('H', 'D'), ()), ((), ('P',)),
 ], ids=['missing-stand', 'missing-hit', 'missing-double', 'only-stand-on-open-hand',
