@@ -381,6 +381,14 @@ def _validated_decision(raw, captured, digest, returncode, policy):
             or bounded and decision['model'] != expected_model):
         raise ValueError('completed decision differs from the captured request/package')
     answer = decision['decision']
+    if not (surrender or resplit or ace_resplit or deferred):
+        from .ev import _offered_actions
+
+        offered = _offered_actions(cards, unseen, rules, can_double=can_double,
+                                   can_split=can_split, is_split_hand=is_split,
+                                   hand_count=hand_count)
+        if set(answer['evs']) != set(offered):
+            raise ValueError('completed decision lacks its exact offered values')
     if deferred:
         offered = {'S'}
         if sum(unseen) >= 2:

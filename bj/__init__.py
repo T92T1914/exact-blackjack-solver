@@ -8,9 +8,12 @@ transitions are card draws WITHOUT replacement from that composition; the
 reward is the settlement at the end of the hand.  The dealer is part of the
 environment - a fixed drawing rule, never an opponent - so there is no game
 theory here, no equilibrium and no adversary.  There is no learning either:
-the value of every state is computed exactly by dynamic programming over the
-reachable continuations, memoised on the immutable shoe tuple, so re-running
-gives bit-identical numbers.
+Stand, hit and double expectations enumerate the finite shoe continuations
+with binary64 floating-point arithmetic and immutable shoe cache keys. The
+default split value uses the independent-hand and greedy shared-slot
+approximations documented in ev.py. Separately selected common-shoe models
+carry joint depletion and settlement. Enumeration and repeatable values do
+not establish symbolic exactness or a universal action-ranking error bound.
 
     core.py      ranks, hands, the immutable shoe, the Rules dataclass
     dealer.py    exact dealer outcome distribution (peek and hole card modelled)
