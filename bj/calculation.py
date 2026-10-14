@@ -389,6 +389,8 @@ def _validated_decision(raw, captured, digest, returncode, policy):
                                    hand_count=hand_count)
         if set(answer['evs']) != set(offered):
             raise ValueError('completed decision lacks its exact offered values')
+        if answer['action'] != max(offered, key=answer['evs'].__getitem__):
+            raise ValueError('completed decision contradicts its canonical ranking')
     if deferred:
         offered = {'S'}
         if sum(unseen) >= 2:
