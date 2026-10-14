@@ -86,6 +86,52 @@ Original stand/hit/double retain the existing last-player-draw convention:
 stand after the last player draw and still require dealer settlement. This
 does not relax the stricter joint split completion rule.
 
+## Reuse completed settlement states
+
+Finished hands retain the settlement information needed by every later choice.
+Totals below 17 have the same payoff against each possible completed dealer
+outcome, and every busted hand loses its wager. The joint continuation stores
+those totals as 16 and 22 respectively, retains totals 17 through 21 and every
+individual wager, then sorts the finished entries for its local cache key.
+It preserves the number of completed hands. Pending hands still play in their
+declared order, and unseen counts, active cards, the shared slot and hidden-hole
+information remain unchanged.
+
+The settlement reward is an integer sum, so sorting these entries preserves
+each reward before the unchanged floating-point multiplication and summation.
+This shares equivalent completed states without changing the combined objective,
+action rules, dealer arithmetic or requirement to finish every offered branch.
+
+The four declared local qualification requests used original `8,8`, DAS and S17
+on, both original Double and Split permitted, and the existing 100000-state cap.
+The `high12` stock was `7:3,8:3,9:3,T:3`. The `mixed16` stock was
+`5:2,7:2,8:4,9:4,T:4`. These counts already exclude the visible cards and include
+the hidden hole. Their recorded whole-request outcomes were:
+
+| Stock | Dealer upcard | Original admitted states | Completed-ledger admitted states | Completed action |
+| --- | --- | ---: | ---: | --- |
+| high12 | 2 | 21785 | 6623 | Stand |
+| high12 | 6 | 21539 | 6377 | Split |
+| mixed16 | 2 | Refused at 100000 | 37802 | Stand |
+| mixed16 | 6 | Refused at 100000 | 32239 | Split |
+
+Both original mixed16 attempts denied state 100001 without a completed answer.
+Both now finish under the same cap. The two high12 records preserve their entire
+saved record identity, including the exact binary64 action values, recommendation
+and margin. The new mixed16 answers are completed engine results, not independent
+rational expected values.
+
+The original source for this qualification is commit
+`259aa8aedf84510887d8dbf3e5bf928c1447458a`. The reviewed completed-ledger body of
+`bj/joint_resplit.py` has SHA256
+`4b0f2b8ebd039d8ad664d703b727860326d246b415593af7996b4d01bd089cf1`.
+These identifiers distinguish the arithmetic source from its unchanged model
+and record identity. The measured counts describe four declared local requests.
+They establish neither a latency or memory claim nor universal completion for
+the 3 through 20 card admission range. Historical work receipts can retain
+different cache populations while their saved mathematical answers remain
+usable for comparison.
+
 ## Bound an attempt and inspect its outcome
 
 The request cap counts uncached work across root draw, hit, double,

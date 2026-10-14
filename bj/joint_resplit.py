@@ -149,7 +149,10 @@ def joint_resplit_value(pair_rank, dealer_up, shoe, *, double_after_split=True,
         return math.fsum(values)
 
     def finish(unseen, cards, pending, completed, slot, wager=1):
-        completed = completed + ((_total(cards)[0], wager),)
+        # Finished hands retain only their integer settlement payoffs and wagers.
+        total = _total(cards)[0]
+        total = 16 if total < 17 else 22 if total > 21 else total
+        completed = tuple(sorted(completed + ((total, wager),)))
         if pending:
             return play(unseen, (pending[0],), pending[1:], completed, slot)
         return settle(unseen, completed)
