@@ -49,6 +49,61 @@ def test_complete_record_and_controls_are_current_only(double, split):
     assert not any(name.startswith('resplit_') for name in FAMILIES)
 
 
+@pytest.mark.parametrize('cards', [
+    pytest.param(('7',) * 3 + ('8',) * 3 + ('9',) * 3 + ('T',) * 3, id='high12'),
+    pytest.param(('5',) * 2 + ('7',) * 2 + ('8',) * 4 + ('9',) * 4 + ('T',) * 4,
+                 id='mixed16'),
+])
+@pytest.mark.parametrize('up', ['2', '6'])
+def test_completed_ledger_family_finishes_under_existing_whole_request_cap(cards, up):
+    unseen = list(counts(cards))
+    original = unseen.copy()
+    saved, work = record._bounded_resplit_record(
+        ('8', '8'), up, rules(das=True, s17=True), shoe=unseen,
+        can_double=True, can_split=True, max_states=100000)
+    assert unseen == original
+    assert saved['schema'] == {'name': 'blackjack-decision', 'version': 5}
+    assert saved['state']['cards'] == ['8', '8']
+    assert saved['state']['dealer_up'] == up
+    assert saved['state']['total'] == 16 and saved['state']['soft'] is False
+    assert saved['state']['is_split_hand'] is False and saved['state']['hand_count'] == 1
+    assert saved['state']['action_controls'] == {'can_double': True, 'can_split': True}
+    assert saved['state']['shoe'] == {
+        'rank_order': list(RANKS), 'counts': original, 'source': 'supplied_unseen',
+        'includes_hidden_hole': True, 'visible_cards_already_removed': True,
+    }
+    assert saved['rules']['das'] is True and saved['rules']['s17'] is True
+    assert saved['model'] == bounded_resplit.model_record(up, 100000)
+    decision = saved['decision']
+    assert list(decision['evs']) == ['S', 'H', 'D', 'P']
+    assert decision['units'] == 'original_wager'
+    assert decision['whole_game_estimate'] is None
+    # This checks record/ranking consistency, not an independent numerical oracle.
+    ranked = sorted(decision['evs'], key=decision['evs'].__getitem__, reverse=True)
+    assert decision['action'] == ranked[0]
+    assert decision['margin'] == decision['evs'][ranked[0]] - decision['evs'][ranked[1]]
+    assert work['limit'] == 100000
+    assert 0 < work['states'] <= work['limit']
+    assert work['states'] == work['attempted_states'] == sum(work['state_counts'].values())
+    assert set(work['state_counts']) <= bounded_resplit.FAMILIES
+    assert any(name.startswith('root_') for name in work['state_counts'])
+    assert any(name.startswith('resplit_') for name in work['state_counts'])
+    if len(cards) == 12:
+        # Saved unmodified-engine bits are compatibility controls, not exact rationals.
+        baseline = {
+            '2': ({'S': '-0x1.a2e8ba2e8ba2fp-1', 'H': '-0x1.0000000000000p+0',
+                   'D': '-0x1.0000000000000p+1', 'P': '-0x1.48253c8253c82p+0'},
+                  'S', '0x1.745d1745d1744p-3'),
+            '6': ({'S': '0x1.45d1745d1745dp-1', 'H': '-0x1.0000000000000p+0',
+                   'D': '-0x1.0000000000000p+1', 'P': '0x1.9364d9364d936p+0'},
+                  'P', '0x1.e0f83e0f83e0fp-1'),
+        }
+        expected_evs, expected_action, expected_margin = baseline[up]
+        assert {action: value.hex() for action, value in decision['evs'].items()} == expected_evs
+        assert decision['action'] == expected_action
+        assert decision['margin'].hex() == expected_margin
+
+
 def test_raw_ties_keep_declared_order_without_reusing_core_dictionary_order():
     assert bounded_resplit.rank({'P': 0.0, 'H': -1.0, 'D': -2.0, 'S': 0.0}) == ('S', 0.0)
     assert bounded_resplit.rank({'H': -1.0, 'S': -1.0}) == ('S', 0.0)
