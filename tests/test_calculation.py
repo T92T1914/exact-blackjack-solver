@@ -8,12 +8,13 @@ import os
 import subprocess
 import sys
 import threading
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from bj import calculation as calc
+from bj import calculation as calc, ev, replay
 from bj import _calculation_process as transport
 
 FIXTURE = Path(__file__).parent / 'fixtures/saved-decision-v1-7a38141.json'
@@ -60,11 +61,180 @@ def input_file(tmp_path, value=None):
 
 def run(tmp_path, value=None, worker=success, cancellation=None):
     path = input_file(tmp_path, value)
-    with patch.object(calc, 'execute', side_effect=worker), patch.object(
-            calc.record, 'best_action', side_effect=AssertionError('parent must not price')):
+    with patch.object(calc, 'execute', side_effect=worker), no_parent_pricing():
         result = calc._run(path, tmp_path / 'attempt', policy(),
                            cancellation or threading.Event())
     return result
+
+
+@contextmanager
+def no_parent_pricing():
+    with ExitStack() as guards:
+        guards.enter_context(patch.object(
+            calc.record, 'best_action', side_effect=AssertionError('parent must not price')))
+        for name in ('best_action', '_stand_ev', '_hit_ev', '_double_ev', '_split_total_ev'):
+            guards.enter_context(patch.object(
+                ev, name, side_effect=AssertionError('parent must not price')))
+        yield
+
+
+def altered_action_map(decision, *, remove=(), add=()):
+    altered = copy.deepcopy(decision)
+    answer = altered['decision']
+    for action in remove:
+        del answer['evs'][action]
+    for action in add:
+        answer['evs'][action] = min(answer['evs'].values()) - 1.0
+    ranked = sorted(answer['evs'].items(), key=lambda item: item[1], reverse=True)
+    answer['action'], best = ranked[0]
+    answer['action_name'] = replay.ACTION_NAMES[answer['action']]
+    answer['margin'] = best - ranked[1][1] if len(ranked) > 1 else 0.0
+    return altered
+
+
+def returned_message(message, code=0):
+    def returned(payload, *_):
+        captured = json.loads(payload)
+        output = {**message, 'request_sha256': captured['request_sha256'],
+                  'policy': captured['policy']}
+        return {'status': 'returned', 'error': None, 'stdout': calc._json_bytes(output),
+                'stderr': b'', 'worker': {'pid': 123, 'returncode': code},
+                'policy_established': True,
+                'cleanup': {'retired': True, 'worker_retired': True, 'transport_retired': True,
+                            'job_empty': None, 'errors': []}, 'elapsed_seconds': 0.01}
+    return returned
+
+
+def historical_action_map_is_passive_and_unchanged(decision):
+    raw = calc._json_bytes(decision)
+    with no_parent_pricing():
+        replay._admit(decision)
+    assert calc._json_bytes(decision) == raw
+
+
+@pytest.mark.parametrize('remove,add', [
+    (('S',), ()), (('H',), ()), (('D',), ()), (('H', 'D'), ()), ((), ('P',)),
+], ids=['missing-stand', 'missing-hit', 'missing-double', 'only-stand-on-open-hand',
+        'split-on-nonpair'])
+def test_fresh_retained_action_map_must_be_complete_and_legal(tmp_path, remove, add):
+    fixture_bytes = FIXTURE.read_bytes()
+    altered = altered_action_map(saved(), remove=remove, add=add)
+    historical_action_map_is_passive_and_unchanged(altered)
+
+    def changed_answer(payload, *args):
+        result = success(payload, *args)
+        message = json.loads(result['stdout'])
+        message['decision'] = altered
+        result['stdout'] = calc._json_bytes(message)
+        return result
+
+    with patch.object(ev, 'best_action', side_effect=AssertionError('parent must not price')):
+        result = run(tmp_path, worker=changed_answer)
+    assert result['status'] == 'worker_failed'
+    assert result['record'] is None
+    assert result['error']['type'] == 'ValueError'
+    assert not (tmp_path / 'attempt/result').exists()
+    assert (tmp_path / 'request.json').read_bytes() == calc._json_bytes(request())
+    assert (tmp_path / 'attempt/request-source.json').read_bytes() == calc._json_bytes(request())
+    assert FIXTURE.read_bytes() == fixture_bytes
+
+
+@pytest.mark.parametrize('double,split', [(True, True), (False, True),
+                                        (True, False), (False, False)])
+def test_original_record_schemas_keep_full_selected_action_maps(tmp_path, double, split):
+    from test_common_calculation import fixed_message
+
+    value = request()
+    value['input'].update(cards=['T', 'T'], dealer_up='7',
+                          unseen_counts=[1] + [0] * 8 + [5],
+                          can_double=double, can_split=split)
+    code, message, _, _ = fixed_message(value)
+    assert code == 0 and message['status'] == 'completed'
+    decision = message['decision']
+    assert decision['schema']['version'] == (1 if double and split else 2)
+    assert set(decision['decision']['evs']) == (
+        {'S', 'H'} | ({'D'} if double else set()) | ({'P'} if split else set()))
+    historical_action_map_is_passive_and_unchanged(decision)
+    with patch.object(ev, 'best_action', side_effect=AssertionError('parent must not price')):
+        result = run(tmp_path, value=value, worker=returned_message(message, code))
+    assert result['status'] == 'completed'
+    assert json.loads((tmp_path / 'attempt/result/decision.json').read_bytes()) == decision
+    assert (tmp_path / 'request.json').read_bytes() == calc._json_bytes(value)
+
+
+@pytest.mark.parametrize('double,remove,add', [
+    (True, ('P',), ()), (False, (), ('D',)),
+], ids=['pair-missing-split', 'schema2-double-disabled'])
+def test_fresh_original_pair_and_control_maps_refuse_incomplete_answers(
+        tmp_path, double, remove, add):
+    from test_common_calculation import fixed_message
+
+    value = request()
+    value['input'].update(cards=['T', 'T'], dealer_up='7',
+                          unseen_counts=[1] + [0] * 8 + [5], can_double=double)
+    code, message, _, _ = fixed_message(value)
+    assert code == 0 and message['status'] == 'completed'
+    message['decision'] = altered_action_map(message['decision'], remove=remove, add=add)
+    historical_action_map_is_passive_and_unchanged(message['decision'])
+    with patch.object(ev, 'best_action', side_effect=AssertionError('parent must not price')):
+        result = run(tmp_path, value=value, worker=returned_message(message, code))
+    assert result['status'] == 'worker_failed'
+    assert result['record'] is None
+    assert not (tmp_path / 'attempt/result').exists()
+    assert (tmp_path / 'request.json').read_bytes() == calc._json_bytes(value)
+
+
+@pytest.mark.parametrize('inputs,rules,expected,forbidden', [
+    ({'cards': ['T', 'T'], 'is_split_hand': True, 'hand_count': 4}, {}, {'S', 'H', 'D'}, 'P'),
+    ({'cards': ['T', '9'], 'is_split_hand': True, 'hand_count': 2}, {'das': False},
+     {'S', 'H'}, 'D'),
+    ({'cards': ['T', '3', '4']}, {}, {'S', 'H'}, 'D'),
+    ({'cards': ['A', '7'], 'is_split_hand': True, 'hand_count': 2}, {}, {'S'}, 'H'),
+    ({'cards': ['A', 'A'], 'is_split_hand': True, 'hand_count': 2}, {}, {'S'}, 'P'),
+    ({'cards': ['A', 'A'], 'is_split_hand': True, 'hand_count': 2}, {'resplit_aces': True},
+     {'S', 'P'}, 'D'),
+    ({'cards': ['7', 'A'], 'is_split_hand': True, 'hand_count': 2}, {}, {'S', 'H', 'D'}, 'P'),
+    ({'cards': ['A', 'T']}, {}, {'S'}, 'H'),
+    ({'cards': ['T', '7', '4']}, {}, {'S'}, 'H'),
+    ({'cards': ['T', '9'], 'unseen_counts': [0] * 9 + [1]}, {}, {'S'}, 'D'),
+    ({'cards': ['T', 'T'], 'unseen_counts': [0] * 9 + [2]}, {}, {'S', 'H', 'D'}, 'P'),
+    ({'cards': ['T', 'T'], 'unseen_counts': [0] * 9 + [3]}, {}, {'S', 'H', 'D', 'P'}, None),
+], ids=['split-hand-cap', 'no-double-after-split', 'no-double-after-hit', 'frozen-split-ace',
+        'no-ace-resplit', 'frozen-ace-resplit', 'split-seven-drew-ace', 'natural', 'drawn-21',
+        'reserved-hole-only', 'one-drawable-card', 'two-drawable-cards'])
+def test_original_action_boundary_preserves_real_controls_and_refuses_extra_values(
+        tmp_path, inputs, rules, expected, forbidden):
+    from test_common_calculation import fixed_message
+
+    value = request()
+    value['input'].update(dealer_up='7', unseen_counts=[0] * 9 + [6])
+    value['input'].update(inputs)
+    value['rules'].update(rules)
+    code, message, captured, selected = fixed_message(value)
+    assert code == 0 and message['status'] == 'completed'
+    decision = message['decision']
+    assert set(decision['decision']['evs']) == expected
+    before = calc._json_bytes(decision)
+    historical_action_map_is_passive_and_unchanged(decision)
+    with no_parent_pricing():
+        status, accepted, error, _ = calc._validated_decision(
+            calc._json_bytes(message), captured, message['request_sha256'], code, selected)
+    assert status == 'completed' and error is None and accepted == before
+    with patch.object(ev, 'best_action', side_effect=AssertionError('parent must not price')):
+        result = run(tmp_path, value=value, worker=returned_message(message, code))
+    assert result['status'] == 'completed'
+    assert (tmp_path / 'attempt/result/decision.json').read_bytes() == before
+    assert (tmp_path / 'request.json').read_bytes() == calc._json_bytes(value)
+    if forbidden is None:
+        return
+    altered = copy.deepcopy(message)
+    altered['decision'] = altered_action_map(decision, add=(forbidden,))
+    historical_action_map_is_passive_and_unchanged(altered['decision'])
+    with no_parent_pricing():
+        with pytest.raises(ValueError):
+            calc._validated_decision(calc._json_bytes(altered), captured,
+                                     message['request_sha256'], code, selected)
+    assert calc._json_bytes(decision) == before
 
 
 def test_complete_record_is_committed_separately_from_request_and_receipt(tmp_path):

@@ -15,7 +15,8 @@ import pytest
 from bj import calculation as calc, common_shoe, record
 from bj import _calculation_worker as worker
 from bj.caches import clear_all_caches
-from test_calculation import policy, request
+from test_calculation import (altered_action_map, historical_action_map_is_passive_and_unchanged,
+                              no_parent_pricing, policy, request, returned_message, run)
 
 
 def common_request(limit=100000):
@@ -157,3 +158,89 @@ def test_legacy_request_shape_and_record_identity_stay_legacy():
         code, message, _, _ = fixed_message(request())
     assert code == 0 and message['decision']['schema']['version'] == 1
     assert 'work' not in message
+
+
+@pytest.mark.parametrize('double,split', [(True, True), (False, True),
+                                        (True, False), (False, False)])
+def test_common_full_maps_preserve_current_action_controls_without_parent_pricing(
+        tmp_path, double, split):
+    clear_all_caches()
+    value = common_request()
+    value['input'].update(can_double=double, can_split=split)
+    try:
+        code, message, _, _ = fixed_message(value)
+        assert code == 0 and message['status'] == 'completed'
+        decision = message['decision']
+        assert set(decision['decision']['evs']) == (
+            {'S', 'H'} | ({'D'} if double else set()) | ({'P'} if split else set()))
+        with patch.object(common_shoe, 'decide', side_effect=AssertionError('must not price')):
+            historical_action_map_is_passive_and_unchanged(decision)
+        with (
+            patch.object(common_shoe, 'decide',
+                         side_effect=AssertionError('parent must not price')),
+            no_parent_pricing(),
+        ):
+            result = run(tmp_path, value=value, worker=returned_message(message, code))
+        assert result['status'] == 'completed'
+        assert result['work'] == message['work']
+        assert json.loads((tmp_path / 'attempt/result/decision.json').read_bytes()) == decision
+        assert (tmp_path / 'request.json').read_bytes() == calc._json_bytes(value)
+    finally:
+        clear_all_caches()
+
+
+@pytest.mark.parametrize('double,split,remove,add', [
+    (True, True, ('S',), ()), (True, True, ('H',), ()), (True, True, ('P',), ()),
+    (False, True, (), ('D',)), (True, False, (), ('P',)),
+], ids=['missing-stand', 'missing-hit', 'missing-split', 'double-disabled', 'split-disabled'])
+def test_fresh_common_maps_refuse_missing_and_forbidden_values_but_history_admits(
+        tmp_path, double, split, remove, add):
+    clear_all_caches()
+    value = common_request()
+    value['input'].update(can_double=double, can_split=split)
+    try:
+        code, message, _, _ = fixed_message(value)
+        assert code == 0 and message['status'] == 'completed'
+        original = calc._json_bytes(message['decision'])
+        altered = copy.deepcopy(message)
+        altered['decision'] = altered_action_map(message['decision'], remove=remove, add=add)
+        with patch.object(common_shoe, 'decide', side_effect=AssertionError('must not price')):
+            historical_action_map_is_passive_and_unchanged(altered['decision'])
+        with (
+            patch.object(common_shoe, 'decide',
+                         side_effect=AssertionError('parent must not price')),
+            no_parent_pricing(),
+        ):
+            result = run(tmp_path, value=value, worker=returned_message(altered, code))
+        assert result['status'] == 'worker_failed'
+        assert result['record'] is None
+        assert result['error']['type'] == 'ValueError'
+        assert not (tmp_path / 'attempt/result').exists()
+        assert (tmp_path / 'request.json').read_bytes() == calc._json_bytes(value)
+        assert (tmp_path / 'attempt/request-source.json').read_bytes() == calc._json_bytes(value)
+        assert calc._json_bytes(message['decision']) == original
+    finally:
+        clear_all_caches()
+
+
+def test_common_ace_pair_keeps_root_actions_and_one_card_split_ace_model():
+    clear_all_caches()
+    value = common_request()
+    value['input']['cards'] = ['A', 'A']
+    try:
+        code, message, captured, selected = fixed_message(value)
+        assert code == 0 and message['status'] == 'completed'
+        decision = message['decision']
+        assert set(decision['decision']['evs']) == {'S', 'H', 'D', 'P'}
+        assert decision['model']['split_aces'] == 'one_card_no_double_no_natural_premium'
+        with (
+            patch.object(common_shoe, 'decide',
+                         side_effect=AssertionError('parent must not price')),
+            no_parent_pricing(),
+        ):
+            status, raw, error, _ = calc._validated_decision(
+                calc._json_bytes(message), captured, message['request_sha256'], code, selected)
+        assert status == 'completed' and error is None
+        assert json.loads(raw) == decision
+    finally:
+        clear_all_caches()

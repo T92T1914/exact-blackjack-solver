@@ -1,4 +1,8 @@
-"""Exact, composition-dependent expected-value solver.
+"""Composition-dependent action values by finite-shoe enumeration.
+
+Stand, hit and double use binary64 enumeration. The default split option
+uses the independent-hand and shared-slot approximations described below.
+Separately selected common-shoe models live in their own modules.
 
 This is the module that lets the tool print a *margin* next to a
 recommendation, and it is the module that GRADES the hard-coded chart in
@@ -24,12 +28,13 @@ WHY EXACT ENUMERATION AND NOT SIMULATION
 ----------------------------------------
 The alternative was a Monte Carlo player to sit alongside a Monte Carlo
 dealer.  It was rejected for the same reason bj.dealer rejected it, only more
-so: this module has to resolve differences of 0.0008 units (12 vs 4, the
-closest decision in blackjack) and 0.0014 units (9,7 vs 10).  A simulator
+so: the published marginal checks include differences of 0.0008 units
+(12 vs 4) and 0.0014 units (9,7 vs 10). A simulator
 needs on the order of (1.15 / 0.0008)^2 ~ 2 million hands *per cell* to see a
 0.0008 edge at one standard error, and roughly a hundred times that to call it
-with confidence.  There are 550 cells.  The recursion below answers every one
-of them exactly, and once the memo tables are warm it answers in microseconds.
+with confidence. Enumeration avoids sampling error for the modeled
+continuations. It still uses floating-point arithmetic and the split
+approximations below, so this comparison does not certify every ranking.
 
 WHY DRAWING WITHOUT REPLACEMENT MATTERS HERE
 --------------------------------------------
@@ -184,9 +189,11 @@ APPROXIMATIONS
     evidence rather than anything this module proves.  Pass your own depleted
     shoe if you ever have one.
 
-6.  Floating point.  Everything is float64.  The deepest recursion accumulates
-    on the order of 1e-15 of rounding, which is six orders of magnitude below
-    the tightest margin the tool ever reports.
+6.  Floating point. Python float arithmetic is binary64. Published-cell and
+    independent small-shoe checks qualify their declared inputs and models.
+    Probability-mass checks and repeatable replay do not bound every action
+    value's error or certify every ranking. No universal rounding-error or
+    minimum-margin guarantee is established for this module.
 """
 from __future__ import annotations
 
@@ -692,11 +699,43 @@ def ev_split(pair_rank, dealer_up, shoe: Shoe | None = None,
 
 # --- the recommendation ----------------------------------------------------
 
+def _offered_actions(cards: tuple[str, ...], shoe: Shoe, rules: Rules, *,
+                     can_double: bool, can_split: bool, is_split_hand: bool,
+                     hand_count: int) -> tuple[str, ...]:
+    """Return the current menu for normalized inputs without pricing a state.
+
+    The first card identifies the split rank. Keep the reserved hole card
+    unavailable to player draws and preserve the engine's S/H/D/P order.
+    Input and model admission remain the caller's responsibility.
+    """
+    if hand_total(cards)[0] == 21:
+        return (STAND,)
+    two_cards = len(cards) == 2
+    unseen = shoe_size(shoe)
+    pair = is_pair(cards, rules.tens_are_pairs)
+    frozen_split_ace = (is_split_hand and two_cards and cards[0] == 'A'
+                        and not rules.hit_split_aces)
+    blocked_resplit_aces = (is_split_hand and pair and cards[0] == 'A'
+                            and not rules.resplit_aces)
+    actions = [STAND]
+    if not frozen_split_ace and unseen >= 2:
+        actions.append(HIT)
+        if can_double and two_cards and (not is_split_hand or rules.das):
+            actions.append(DOUBLE)
+    if (can_split and two_cards and pair and unseen >= 3
+            and hand_count < rules.max_hands and not blocked_resplit_aces):
+        actions.append(SPLIT)
+    return tuple(actions)
+
+
 def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
                 rules: Rules = STANDARD, *, can_double: bool = True,
                 can_split: bool = True, is_split_hand: bool = False,
                 hand_count: int = 1) -> tuple[str, dict[str, float], float]:
-    """The exact optimum for one hand, with the EV of every legal alternative.
+    """Choose the best offered value under this module's single-hand model.
+
+    Stand, hit and double enumerate finite-shoe continuations in binary64.
+    Split uses the documented independent-hand and shared-slot approximation.
 
     Returns (action, evs, margin):
         action  one of core.HIT / STAND / DOUBLE / SPLIT
@@ -704,11 +743,9 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
                 Unavailable actions are absent rather than present-and-None,
                 so a caller cannot accidentally rank against a number that was
                 never on offer.
-        margin  best EV minus the second-best AVAILABLE EV.  This is the
-                number the tool prints next to its advice, and it is the only
-                honest measure of how much the decision matters: 0.044 on
-                12 vs 2 means the play is real, 0.0008 on 12 vs 4 means it is
-                a coin flip and the user should not agonise.
+        margin  best EV minus the second-best AVAILABLE EV in this model.
+                This gap is not a probability of success, an error bound or
+                a certificate of the exact mathematical action ordering.
 
     can_double / can_split describe the BUTTONS, and are intersected with the
     rules: passing can_double=True on a three-card hand does not conjure a
@@ -750,33 +787,19 @@ def best_action(player_cards, dealer_up, shoe: Shoe | None = None,
     if total == 21:
         return STAND, {STAND: _stand_ev(total, up, shoe, rules.s17)}, 0.0
 
-    pair = is_pair(cards, rules.tens_are_pairs)
-    can_double = bool(can_double) and two_cards and (not is_split_hand or rules.das)
-    blocked_resplit_aces = (is_split_hand and pair and cards[0] == 'A'
-                            and not rules.resplit_aces)
-    unseen = shoe_size(shoe)
-    can_split = (bool(can_split) and two_cards and pair and unseen >= 3
-                 and hand_count < rules.max_hands and not blocked_resplit_aces)
-
-    # A split ace is frozen: the table deals it exactly one card and the hand is
-    # over.  The only button it can still have is SPLIT, and only where the
-    # table allows resplitting aces.  Offering HIT or DOUBLE here would be
-    # advice the dealer will not accept, and - worse - would put a number the
-    # player cannot collect into the margin.  cards[0] is the split rank by the
-    # convention every caller in this project follows, so 7,A (a split seven
-    # that drew an ace) is correctly NOT frozen.
-    frozen_split_ace = (is_split_hand and two_cards and cards[0] == 'A'
-                        and not rules.hit_split_aces)
+    offered = _offered_actions(cards, shoe, rules, can_double=can_double,
+                               can_split=can_split, is_split_hand=is_split_hand,
+                               hand_count=hand_count)
 
     evs: dict[str, float] = {STAND: _stand_ev(total, up, shoe, rules.s17)}
     # Keep explicit ev_hit/ev_double requests strict, but do not evaluate
     # unavailable actions while choosing among legal alternatives. Splitting
     # requires two drawable cards in addition to the reserved hole card.
-    if not frozen_split_ace and unseen >= 2:
+    if HIT in offered:
         evs[HIT] = _hit_ev(total, soft, up, shoe, rules.s17)
-        if can_double:
+        if DOUBLE in offered:
             evs[DOUBLE] = _double_ev(total, soft, up, shoe, rules.s17)
-    if can_split:
+    if SPLIT in offered:
         # hand_count, not 1: rules.max_hands is a pool shared by the whole
         # round, so a pair being split as the third hand of a round has fewer
         # resplits behind it than the same pair on the first decision.
