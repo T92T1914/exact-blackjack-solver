@@ -656,6 +656,86 @@ def test_command_report_delivery_refusal_returns_8_and_retires_stdout(failure):
     assert output.closed
 
 
+@pytest.mark.parametrize('failure', [None, 'short', 'flush'], ids=['success', 'short', 'flush'])
+def test_command_report_preserves_committed_calculation(tmp_path, failure):
+    path = input_file(tmp_path)
+    path.write_bytes(b' \n' + path.read_bytes())
+    original = path.read_bytes()
+    directory = tmp_path / 'attempt'
+    source = directory / 'request-source.json'
+    normalized = directory / 'request.json'
+    decision = directory / 'result/decision.json'
+    receipt_path = directory / 'result/receipt.json'
+    before, hashes = {}, {}
+    writes = []
+
+    class ReportStream(Stream):
+        def write(self, raw):
+            # The report fault must occur after the real publication commit.
+            assert not writes
+            writes.append(raw)
+            before.update({item: item.read_bytes() for item in
+                           (path, source, normalized, decision, receipt_path)})
+            hashes.update({item: hashlib.sha256(raw).hexdigest()
+                           for item, raw in before.items()})
+            assert json.loads(before[receipt_path])['status'] == 'completed'
+            assert not (directory / 'pending-result').exists()
+            assert not (directory / 'outcome.json').exists()
+            return super().write(raw)
+
+    output, error = ReportStream(failure), Stream()
+    previous_signal = object()
+    with (
+        no_parent_pricing(),
+        patch.object(calc, 'execute', side_effect=success) as dispatch,
+        patch.object(transport, 'execute', side_effect=AssertionError('no real transport'))
+        as real_transport,
+        patch.object(subprocess, 'Popen', side_effect=AssertionError('no worker launch'))
+        as launch,
+        patch.object(calc.signal, 'getsignal', return_value=previous_signal) as get_signal,
+        patch.object(calc.signal, 'signal') as set_signal,
+        patch.object(sys, 'platform', 'linux'),
+        patch.object(sys, 'stdout', output),
+        patch.object(sys, 'stderr', error),
+    ):
+        code = calc.main([str(path), '--output-dir', str(directory)])
+        assert json.loads(before[normalized]) == calc._normalise(request())
+
+    assert code == (0 if failure is None else 8)
+    assert output.closed is (failure is not None)
+    assert not error.closed
+    assert len(writes) == 1
+    dispatch.assert_called_once()
+    real_transport.assert_not_called()
+    launch.assert_not_called()
+    get_signal.assert_called_once_with(calc.signal.SIGINT)
+    assert set_signal.call_count == 2
+    assert set_signal.call_args_list[0].args[0] == calc.signal.SIGINT
+    assert callable(set_signal.call_args_list[0].args[1])
+    assert set_signal.call_args_list[1].args == (calc.signal.SIGINT, previous_signal)
+    assert before[path] == before[source] == original
+    assert before[path] != before[normalized] and hashes[path] != hashes[normalized]
+    assert before[decision] == calc._json_bytes(saved())
+    receipt = json.loads(before[receipt_path])
+    assert receipt['status'] == 'completed' and receipt['error'] is None
+    assert receipt['source_request'] == {
+        'bytes': len(original), 'sha256': hashes[path], 'complete': True}
+    assert receipt['request_sha256'] == hashes[normalized]
+    assert receipt['record'] == {'path': 'result/decision.json',
+                                 'bytes': len(before[decision]), 'sha256': hashes[decision]}
+    payload = json.loads(dispatch.call_args.args[0])
+    assert payload['request_sha256'] == hashes[normalized]
+    assert payload['request'] == json.loads(before[normalized])
+    for item, raw in before.items():
+        assert item.read_bytes() == raw
+        assert hashlib.sha256(item.read_bytes()).hexdigest() == hashes[item]
+    assert not (directory / 'pending-result').exists()
+    assert not (directory / 'outcome.json').exists()
+    if failure in (None, 'flush'):
+        # A flush failure can leave complete buffered JSON while returning 8.
+        assert json.loads(output.bytes) == receipt
+
+
 def test_actual_transport_timeout_and_following_small_use(tmp_path):
     original_popen = subprocess.Popen
 
