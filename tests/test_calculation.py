@@ -10,6 +10,7 @@ import sys
 import threading
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -356,6 +357,110 @@ def test_request_capture_survives_original_replacement_after_dispatch(tmp_path):
     assert result['source_request'] == {'bytes': len(original), 'complete': True,
                                          'sha256': hashlib.sha256(original).hexdigest()}
     assert json.loads((tmp_path / 'attempt/result/decision.json').read_bytes()) == saved()
+
+
+def test_request_capture_refuses_reparse_descriptor_before_read(tmp_path):
+    path = input_file(tmp_path)
+    original = path.read_bytes()
+    observed = path.stat()
+    reparse = SimpleNamespace(st_mode=observed.st_mode, st_file_attributes=0x400)
+    opened = []
+    original_open = calc._open_regular
+
+    def track_open(value, flags):
+        descriptor = original_open(value, flags)
+        opened.append(descriptor)
+        return descriptor
+
+    with (patch.object(calc, '_open_regular', side_effect=track_open),
+          patch.object(calc.os, 'fstat', return_value=reparse),
+          patch.object(calc.os, 'fdopen', side_effect=AssertionError('must not read')),
+          patch.object(calc, 'execute', side_effect=success) as dispatch,
+          no_parent_pricing()):
+        result = calc._run(path, tmp_path / 'attempt', policy(), threading.Event())
+    assert result['status'] == 'invalid_request'
+    assert result['record'] is None and result['source_request'] is None
+    assert not dispatch.called and not (tmp_path / 'attempt').exists()
+    assert path.read_bytes() == original
+    assert len(opened) == 1
+    with pytest.raises(OSError):
+        os.fstat(opened[0])
+
+
+def test_request_capture_accepts_ordinary_replacement_before_open(tmp_path):
+    path = input_file(tmp_path)
+    replacement = tmp_path / 'replacement.json'
+    selected = b'\n' + path.read_bytes()
+    replacement.write_bytes(selected)
+    original_ordinary = calc._ordinary
+
+    def replace_after_check(value, directory=False):
+        original_ordinary(value, directory=directory)
+        if value == path:
+            replacement.replace(path)
+
+    with (patch.object(calc, '_ordinary', side_effect=replace_after_check),
+          patch.object(calc, 'execute', side_effect=success),
+          no_parent_pricing()):
+        result = calc._run(path, tmp_path / 'attempt', policy(), threading.Event())
+    assert result['status'] == 'completed'
+    assert result['source_request']['sha256'] == hashlib.sha256(selected).hexdigest()
+    assert (tmp_path / 'attempt/request-source.json').read_bytes() == selected
+
+
+def test_request_capture_refuses_link_replacement_before_open(tmp_path):
+    path = input_file(tmp_path)
+    target = tmp_path / 'target.json'
+    selected = b'\n' + path.read_bytes()
+    target.write_bytes(selected)
+    probe = tmp_path / 'link-probe.json'
+    try:
+        probe.symlink_to(target)
+    except OSError as exc:
+        pytest.skip(f'host does not permit disposable symlinks: {exc}')
+    probe.unlink()
+    original_ordinary = calc._ordinary
+
+    def replace_after_check(value, directory=False):
+        original_ordinary(value, directory=directory)
+        if value == path:
+            path.unlink()
+            path.symlink_to(target)
+
+    with (patch.object(calc, '_ordinary', side_effect=replace_after_check),
+          patch.object(calc, 'execute', side_effect=success) as dispatch,
+          no_parent_pricing()):
+        result = calc._run(path, tmp_path / 'attempt', policy(), threading.Event())
+    assert result['status'] == 'invalid_request'
+    assert result['record'] is None and result['source_request'] is None
+    assert not dispatch.called and not (tmp_path / 'attempt').exists()
+    assert path.is_symlink() and target.read_bytes() == selected
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX FIFO replacement uses nonblocking open')
+def test_request_capture_fifo_replacement_cannot_block_open(tmp_path):
+    path = input_file(tmp_path)
+    original_open = os.open
+    opened = []
+
+    def replace_then_open(value, flags):
+        assert flags & os.O_NONBLOCK and flags & os.O_NOFOLLOW
+        path.unlink()
+        os.mkfifo(path)
+        descriptor = original_open(value, flags)
+        opened.append(descriptor)
+        return descriptor
+
+    with (patch.object(calc.os, 'open', side_effect=replace_then_open),
+          patch.object(calc, 'execute', side_effect=success) as dispatch,
+          no_parent_pricing()):
+        result = calc._run(path, tmp_path / 'attempt', policy(), threading.Event())
+    assert result['status'] == 'invalid_request'
+    assert result['record'] is None and result['source_request'] is None
+    assert not dispatch.called and not (tmp_path / 'attempt').exists()
+    assert len(opened) == 1
+    with pytest.raises(OSError):
+        os.fstat(opened[0])
 
 
 @pytest.mark.parametrize('change', [
