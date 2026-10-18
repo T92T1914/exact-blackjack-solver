@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-appearance="obscur">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="A bounded comparison of independent split valuation and a joint two hand reference. All 48 declared toy conditions, values, recommendation margins and execution limits are retained.">
+<meta name="description" content="A retained comparison of the original/default split approximation and a joint two hand reference. All 48 declared toy conditions, values, recommendation margins and execution limits are retained.">
 <title>Two hands, one shoe | Exact Blackjack Solver</title>
 <script src="appearance.js"></script><link rel="stylesheet" href="appearance.css"><link rel="stylesheet" href="style.css">
 <style>{palette}</style>
@@ -11,11 +11,11 @@
 <a class="skip" href="#main">Skip to the report</a>
 <div class="wrap">
 <nav aria-label="Project navigation"><a href="index.html">Saved decision examples</a><a href="https://github.com/T92T1914/exact-blackjack-solver">Source on GitHub</a></nav>
-<div class="appearance-control"><label for="appearance">Appearance</label><select id="appearance" disabled><option value="auto">Auto</option><option value="clair">Clair</option><option value="obscur">Obscur</option></select><noscript><small>Auto follows your system appearance.</small></noscript></div>
+<div class="appearance-control"><label for="appearance">Appearance</label><select id="appearance" disabled><option value="auto">Auto</option><option value="clair">Clair</option><option value="obscur" selected>Obscur</option></select><noscript><small>Obscur appearance. Enable JavaScript to choose Clair or Auto.</small></noscript></div>
 <main id="main">
 <p class="eyebrow">Bounded numerical comparison</p>
 <h1>Two hands still draw from one shoe.</h1>
-<p class="lead">The production solver values split hands independently. This separate reference carries the cards removed by the first hand into the second and settles both against the same dealer. I compared the two models on 48 declared toy conditions.</p>
+<p class="lead">The original/default solver values split hands independently. This separate reference carries the cards removed by the first hand into the second and settles both against the same dealer. I compared the two models on 48 declared toy conditions.</p>
 <div class="metrics" aria-label="Comparison summary">
 <div class="metric"><strong>{completed} of 48</strong><span>completed conditions, {excluded} exclusions</span></div>
 <div class="metric"><strong>0.032142857</strong><span>largest absolute difference, original bet units</span></div>

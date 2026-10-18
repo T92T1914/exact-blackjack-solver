@@ -1241,9 +1241,37 @@ for (const route of ['index.html','joint-split.html']) for (const fallback of ph
       (fallback.family?(fallback.family.includes('Verdana')?'-wide-fallback':'-system-fallback'):''),false);
   });
 
+for (const route of ['index.html','joint-split.html'])
+  test(`${route} starts in Obscur on a light system and remembers explicit Auto`, async t => {
+    const page = await fixture(t, {colorScheme:'light'});
+    await page.goto(base+'/'+route);
+    await page.locator('#appearance:not([disabled])').waitFor();
+    assert.equal(await page.locator('#appearance').inputValue(), 'obscur');
+    assert.equal(await background(page), 'rgb(9, 9, 9)');
+    await capture(page, 'obscur-first-'+route, false);
+    await page.setViewportSize({width:390,height:844});
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await capture(page, 'obscur-first-narrow-'+route, false);
+    await page.locator('#appearance').selectOption('auto');
+    assert.equal(await background(page), 'rgb(248, 247, 243)');
+    await page.reload();
+    assert.equal(await page.locator('#appearance').inputValue(), 'auto');
+    assert.equal(await background(page), 'rgb(248, 247, 243)');
+    await page.emulateMedia({colorScheme:'dark'});
+    assert.equal(await background(page), 'rgb(9, 9, 9)');
+    assert.equal(await page.evaluate(() => localStorage.getItem('exact-blackjack-solver.appearance.v1')), 'auto');
+  });
+
 test('Auto and overrides preserve the selected hand, exact saved data and history', async t => {
   const page = await fixture(t, {colorScheme:'dark'});
   await ready(page);
+  assert.deepEqual(await page.locator('#saved-example').evaluate(element => ({
+    parent:element.parentElement.id,
+    afterHero:element.previousElementSibling.classList.contains('actions'),
+    beforeModel:element.nextElementSibling.id,
+    containsExample:element.querySelector('#interactive') !== null
+  })), {parent:'main',afterHero:true,beforeModel:'model-route',containsExample:true});
+  assert.equal(await page.locator('.actions a.button').first().getAttribute('href'), '#saved-example');
   assert.equal(await background(page), 'rgb(9, 9, 9)');
   await page.locator('#choice').selectOption('1');
   const before = await page.locator('#interactive').textContent();
@@ -1262,6 +1290,12 @@ test('Auto and overrides preserve the selected hand, exact saved data and histor
   assert.equal(await background(page), 'rgb(9, 9, 9)');
   await page.emulateMedia({colorScheme:'light'});
   assert.equal(await background(page), 'rgb(248, 247, 243)');
+  await page.reload();
+  await page.locator('#interactive:visible').waitFor();
+  assert.equal(await page.locator('#appearance').inputValue(), 'auto');
+  assert.equal(await page.locator('#choice').inputValue(), '1');
+  assert.equal(await page.locator('#interactive').textContent(), before);
+  assert.equal(page.url(), selectedURL);
   await page.locator('#choice').selectOption('0');
   await page.goBack();
   assert.equal(await page.locator('#choice').inputValue(), '1');
@@ -1273,17 +1307,27 @@ test('Auto and overrides preserve the selected hand, exact saved data and histor
 test('blocked storage leaves the controls usable without claiming persistence', async t => {
   const page = await fixture(t, {colorScheme:'light'}, true);
   await ready(page);
-  await page.locator('#appearance').selectOption('obscur');
   assert.equal(await background(page), 'rgb(9, 9, 9)');
-  await page.reload();
+  await page.locator('#appearance').selectOption('clair');
   assert.equal(await background(page), 'rgb(248, 247, 243)');
+  await page.reload();
+  assert.equal(await page.locator('#appearance').inputValue(), 'obscur');
+  assert.equal(await background(page), 'rgb(9, 9, 9)');
 });
 
-test('no JavaScript keeps Auto, original evidence and model boundaries available', async t => {
+test('no JavaScript keeps Obscur, original evidence and model boundaries available', async t => {
   const page = await fixture(t, {javaScriptEnabled:false, colorScheme:'dark'});
   await page.goto(base+'/');
   assert.equal(await page.locator('#appearance').isDisabled(), true);
   assert.equal(await page.locator('#interactive').isHidden(), true);
+  assert.equal(await page.locator('#saved-example').isVisible(), true);
+  const firstAction = page.locator('.actions a.button').first();
+  assert.equal(await firstAction.getAttribute('href'), '#saved-example');
+  await firstAction.click();
+  const fallback = page.locator('#saved-example noscript a[href="#composition-figure"]');
+  assert.equal(await fallback.isVisible(), true);
+  await fallback.click();
+  assert.equal(new URL(page.url()).hash, '#composition-figure');
   assert.equal(await background(page), 'rgb(9, 9, 9)');
   await page.locator('#composition-figure img:visible').scrollIntoViewIfNeeded();
   await page.waitForFunction(() => [...document.querySelectorAll('#composition-figure img')]
@@ -1295,7 +1339,7 @@ test('no JavaScript keeps Auto, original evidence and model boundaries available
   assert.match(await page.locator('#model-route').textContent(),/binary floating point, not symbolic fractions/);
   assert.equal(await page.locator('a[href="data.json"]').first().isVisible(), true);
   await page.emulateMedia({colorScheme:'light'});
-  assert.equal(await background(page), 'rgb(248, 247, 243)');
+  assert.equal(await background(page), 'rgb(9, 9, 9)');
 });
 
 for (const mode of ['clair','obscur']) test(`${mode} preserves loss values and evidence at narrow and enlarged sizes`, async t => {
@@ -1443,9 +1487,11 @@ test('joint report Auto, blocked storage, no script and print retain readable ev
   await page.locator('#appearance').selectOption('clair');
   assert.equal(await background(page),'rgb(248, 247, 243)');
   await page.reload();
-  assert.equal(await page.locator('#appearance').inputValue(),'auto');
+  assert.equal(await page.locator('#appearance').inputValue(),'obscur');
   assert.equal(await background(page),'rgb(9, 9, 9)');
   await page.emulateMedia({colorScheme:'light'});
+  assert.equal(await background(page),'rgb(9, 9, 9)');
+  await page.locator('#appearance').selectOption('auto');
   assert.equal(await background(page),'rgb(248, 247, 243)');
   await page.locator('#appearance').selectOption('obscur');
   await page.emulateMedia({media:'print',colorScheme:'dark'});
@@ -1460,6 +1506,8 @@ test('joint report Auto, blocked storage, no script and print retain readable ev
   assert.equal(await noScript.locator('[data-condition]').count(),48);
   assert.equal(await background(noScript),'rgb(9, 9, 9)');
   assert.equal(await noScript.locator('a[href="joint-split.csv"]').isVisible(),true);
+  await noScript.emulateMedia({colorScheme:'light'});
+  assert.equal(await background(noScript),'rgb(9, 9, 9)');
 });
 
 test('joint report and standalone figures use real local Inter glyph providers',
@@ -1512,7 +1560,10 @@ test('six real Inter faces and ordinary text use the intended local providers',
       console.log('Ordinary interface text:', JSON.stringify({mode,selector,providers}));
     }
   }
-  assert.match(await page.locator('code').evaluate(e => getComputedStyle(e).fontFamily), /Consolas/);
+  const codeFonts = await page.locator('code').evaluateAll(nodes =>
+    nodes.map(element => getComputedStyle(element).fontFamily));
+  assert.ok(codeFonts.length > 0);
+  for (const family of codeFonts) assert.match(family, /Consolas/);
 });
 
 test('composition editions follow Auto and overrides without changing saved evidence', async t => {
@@ -1566,7 +1617,7 @@ test('composition editions follow Auto and overrides without changing saved evid
   await noScript.goto(base+'/');
   assert.equal(await noScript.locator('#composition-figure img:visible').getAttribute('src'),'composition-obscur.png');
   await noScript.emulateMedia({colorScheme:'light'});
-  assert.equal(await noScript.locator('#composition-figure img:visible').getAttribute('src'),'composition-clair.png');
+  assert.equal(await noScript.locator('#composition-figure img:visible').getAttribute('src'),'composition-obscur.png');
 });
 
 test('maintained Markdown pictures select the portable editions at narrow size', async t => {
