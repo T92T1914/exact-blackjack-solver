@@ -277,6 +277,33 @@ def _ordinary(path, directory=False):
         raise ValueError('use ordinary local files and directories, without links/reparse points')
 
 
+def _open_regular(path, flags):
+    """Open the final path component without following a link or reparse point."""
+    if os.name != 'nt':
+        return os.open(path, flags | os.O_NONBLOCK | os.O_NOFOLLOW)
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                  ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD,
+                                  wintypes.HANDLE]
+    kernel.CreateFileW.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+
+    # OPEN_EXISTING, shared read/write/delete, OPEN_REPARSE_POINT | SEQUENTIAL_SCAN.
+    handle = kernel.CreateFileW(str(path), 0x80000000, 7, None, 3, 0x08200000, None)
+    if handle == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        return msvcrt.open_osfhandle(int(handle), flags)
+    except BaseException:
+        kernel.CloseHandle(handle)
+        raise
+
+
 def _validated_decision(raw, captured, digest, returncode, policy):
     if not raw.endswith(b'\n'):
         raise ValueError('worker did not deliver a complete LF-terminated message')
@@ -562,10 +589,19 @@ def _run(request_path, output, policy, cancellation):
     try:
         path = Path(request_path)
         _ordinary(path)
-        with path.open('rb') as stream:
-            if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
-                raise ValueError('request must be a regular local file')
-            raw = stream.read(replay.MAX_RECORD_BYTES + 1)
+        flags = os.O_RDONLY | getattr(os, 'O_BINARY', 0) | getattr(os, 'O_CLOEXEC', 0)
+        descriptor = _open_regular(path, flags)
+        try:
+            observed = os.fstat(descriptor)
+            if (not stat.S_ISREG(observed.st_mode)
+                    or getattr(observed, 'st_file_attributes', 0) & 0x400):
+                raise ValueError('request must be an ordinary regular local file')
+            with os.fdopen(descriptor, 'rb') as stream:
+                descriptor = None
+                raw = stream.read(replay.MAX_RECORD_BYTES + 1)
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
         receipt['source_request'] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(),
                                      'complete': len(raw) <= replay.MAX_RECORD_BYTES}
         captured = _normalise(replay._parse(raw))

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import ctypes
 import hashlib
 import os
 import signal
@@ -53,28 +52,7 @@ def _ordinary_parents(path):
 
 
 def _open_regular(path, flags):
-    if os.name != 'nt':
-        return os.open(path, flags | os.O_NONBLOCK | os.O_NOFOLLOW)
-    from ctypes import wintypes
-    import msvcrt
-
-    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-    kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
-                                  ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD,
-                                  wintypes.HANDLE]
-    kernel.CreateFileW.restype = wintypes.HANDLE
-    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-    kernel.CloseHandle.restype = wintypes.BOOL
-    # OPEN_EXISTING, shared read/write/delete, OPEN_REPARSE_POINT | SEQUENTIAL_SCAN.
-    # Final reparse handles are rejected below. Ancestor lookup is contained in the worker.
-    handle = kernel.CreateFileW(str(path), 0x80000000, 7, None, 3, 0x08200000, None)
-    if handle == ctypes.c_void_p(-1).value:
-        raise ctypes.WinError(ctypes.get_last_error())
-    try:
-        return msvcrt.open_osfhandle(int(handle), flags)
-    except BaseException:
-        kernel.CloseHandle(handle)
-        raise
+    return calculation._open_regular(path, flags)
 
 
 def _capture(path, cancellation):
