@@ -65,7 +65,12 @@ Clair/Obscur revision `7a57fe750ff50205a17e1d342106a0d3f2777159` and generates
 Inter aliases cover 400, 600 and 700 with genuine italics. Code keeps a monospace
 font, other scripts can use language fallbacks, and visitors without Inter keep
 their system font. Print uses Clair without changing the saved screen preference.
-The storage key is `exact-blackjack-solver.appearance.v1`.
+Both pages start in Obscur, including without JavaScript. Explicit Auto, Clair
+and Obscur choices persist under `exact-blackjack-solver.appearance.v1`.
+Auto follows system changes. Blocked storage keeps the current choice in memory
+until reload, which restores the Obscur default.
+Earlier Auto choices left no stored value, so those visitors also see the new
+default until they select Auto again.
 
 Presentation checks do not rerun the retained calculation:
 
