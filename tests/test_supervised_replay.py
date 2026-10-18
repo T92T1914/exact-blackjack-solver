@@ -301,6 +301,7 @@ def test_existing_attempt_is_preserved_before_dispatch(tmp_path):
     with patch.object(protected, 'execute', side_effect=AssertionError('no worker')):
         result = run(tmp_path)
     assert result['status'] == 'delivery_failed'
+    assert result['report'] is None
     assert previous.read_bytes() == b'accepted earlier bytes'
     assert list(directory.iterdir()) == [previous]
 
@@ -471,24 +472,75 @@ def test_cancellation_before_and_after_publication_have_distinct_results(tmp_pat
     assert (following / 'attempt/result/replay.json').is_file()
 
 
-@pytest.mark.parametrize('phase', ['write', 'rename'])
-def test_publication_failure_has_no_accepted_result(tmp_path, phase):
+@pytest.mark.parametrize('phase', ['write', 'receipt', 'rename'])
+@pytest.mark.parametrize('error_type', [OSError, FileExistsError], ids=['os-error', 'file-exists'])
+def test_publication_failure_has_no_accepted_result(tmp_path, phase, error_type):
     write = calc._exclusive_bytes
 
     def fail_report(path, raw):
-        if path.name == 'replay.json':
-            raise OSError('controlled write/flush refusal')
+        selected = 'replay.json' if phase == 'write' else 'receipt.json'
+        if path.parent.name == 'pending-result' and path.name == selected:
+            raise error_type('controlled write/flush refusal')
         return write(path, raw)
 
     target = (patch.object(calc, '_exclusive_bytes', side_effect=fail_report)
-              if phase == 'write' else
+              if phase != 'rename' else
               patch.object(protected.os, 'rename',
-                           side_effect=OSError('controlled rename refusal')))
+                           side_effect=error_type('controlled rename refusal')))
     with target:
         result = run(tmp_path)
     assert result['status'] == 'delivery_failed'
     assert result['report'] is None
     assert not (tmp_path / 'attempt/result').exists()
+    outcome = json.loads((tmp_path / 'attempt/outcome.json').read_bytes())
+    assert outcome == result
+    assert outcome['report'] is None
+    assert outcome['error']['type'] == error_type.__name__
+
+
+def test_result_collision_preserves_other_files_without_accepting_report(tmp_path):
+    directory = tmp_path / 'attempt'
+    destination = directory / 'result'
+    sentinel = destination / 'previous'
+    earlier = b'previous destination bytes\n'
+    original = FIXTURE.read_bytes()
+    write = calc._exclusive_bytes
+    staged = {}
+    calls = []
+
+    def collide_after_staging(path, raw):
+        write(path, raw)
+        if path.parent.name == 'pending-result':
+            staged[path.name] = raw
+            if path.name == 'receipt.json':
+                destination.mkdir()
+                sentinel.write_bytes(earlier)
+
+    def completed(payload, *args, **options):
+        calls.append(payload)
+        return success(payload, *args, **options)
+
+    with (
+        patch.object(calc, '_exclusive_bytes', side_effect=collide_after_staging),
+        patch.object(transport, 'execute', side_effect=AssertionError('no real transport')),
+        patch.object(transport.subprocess, 'Popen', side_effect=AssertionError('no worker launch')),
+        patch.object(calc.record, 'best_action', side_effect=AssertionError('must not price')),
+        patch.object(ev, 'best_action', side_effect=AssertionError('must not price')),
+    ):
+        result = run(tmp_path, dispatch=completed)
+    assert result['status'] == 'delivery_failed' and result['report'] is None
+    assert result['error']['type'] == 'FileExistsError'
+    assert json.loads((directory / 'outcome.json').read_bytes()) == result
+    assert len(calls) == 1
+    assert sentinel.read_bytes() == earlier and list(destination.iterdir()) == [sentinel]
+    assert (tmp_path / 'source.json').read_bytes() == original
+    assert (directory / 'record-source.json').read_bytes() == original
+    assert result['source_record'] == protected._source(original)
+    assert result['capture_verified'] is True
+    assert json.loads(staged['replay.json'])['status'] == 'agreement'
+    assert json.loads(staged['receipt.json'])['status'] == 'agreement'
+    for name, raw in staged.items():
+        assert (directory / 'pending-result' / name).read_bytes() == raw
 
 
 def test_shared_owner_rejects_unselected_worker_before_launch(tmp_path):

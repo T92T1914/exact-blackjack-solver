@@ -626,7 +626,8 @@ def _run(request_path, output, policy, cancellation):
     except _Cancelled:
         receipt['status'], receipt['record'] = 'cancelled', None
     except FileExistsError as exc:
-        receipt['status'], receipt['error'] = 'delivery_failed', _error(exc)
+        receipt['status'], receipt['record'] = 'delivery_failed', None
+        receipt['error'] = _error(exc)
         if receipt['attempt_id'] is None:
             directory = None  # Never write into someone else's existing directory.
     except (OSError, ValueError, TypeError, OverflowError) as exc:

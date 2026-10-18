@@ -398,7 +398,8 @@ def _run(record_path, output, policy, cancellation):
     except _Cancelled:
         receipt['status'], receipt['report'] = 'cancelled', None
     except FileExistsError as exc:
-        receipt['status'], receipt['error'] = 'delivery_failed', calculation._error(exc)
+        receipt['status'], receipt['report'] = 'delivery_failed', None
+        receipt['error'] = calculation._error(exc)
         if receipt['attempt_id'] is None:
             directory = None
     except (OSError, ValueError, TypeError, OverflowError, MemoryError, RecursionError) as exc:

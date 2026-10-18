@@ -419,29 +419,78 @@ def test_prior_attempt_and_result_are_preserved(tmp_path):
     with patch.object(calc, 'execute') as dispatch:
         result = calc._run(path, directory, policy(), threading.Event())
     assert result['status'] == 'delivery_failed'
+    assert result['record'] is None
     assert not dispatch.called
     assert earlier.read_bytes() == b'earlier completed bytes\n'
     assert sorted(p.name for p in directory.iterdir()) == ['decision.json']
 
 
 @pytest.mark.parametrize('phase', ['decision.json', 'receipt.json', 'rename'])
-def test_publication_failure_never_exposes_completed_result(tmp_path, phase):
+@pytest.mark.parametrize('error_type', [OSError, FileExistsError], ids=['os-error', 'file-exists'])
+def test_publication_failure_never_exposes_completed_result(tmp_path, phase, error_type):
     original_write = calc._exclusive_bytes
 
     def fail_selected(path, raw):
         if path.parent.name == 'pending-result' and path.name == phase:
-            raise OSError('controlled complete-file delivery refusal')
+            raise error_type('controlled complete-file delivery refusal')
         return original_write(path, raw)
 
     with patch.object(calc, '_exclusive_bytes', side_effect=fail_selected), patch.object(
-            calc.os, 'rename', side_effect=OSError('controlled commit refusal')
+            calc.os, 'rename', side_effect=error_type('controlled commit refusal')
             if phase == 'rename' else os.rename):
         result = run(tmp_path)
     assert result['status'] == 'delivery_failed'
     assert result['record'] is None
     assert not (tmp_path / 'attempt/result').exists()
     outcome = json.loads((tmp_path / 'attempt/outcome.json').read_bytes())
-    assert outcome['status'] == 'delivery_failed'
+    assert outcome == result
+    assert outcome['record'] is None
+    assert outcome['error']['type'] == error_type.__name__
+
+
+def test_result_collision_preserves_other_files_without_accepting_candidate(tmp_path):
+    directory = tmp_path / 'attempt'
+    destination = directory / 'result'
+    sentinel = destination / 'previous'
+    earlier = b'previous destination bytes\n'
+    original = calc._json_bytes(request())
+    write = calc._exclusive_bytes
+    staged = {}
+    calls = []
+
+    def collide_after_staging(path, raw):
+        write(path, raw)
+        if path.parent.name == 'pending-result':
+            staged[path.name] = raw
+            if path.name == 'receipt.json':
+                destination.mkdir()
+                sentinel.write_bytes(earlier)
+
+    def completed(payload, *args):
+        calls.append(payload)
+        return success(payload, *args)
+
+    with (
+        patch.object(calc, '_exclusive_bytes', side_effect=collide_after_staging),
+        patch.object(transport, 'execute', side_effect=AssertionError('no real transport')),
+        patch.object(subprocess, 'Popen', side_effect=AssertionError('no worker launch')),
+    ):
+        result = run(tmp_path, worker=completed)
+    assert result['status'] == 'delivery_failed' and result['record'] is None
+    assert result['error']['type'] == 'FileExistsError'
+    assert json.loads((directory / 'outcome.json').read_bytes()) == result
+    assert len(calls) == 1
+    assert sentinel.read_bytes() == earlier and list(destination.iterdir()) == [sentinel]
+    assert (tmp_path / 'request.json').read_bytes() == original
+    assert (directory / 'request-source.json').read_bytes() == original
+    normalized = (directory / 'request.json').read_bytes()
+    assert result['request_sha256'] == hashlib.sha256(normalized).hexdigest()
+    assert result['source_request'] == {'bytes': len(original), 'complete': True,
+                                         'sha256': hashlib.sha256(original).hexdigest()}
+    assert staged['decision.json'] == calc._json_bytes(saved())
+    assert json.loads(staged['receipt.json'])['status'] == 'completed'
+    for name, raw in staged.items():
+        assert (directory / 'pending-result' / name).read_bytes() == raw
 
 
 @pytest.mark.parametrize('failure', ['short', 'flush', 'close'])
