@@ -214,6 +214,11 @@ The [calculation guide](docs/local-calculation.md) and
 wall and cleanup policies. Direct APIs and `bj-advise --replay` remain caller
 owned.
 
+Reuse of [completed settlement states](docs/bounded-resplit-calculation.md#reuse-completed-settlement-states)
+also lets two declared sixteen card non ace requests finish under the unchanged
+state cap after earlier refusal. This extends finite completion coverage without
+a latency, memory or universal completion claim.
+
 ## A complete H17 ace calculation
 
 Save the [H17 request](examples/bounded-ace-resplit-h17-request.json) as
