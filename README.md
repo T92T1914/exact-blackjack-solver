@@ -4,6 +4,11 @@
 [![Python 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](.github/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+The same total can call for different decisions. I wanted to follow
+that difference down to the cards left in the shoe, then check the calculations
+with an independent simulation. The tool shows each action value and the
+margin between the best two choices so a close decision is visible.
+
 A composition dependent blackjack solver that enumerates action values from
 the remaining cards using binary floating point. The original/default path
 approximates split hands independently with a greedy shared resplit budget.
@@ -12,11 +17,6 @@ completed wagers through their declared joint continuations. Each has an
 explicit model identity, supported subset and complete result or refusal.
 These calculations enumerate finite models. They are not symbolic real
 arithmetic, Monte Carlo estimates or learned predictions.
-
-**The same total can call for different decisions.** I wanted to follow
-that difference down to the cards left in the shoe, then check the calculations
-with an independent simulation. The tool shows each action value and the
-margin between the best two choices so a close decision is visible.
 
 [Run it](#run-it) | [Supported calculation models](#supported-calculation-models) | [A complete H17 ace calculation](#a-complete-h17-ace-calculation) | [A worked decision](#a-worked-decision) | [How it works](#how-it-works) | [The derived chart](#the-chart-the-solver-derives) | [What this does not prove](#what-this-does-not-prove)
 
@@ -114,9 +114,9 @@ still removes doubling after a split.
 When split aces receive only one card, a split hand beginning with A must
 contain exactly two cards. A longer hand is rejected in text and JSON advice.
 
-Explicit-shoe reports print the supplied rank counts. Split reports also print
+Reports for an explicit shoe print the supplied rank counts. Split reports also print
 the round state. These reports omit the
-fresh-shoe whole-game estimate because it describes a different starting
+whole game estimate for a fresh shoe because it describes a different starting
 state. The ordinary command and its recorded example remain unchanged.
 A shortage that prevents required dealer draws is an error, not an invented
 settlement or reshuffle. Explicit shoes make constructed cases inspectable. In
@@ -158,8 +158,9 @@ package version and the model qualifications. The hole stays hidden, values
 assume the dealer peek has ruled out a natural, and ten value ranks collapse to
 T. Insurance is not priced in a hand decision. Split still uses independent
 hands and a greedy shared resplit budget, with no general error bound. The
-record refuses unsupported no-peek, surrender, restricted-double and distinct
-ten-pair rules instead of labeling them as implemented. Invalid states and
+record refuses unsupported rules for no peek, surrender and restricted doubling.
+It also refuses rules that distinguish ten value ranks when deciding whether cards form a pair.
+Invalid states and
 nonfinite results also fail before a JSON record is emitted. These checks belong
 to the record interface and do not change the existing solver arithmetic.
 
@@ -380,7 +381,7 @@ Three details carry most of the weight, and each has a test with its name on it:
 
 The [cache guide](docs/caches.md) explains the production table ownership,
 supported diagnostics and combined reset. The [bounded cache measurements](docs/cache-results-2026-09-30.md)
-retain cold, repeated, cleared and varied-query results with separate process
+retain results for cold, repeated, cleared and varied queries with separate process
 memory and instrumentation costs. Clearing tables does not promise a lower
 process memory reading or change the supported numerical model.
 
@@ -601,10 +602,10 @@ Found a problem or have a useful comparison? [Open an issue](https://github.com/
 
 This project gives me a concrete way to work on dynamic programming, state representation and independent verification. I want someone to be able to inspect a result, reproduce it and see where the supported model stops.
 
-- **State and caching.** Follow the composition-dependent calculation and memoized states. [Inspect the work](README.md#how-it-works).
+- **State and caching.** Follow the composition dependent calculation and memoized states. [Inspect the work](README.md#how-it-works).
 - **Independent checks.** Read how exact calculations and simulation are compared. [Inspect the work](README.md#what-is-verified-and-how).
 - **Model boundaries.** Compare the original split approximation with separately selected joint and deferred dealer models. [Inspect the work](README.md#supported-calculation-models).
 
-The transferable work is numerical software and verification. A correct result inside this rule model does not establish a model for financial risk or another real-world decision.
+The transferable work is numerical software and verification. A correct result inside this rule model does not establish a model for financial risk or another real world decision.
 
 See [sharing previews](docs/sharing-preview.md) for the maintained link image and its source.
