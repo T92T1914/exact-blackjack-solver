@@ -148,8 +148,9 @@ An attempt contains `request-source.json`, `request.json` and `attempt.json`.
 The initial capture is not a completed result. Received worker streams are
 retained when present. Success publishes the complete `result` directory with:
 
-- `result/decision.json`, a V1 or V2 decision for legacy requests, or an explicit
-  V3 common-shoe decision, suitable for the supported replay and inspector.
+- `result/decision.json`, a decision for the selected supported model, suitable
+  for the existing replay and inspector. Legacy requests keep V1 or V2 records.
+  Each separately selected family keeps its declared decision schema.
 - `result/receipt.json`, the completed attempt, request identity, applied policy,
   worker exit, retirement observations and decision byte count/digest.
 

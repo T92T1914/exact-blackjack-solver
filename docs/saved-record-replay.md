@@ -28,6 +28,13 @@ emits schema 4 for one original initial two-card hand below 21. Replay uses its
 current surrender permission, retained counts, coverage and root-only state
 cap. Older models remain outside surrender coverage.
 
+The separately selected [non-ace resplit](bounded-resplit-calculation.md) and
+[one-card ace resplit](bounded-ace-resplit-calculation.md) calculations emit
+schemas 5 and 6. The [deferred second-card calculation](deferred-second-card-calculation.md)
+emits schema 7, with no dealt hidden hole and loss of every committed wager to
+a later dealer natural. Each family retains its own admitted inputs, actions
+and recorded limits. None changes the meaning of an older record.
+
 For a small installed-package example, copy
 [`examples/replay_saved_decision.py`](../examples/replay_saved_decision.py)
 outside the checkout and run it with the Python environment containing the
@@ -279,8 +286,8 @@ existing engine's action selection, including its tie behavior, without a
 new ranking or tolerance policy.
 
 `recorded_package`, `current_package` and `package_version_matches` describe
-the version labels. A different package-version label does not make either
-supported schema version unsupported and does not fetch or install that version. Neither
+the version labels. A different package-version label does not by itself make
+a supported record unsupported and does not fetch or install that version. Neither
 matching labels nor agreement authenticate a record's origin. Recalculation
 by the same engine is a reproducibility check. Independent mathematical
 validation remains a separate question.
@@ -313,7 +320,7 @@ command's mapping.
 
 ## Admission and retained counts
 
-Supported replay is the `blackjack-decision` schema, versions 1, 2, 3 and 4. The importer
+Supported replay is the `blackjack-decision` schema, versions 1 through 7. The importer
 requires every declared field and rejects unknown fields at every object,
 duplicate JSON keys, nonfinite values, Boolean numeric parameters and
 inconsistent derived hand totals or softness. Cards must be normalized ranks
@@ -326,7 +333,7 @@ reading takes at most that limit plus one byte to detect excess size. Depth
 is checked before the JSON decoder allocates nested objects. These are
 admission limits for this small format, not calculation resource limits.
 
-Counts already exclude visible cards and include the hidden dealer hole.
+Post-peek counts already exclude visible cards and include the hidden dealer hole.
 Replay passes the retained counts directly to the solver, exactly once. It
 never subtracts visible cards again or infers a specific hole card. For
 `fresh_minus_visible`, admission checks counts against the declared fresh
@@ -334,8 +341,10 @@ shoe for consistency. Execution still uses the saved counts. For
 `supplied_unseen`, counts need not fit the fresh-deck maxima. A consistently
 changed supported state is calculated normally and compared with its saved
 answer.
+The deferred second-card family also excludes visible cards once, but has no
+dealt hole to reserve or remove. Its record declares that different timing.
 
-The importer checks the declared post-peek hidden-hole model, collapsed
+The importer checks the declared mathematical model, collapsed
 ten-value ranks, original-wager units and the selected split model. Schemas 1
 and 2 retain the existing approximation. Schema 3 requires its common-shoe
 coverage, deal order, split-ace/exhaustion declarations and recorded state cap.
@@ -344,7 +353,8 @@ initial two-card hand below 21, no split, supplied three through twenty unseen
 cards, current surrender control, terminal half-loss, no later surrender and
 recorded root-only cap. S/H/D retain the ordinary last-draw standing convention
 and required dealer-settlement exhaustion refusal. Surrender in schemas 1/2/3,
-no-peek, restricted-double and distinct-ten rules remain refused. Saved EVs,
+restricted-double and distinct-ten rules remain refused. No-peek timing requires
+the separate schema 7 family. Saved EVs,
 recommendations and margins are historical comparison
 data. Known action-code sets may differ from the current legal set, and a
 finite altered saved answer remains visible as a difference after calculation.
@@ -352,7 +362,7 @@ finite altered saved answer remains visible as a difference after calculation.
 ## Inspect and compare local records in the browser
 
 The [project page](https://t92t1914.github.io/exact-blackjack-solver/) can inspect
-one or two local version 1, 2, 3 or 4 decision files. Export a record through an installed
+one or two local supported decision files. Export a record through an installed
 package, save the JSON output as UTF-8, then select it as record A. For example,
 the six unseen cards keep this example small:
 
@@ -392,17 +402,18 @@ false declaration without adding fields to old records.
 Version 1 and declared true/true version 2 have equal control inputs in either
 comparison direction, with their schema difference shown as metadata.
 It uses those effective controls,
-the retained unseen counts, dealt order and declared split/rule state. A total
-of 21 permits stand only. Otherwise hit/double need a drawable card in addition
-to the hidden hole, and split needs two. Double also requires two dealt cards
+the retained unseen counts, dealt order and declared split/rule state. Within
+the post-peek families, a total of 21 permits stand only. Otherwise hit/double
+need a drawable card in addition to the hidden hole, and split needs two. Double also requires two dealt cards
 and permission after splitting. Frozen split aces, ace resplitting and the
 shared hand cap retain the engine's existing eligibility rules. The first
 dealt card remains the split rank. Counts are summed as exact integers without
 removing visible cards again. External table buttons are outside this model.
 
-Each model's four action codes show their permitted status and supplied EV presence.
+Each model's action codes show their permitted status and supplied EV presence.
 For schema 4 these are S/H/D/R, with R's initial eligibility and current
-permission derived without pricing. Older models retain H/S/D/P. Mixed
+permission derived without pricing. The ordinary and shared-shoe split models
+retain H/S/D/P. The deferred second-card family uses S/H/D. Mixed
 comparisons show the union, including unavailable or absent R on the old side.
 A deliberately disabled action absent from EVs is not an omission.
 A supplied unavailable action, an omitted permitted action or an unavailable
@@ -453,6 +464,10 @@ the joint calculation's cooperative limit. Schema 4 adds a root-only cap and
 no split cooperative limit. A failed offered price yields no completed result,
 even if R's constant value is already known. Process-wide memo tables have no
 eviction limit and remain owned by the caller's process.
+The non-ace and ace resplit families retain their recorded whole-request state
+caps and joint cooperative limits. The deferred second-card family retains its
+own whole-request state cap and cooperative deadline. Their calculation guides
+above define which state bodies and phases those limits cover.
 Replay does not create workers, clear shared
 caches, launch a supervisor or guarantee recovery after an operating-system
 kill. A reported `MemoryError`, `RecursionError` or `KeyboardInterrupt` is
