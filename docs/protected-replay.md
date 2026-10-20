@@ -62,8 +62,12 @@ The fixed contained worker parses and admits those captured bytes through the
 existing replay function. UTF-8, duplicate-key, finite-number, eight-container
 depth and supported schema/model checks remain in effect. Schemas 1 through 6
 retain their original ordinary, controlled, two-hand common-shoe, late-surrender,
-bounded non-ace resplit and bounded one-card ace resplit meanings. Counts already
-exclude visible cards and include the hidden hole. They are used once.
+bounded non-ace resplit and bounded one-card ace resplit meanings. Their counts
+already exclude visible cards and include the hidden hole. They are used once.
+The separately selected [deferred second-card family](deferred-second-card-calculation.md)
+uses schema 7. It retains its no-peek timing, no dealt hole and loss of every
+committed wager to a later dealer natural. Replay preserves that family's
+recorded state and cooperative time limits rather than substituting a post-peek model.
 
 The saved action, values and margin are never calculation inputs. A supported
 changed answer or missing action produces differences when recomputation
