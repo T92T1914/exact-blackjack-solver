@@ -31,7 +31,7 @@ The dealer follows a fixed drawing rule. There are no learned weights or
 opponent predictions. The original split approximation remains the default
 and still applies to the derived chart and whole game estimates.
 
-[Explore the browser demo](https://t92t1914.github.io/exact-blackjack-solver/) · [Open in Codespaces](https://codespaces.new/T92T1914/exact-blackjack-solver)
+[Explore the browser demo](https://t92t1914.github.io/exact-blackjack-solver/) · [Open in Codespaces](https://codespaces.new/T92T1914/exact-blackjack-solver) · [Read in another language](https://github.com/T92T1914/T92T1914/blob/main/TRANSLATION.md)
 
 Use **Link to this example** in the browser demo to share the selected result.
 The URL keeps the example's visible label, and Back and Forward restore earlier
