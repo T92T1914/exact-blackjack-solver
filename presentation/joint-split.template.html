@@ -21,7 +21,7 @@
 <div class="metric"><strong>0.032142857</strong><span>largest absolute difference, original bet units</span></div>
 <div class="metric"><strong>1 tie expansion</strong><span>changed best action set, no strict reversal</span></div>
 </div>
-<p>The mean absolute difference was <strong>{mean}</strong> units. Production was lower in {below} conditions, higher in {above}, and equal within <code>1e-12</code> in {tied}. The largest difference was for a pair of twos against a ten in the ten rich shoe with double after split allowed. Its signed production minus joint gap was <strong>{minimum}</strong>.</p>
+<p>The mean absolute difference was <strong>{mean}</strong> units. Production was lower in {below} conditions, higher in {above}, and equal within <code translate="no">1e-12</code> in {tied}. The largest difference was for a pair of twos against a ten in the ten rich shoe with double after split allowed. Its signed production minus joint gap was <strong>{minimum}</strong>.</p>
 <p><strong>This is not a full shoe error bound.</strong> Two constructed shoes cannot establish a typical error, a house edge or a general direction for the approximation. The production API is unchanged. The reference uses floating point enumeration, not symbolic exact arithmetic.</p>
 <div class="actions"><a class="button" href="#all-conditions">Read all conditions</a><a class="button" href="joint-split.csv" download>Download values as CSV</a><a class="button" href="joint-split-results.json" download>Download matched result JSON</a></div>
 <section class="panel" aria-labelledby="contract-title">
@@ -38,13 +38,13 @@
 </figure>
 <section id="recommendations">
 <h2>A recommendation changed into a tie</h2>
-<p>For a pair of fives against a six in the balanced shoe with DAS allowed, production preferred double with a margin of 0.023809524. Replacing only the split value made double and split tie within <code>1e-12</code>, with a raw numerical margin of zero. The original double recommendation remained in the best set. No condition changed to a disjoint best action set.</p>
+<p>For a pair of fives against a six in the balanced shoe with DAS allowed, production preferred double with a margin of 0.023809524. Replacing only the split value made double and split tie within <code translate="no">1e-12</code>, with a raw numerical margin of zero. The original double recommendation remained in the best set. No condition changed to a disjoint best action set.</p>
 <p>The root comparison preserves production stand, hit and double values. <strong>S</strong> means stand, <strong>H</strong> hit, <strong>D</strong> double and <strong>P</strong> split. Each value is expected net return per original bet. A doubled split hand risks two units. Margins are the best value minus the next value, not win probabilities.</p>
 {changes}
 </section>
 <section id="all-conditions">
 <h2>Every declared condition</h2>
-<p>The tables show nine decimal places for values and six for runtime. The downloads retain the full stored numbers. Tiny positive gaps up to about <code>4.44e-16</code> are floating point differences within the declared equality tolerance.</p>
+<p>The tables show nine decimal places for values and six for runtime. The downloads retain the full stored numbers. Tiny positive gaps up to about <code translate="no">4.44e-16</code> are floating point differences within the declared equality tolerance.</p>
 {table}
 <p>The largest reference state count was 3,260 and the largest observed reference time was about 0.014 seconds. Reported probability mass error was zero in all rows. These times describe bounded feasibility on a shared machine. They are not a controlled speed comparison between the solvers.</p>
 </section>
@@ -53,7 +53,7 @@
 <p>The first runner passed a count array in reference rank order to production, whose rank order starts with A. It therefore compared different card compositions. Its gaps and combined root recommendations are invalid for the declared question. The raw attempt remains available, clearly separated from the matched result above.</p>
 <p>The correction maps counts by rank name and records both schemas in every completed row. An asymmetric mapping regression was added before the corrected attempt. The protocol, reference arithmetic and production model did not change. The corrected 48 condition attempt ran once, and the report independently checks rank identities and recomputes gaps, rankings and margins from its retained values.</p>
 <p><a href="joint-split-first-invalid.json" download>Download the invalid first attempt for audit</a>. It is excluded from every summary and figure on this page.</p>
-<dl class="identities"><dt>Corrected measured revision</dt><dd><a href="https://github.com/T92T1914/exact-blackjack-solver/commit/{measured}"><code>{measured}</code></a></dd><dt>Invalid first revision</dt><dd><a href="https://github.com/T92T1914/exact-blackjack-solver/commit/{invalid}"><code>{invalid}</code></a></dd><dt>Report renderer revision</dt><dd><code>{renderer}</code>{dirty}</dd></dl>
+<dl class="identities"><dt>Corrected measured revision</dt><dd><a href="https://github.com/T92T1914/exact-blackjack-solver/commit/{measured}"><code translate="no">{measured}</code></a></dd><dt>Invalid first revision</dt><dd><a href="https://github.com/T92T1914/exact-blackjack-solver/commit/{invalid}"><code translate="no">{invalid}</code></a></dd><dt>Report renderer revision</dt><dd><code translate="no">{renderer}</code>{dirty}</dd></dl>
 <p class="fine">Rendering this page does not run either solver. <a href="joint-split-presentation.json" download>Download the presentation record</a> for source identities and normalized text checksums.</p>
 </section>
 <section>
