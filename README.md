@@ -258,14 +258,13 @@ records the source, method, counters and installed calculation/replay acceptance
 
 <a href="docs/ace-terminal-reuse.md">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/ace-terminal-reuse-obscur.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/ace-terminal-reuse-clair.png">
     <img src="docs/ace-terminal-reuse-obscur.png" alt="One cold H17 ace request completed all four original action values in 82,780 entered states under the unchanged 100,000 state cap. This is work versus a cap, not a timing comparison or a guarantee for other shoes." width="900">
   </picture>
 </a>
 
-These accepted Clair and Obscur figures show the retained numerical result,
-with [source data and rendering evidence](docs/ace-terminal-reuse-figure.json).
+This Obscur figure shows the retained numerical result, with
+[source data and rendering evidence](docs/ace-terminal-reuse-figure.json).
+A [Clair edition](docs/ace-terminal-reuse-clair.png) remains available.
 The four values remain selectable text above. Open the completed decision in
 the [local inspector](https://t92t1914.github.io/exact-blackjack-solver/#record-inspector)
 to inspect its inputs or compare it with another saved result.
@@ -320,16 +319,16 @@ prints the margin between available actions alongside each recommendation.
 
 <a href="docs/visual-example.md">
   <picture>
-    <source media="(min-width: 1024px) and (prefers-color-scheme: dark)" srcset="docs/blackjack-composition-obscur-wide.png">
-    <source media="(min-width: 1024px) and (prefers-color-scheme: light)" srcset="docs/blackjack-composition-clair-wide.png">
-    <source media="(prefers-color-scheme: dark)" srcset="docs/blackjack-composition-obscur.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/blackjack-composition-clair.png">
-    <img src="docs/blackjack-composition-clair.png" alt="Two hard 16 hands against a dealer ten. Hit 10 + 6 at negative 0.534676, or stand on 8 + 5 + 3 at negative 0.539887. Both expected returns are negative. Margins are 0.006279 and 0.004117 original wager units." width="900">
+    <source media="(min-width: 1024px)" srcset="docs/blackjack-composition-obscur-wide.png">
+    <img src="docs/blackjack-composition-obscur.png" alt="Two hard 16 hands against a dealer ten. Hit 10 + 6 at negative 0.534676, or stand on 8 + 5 + 3 at negative 0.539887. Both expected returns are negative. Margins are 0.006279 and 0.004117 original wager units." width="900">
   </picture>
 </a>
 
 Both hands total 16, but the cards remaining in the shoe differ. Under the same six deck rules, the solver recommends hitting 10 + 6 and standing on 8 + 5 + 3. Both decisions still have negative expected returns.
 [Reproduce and inspect the values](docs/visual-example.md).
+
+The README uses Obscur. Alternate [Clair portrait](docs/blackjack-composition-clair.png)
+and [wide](docs/blackjack-composition-clair-wide.png) editions preserve the same values.
 
 The original/default path below treats one hand as a single agent, finite horizon Markov decision process, and the
 solver is the dynamic program that values it. The state is the player's
