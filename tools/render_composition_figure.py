@@ -142,7 +142,7 @@ def draw(data, tokens, mode, files, output, wide=False):
                   'Peek found no blackjack. Visible cards removed.',
                   12.5, color=roles['muted'])
             label(.055, .13, 'Exact hit and stand values in this model. '
-                  'Split values elsewhere are approximate.', 12.5)
+                  'Original split path is approximate.', 12.5)
             label(.055, .07, 'Recorded source: 23a42e6.', 12, 'SemiBold', roles['muted'])
         else:
             label(.075, .283, 'Both expected returns are negative.', 13.5, 'BoldItalic')
@@ -153,7 +153,7 @@ def draw(data, tokens, mode, files, output, wide=False):
             label(.075, .135, 'Six decks. Dealer stands on soft 17.\n'
                   'Peek found no blackjack. Visible cards removed.', 11.8, color=roles['muted'])
             label(.075, .080, 'Exact hit and stand values in this model.\n'
-                  'Split values elsewhere are approximate.', 12.2)
+                  'Original split path is approximate.', 12.2)
             label(.075, .027, 'Recorded source: 23a42e6.', 12, 'SemiBold', roles['muted'])
         canvas = FigureCanvasAgg(fig)
         canvas.draw()

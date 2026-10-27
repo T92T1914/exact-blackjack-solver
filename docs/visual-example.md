@@ -38,6 +38,10 @@ enumeration within the supported model. No split approximation is involved
 in this example. A three card 16 does not always call for standing; the
 particular composition matters.
 
+The figure's split limitation describes the original split path. Separately
+selected bounded common-shoe models have their own
+[information and settlement contracts](../README.md#supported-calculation-models).
+
 ## Inspect the source
 
 The [underlying values](visual-example-data.json) include the source and

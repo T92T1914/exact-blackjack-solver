@@ -67,7 +67,7 @@
     "examples/bounded-ace-resplit-h17-request.json": "8fc3c209a9f65fd87b4ee2cdda8aa6d57456c7748aea57331fe4f26892436cb4",
     "presentation/tokens.json": "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7",
     "tools/presentation.py": "1055ef87d159d87c05b96817cab172d6b41d23f8f723d660d094f8e0d3589109",
-    "tools/render_composition_figure.py": "bc996c1e3104ffdc4fdbbef3fa490ebf5c4c382fed41f91d6812021983ae2ecf",
+    "tools/render_composition_figure.py": "a89afeaf76fef708f21d0e6e6be37525ce89403e53f450af6d3586a019fd66d4",
     "tools/render_evidence_figure.py": "00a699f02aaee7744b4b03c94c2e73e595c1410b4c36e0d0b681fd25b5dda3e6"
   },
   "editions": {
