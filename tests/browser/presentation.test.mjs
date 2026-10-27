@@ -1620,11 +1620,11 @@ test('composition editions follow Auto and overrides without changing saved evid
   assert.equal(await noScript.locator('#composition-figure img:visible').getAttribute('src'),'composition-obscur.png');
 });
 
-test('maintained Markdown pictures select the portable editions at narrow size', async t => {
+test('maintained Markdown pictures preserve their declared narrow editions', async t => {
   const page=await fixture(t,{viewport:{width:390,height:844},colorScheme:'light'});
   const expected={
-    'README.md':{'blackjack-composition':{published:'composition',width:960},
-      'ace-terminal-reuse':{published:'ace-terminal-reuse',width:1440}},
+    'README.md':{'blackjack-composition':{published:'composition',width:960,edition:'obscur'},
+      'ace-terminal-reuse':{published:'ace-terminal-reuse',width:1440,edition:'obscur'}},
     'docs/visual-example.md':{'blackjack-composition':{published:'composition',width:960}},
   };
   for (const name of ['README.md','docs/visual-example.md']) {
@@ -1637,12 +1637,15 @@ test('maintained Markdown pictures select the portable editions at narrow size',
       assert.ok(source,`Unqualified Markdown picture in ${name}`);
       const family=source[1],spec=expected[name][family];
       assert.ok(spec,`Unexpected Markdown picture ${family} in ${name}`);
+      if (spec.edition) assert.doesNotMatch(picture,/prefers-color-scheme/,
+        `The ${name} picture keeps its declared edition independently of the reader's scheme`);
       seen.push(family);
       picture=picture.replace(/(?:docs\/)?(blackjack-composition|ace-terminal-reuse)-(clair|obscur)\.png/g,
         (_,kind,mode)=>base+`/${expected[name][kind].published}-${mode}.png`);
       await page.setContent('<!doctype html><html lang="en"><head><title>Authored picture check</title>'+
         '<style>body{margin:20px}img{max-width:100%;height:auto}</style></head><body>'+picture+'</body></html>');
-      for (const [scheme,mode] of [['light','clair'],['dark','obscur']]) {
+      for (const scheme of ['light','dark']) {
+        const mode=spec.edition ?? (scheme==='light'?'clair':'obscur');
         await page.emulateMedia({colorScheme:scheme});
         await page.waitForFunction(file => document.querySelector('img').currentSrc.endsWith(file) &&
           document.querySelector('img').complete,`${spec.published}-${mode}.png`);
