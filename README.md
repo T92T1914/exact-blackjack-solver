@@ -49,7 +49,7 @@ font fallback for other visitors. It does not download fonts.
 Install the reviewed source without a development checkout:
 
 ```sh
-python -m pip install "https://github.com/T92T1914/exact-blackjack-solver/archive/56abec59bab328c8856c824eac36f0e00775c18d.zip"
+python -m pip install "https://github.com/T92T1914/exact-blackjack-solver/archive/a36be7956c4115093779678aa2c5421256e2ac1e.zip"
 bj-advise T,4 T --unseen 2,3,7,8,9,T --json
 ```
 
