@@ -33,9 +33,9 @@ and still applies to the derived chart and whole game estimates.
 
 [Explore the browser demo](https://t92t1914.github.io/exact-blackjack-solver/) · [Open in Codespaces](https://codespaces.new/T92T1914/exact-blackjack-solver) · [Read in another language](https://github.com/T92T1914/T92T1914/blob/main/TRANSLATION.md)
 
-Use **Link to this example** in the browser demo to share the selected result.
+Use Link to this example in the browser demo to share the selected result.
 The URL keeps the example's visible label, and Back and Forward restore earlier
-selections. These links inspect saved evidence; they do not run a new calculation.
+selections. These links inspect saved evidence. They do not run a new calculation.
 
 The page starts in Obscur. You can choose Clair or let Auto follow your system.
 Your selected appearance stays in this project's browser storage. Switching
@@ -70,7 +70,7 @@ python -m pytest -q -m "not slow"
 
 Use `python -m pip install -e .` if you only want the solver. Both installs
 provide the `bj-advise` command. Runtime and table generation time depend on
-the machine; the ordinary test command excludes the long statistical runs.
+the machine. The ordinary test command excludes the long statistical runs.
 
 Python 3.11+ and `numpy` (used only by the Monte Carlo harness). CI lints and
 runs the suite on Python 3.11, 3.12 and 3.13. Two more examples are `bj-advise T,6 T` and `bj-advise A,7 3`; `--decks`, `--h17` and
@@ -296,9 +296,9 @@ Every action has a negative expected value in this example. Splitting ranks
 first because its estimated loss is smaller, by 0.0605 units compared with
 hitting. That margin describes a difference in expected return, not the
 probability of winning the next hand. The whole game estimate under the
-derived basic strategy is **−0.4044%**
-to the player for this table. This estimate inherits the split approximations;
-it is not an exact joint split optimum or a guarantee about play outcomes.
+derived basic strategy is −0.4044%
+to the player for this table. This estimate inherits the split approximations.
+It is not an exact joint split optimum or a guarantee about play outcomes.
 
 ## Why composition dependent, and why it is not a table
 
@@ -306,12 +306,12 @@ A total based strategy chart combines hands that can leave different cards
 in the shoe. Under the default rules, two unsplit hands totaling 16 against a
 dealer ten can therefore have different best actions. I wanted the calculation
 to show that difference instead of hiding it behind the total. The solver
-values the available actions from the remaining card counts; the generated
+values the available actions from the remaining card counts. The generated
 chart is a summary of those calculations under the selected rules.
 
 For 10 + 6 against a dealer ten, hitting leads the next available action by
-**0.0063 units** under the default rules. For ace + 7 against a three, doubling
-has an expected value of **+0.1793 units**. These are values for particular
+0.0063 units under the default rules. For ace + 7 against a three, doubling
+has an expected value of +0.1793 units. These are values for particular
 hands. A favorable hand does not make the game profitable overall. The tool
 prints the margin between available actions alongside each recommendation.
 
@@ -333,8 +333,8 @@ and [wide](docs/blackjack-composition-clair-wide.png) editions preserve the same
 The original/default path below treats one hand as a single agent, finite horizon Markov decision process, and the
 solver is the dynamic program that values it. The state is the player's
 (total, softness), the dealer's upcard and the exact composition of the cards
-nobody has seen; an action is stand, hit, double or split; a transition is one
-card drawn *without replacement* from that composition; the reward is the
+nobody has seen. An action is stand, hit, double or split. A transition is one
+card drawn without replacement from that composition. The reward is the
 settlement. The dealer is part of the environment, a fixed drawing rule, never
 an opponent.
 
@@ -358,21 +358,21 @@ flowchart TD
 
 Three details carry most of the weight, and each has a test with its name on it:
 
-* **Every draw comes out of the actual remaining shoe.** A three card 8,5,3
-  against a ten *stands*, while a two card T,6, the same hard 16, hits,
+* Every draw comes out of the actual remaining shoe. A three card 8,5,3
+  against a ten stands, while a two card T,6, the same hard 16, hits,
   because the three low cards that would have rescued the hit are already in
   the hand. An infinite deck model cannot tell those hands apart
   (`test_multi_card_sixteen_versus_ten`).
-* **The peek is applied where the table applies it.** The dealer peeks under a
-  ten or an ace *before* the player acts, so by decision time the player knows
+* The peek is applied where the table applies it. The dealer peeks under a
+  ten or an ace before the player acts, so by decision time the player knows
   the hole card is not the one that completes a natural. Both the dealer's
   distribution and the player's own draw probabilities are conditioned on
-  that; the second correction is worth up to 0.0025 on 11 vs A and is exactly
+  that. The second correction is worth up to 0.0025 on 11 vs A and is exactly
   zero against a 2 through 9 (`test_the_peek_only_touches_the_two_upcards_it_can_touch`).
-  The hole card is never *read*, a solver that maximised over it would report
+  The hole card is never read. A solver that maximised over it would report
   +0.1867 for hitting 11 vs A instead of the correct +0.1476, and that number
   is pinned so the mistake cannot come back (`test_eleven_vs_ace_is_not_played_clairvoyantly`).
-* **Memoisation on an immutable shoe tuple.** Dealer resolution is keyed on
+* Memoisation on an immutable shoe tuple. Dealer resolution is keyed on
   `(total, soft, shoe, s17)`, and a tuple of counts cannot be mutated out from
   under the cache, so 2,3 and 3,2 collapse into one subproblem and clearing the
   caches reproduces every number bit for bit
@@ -411,7 +411,7 @@ Obscur figures. It also retains and identifies the first comparison attempt,
 whose rank order adapter compared different shoes and invalidated its gaps.
 
 Custom shoes passed to the Python API include the dealer's hidden hole card.
-When only that card remains, `best_action` offers standing; a direct request
+When only that card remains, `best_action` offers standing. A direct request
 to hit or double raises `ValueError`. After the last drawable card, hit
 valuation settles the hand instead of trying to take the hole card. A split
 needs at least two drawable cards. If the dealer still needs a card that is
@@ -526,25 +526,25 @@ share.
 The test suite runs the solver against independent checks rather than against
 itself:
 
-* **Exact vs. simulated.** `simulate.py` plays hands under fresh randomness; its
+* Exact vs. simulated. `simulate.py` plays hands under fresh randomness. Its
   long run dealer bust rate and its house edge must match the enumerated figures
   (the heavy runs are multi million hand simulations, gated behind `BJ_SLOW=1`).
-* **Exact vs. published.** All 45 stand/hit/double cells of the published
+* Exact vs. published. All 45 stand/hit/double cells of the published
   marginal hand table are held to 0.0001, the tables print four decimals, and
   the composition dependent whole game estimate is pinned at −0.4029%, 3e-06 from the
   published −0.4026%.
-* **Two decision paths agree.** A compiled fast path action function is checked
+* Two decision paths agree. A compiled fast path action function is checked
   against the solver's `basic_action` across every hand shape and dealer upcard.
-* **The transcription equals the derivation.** The chart typed into
+* The transcription equals the derivation. The chart typed into
   `bj/strategy.py` and the chart `derive_table()` recomputes agree on every
   cell they share, 160 hard, 80 soft, 100 pair, with no permitted
-  exceptions; the two hard rows only one of them has (a hard 4, and a hard 21
+  exceptions. The two hard rows only one of them has (a hard 4, and a hard 21
   no two ace free cards can make) are accounted for by name.
-* **Rule sensitivity is pinned.** Doubling after split, dealer S17 vs H17,
+* Rule sensitivity is pinned. Doubling after split, dealer S17 vs H17,
   resplit and hit split aces, deck count, and blackjack payout each move the EV
   in a known direction, and the tests assert those directions rather than magic
   constants.
-* **This README is tested.** The chart above is parsed and compared with the
+* This README is tested. The chart above is parsed and compared with the
   solver's output, and the worked decision is the command line's pinned output
   (`tests/test_chart.py`, `tests/test_cli.py`).
 
@@ -559,19 +559,19 @@ separate from this command. Current results are available in the linked CI run.
 
 ## What this does not prove
 
-* **The headline numbers are one table.** The solver is parameterized by a
+* The headline numbers are one table. The solver is parameterized by a
   `Rules` object, and the tests exercise rule variations, but the worked example
   and the −0.4044% are a single six deck, S17, 3:2 table. Changing the rules
   requires recalculating the values. `--decks`, `--h17` and `--no-das` select
   those changes on the command line.
-* **It models a declared hand or round, not a session.** The ordinary CLI starts with a fresh shoe minus
-  the visible cards. The Python API also accepts an explicit remaining shoe;
-  callers are responsible for its card counts. There is no automatic tracking
+* It models a declared hand or round, not a session. The ordinary CLI starts with a fresh shoe minus
+  the visible cards. The Python API also accepts an explicit remaining shoe.
+  Callers are responsible for its card counts. There is no automatic tracking
   across hands, account connection or live table integration.
-* **It sees only what a player sees.** The dealer's hole card is never an input;
-  a solver allowed to read it would be trivial and useless. Every hard problem
+* It sees only what a player sees. The dealer's hole card is never an input.
+  A solver allowed to read it would be trivial and useless. Every hard problem
   here exists because it is restricted to legitimate information.
-* **Two of the split rules were conservative defaults** in the original table
+* Two of the split rules were conservative defaults in the original table
   (resplit aces, hit split aces), and the solver's defaults follow them. The EV
   of a table that allows them can be requested through the original interface,
   subject to its independent hand and shared resplit budget approximations.
@@ -586,7 +586,7 @@ sensitive cells, are Wizard of Odds' six deck, S17, DAS, dealer peeks numbers,
 as transcribed into the original project's design notes. The code and tests
 call those notes "the spec". They are private and not in this repository, but
 every number they supplied is reproduced in `tests/`, so nothing here depends on
-having them; where the spec contradicted itself or the solver, the tests say
+having them. Where the spec contradicted itself or the solver, the tests say
 which side the arithmetic is on rather than tuning anything to agree.
 
 ## License
@@ -601,9 +601,9 @@ Found a problem or have a useful comparison? [Open an issue](https://github.com/
 
 This project gives me a concrete way to work on dynamic programming, state representation and independent verification. I want someone to be able to inspect a result, reproduce it and see where the supported model stops.
 
-- **State and caching.** Follow the composition dependent calculation and memoized states. [Inspect the work](README.md#how-it-works).
-- **Independent checks.** Read how exact calculations and simulation are compared. [Inspect the work](README.md#what-is-verified-and-how).
-- **Model boundaries.** Compare the original split approximation with separately selected joint and deferred dealer models. [Inspect the work](README.md#supported-calculation-models).
+- State and caching. Follow the composition dependent calculation and memoized states. [Inspect the work](README.md#how-it-works).
+- Independent checks. Read how exact calculations and simulation are compared. [Inspect the work](README.md#what-is-verified-and-how).
+- Model boundaries. Compare the original split approximation with separately selected joint and deferred dealer models. [Inspect the work](README.md#supported-calculation-models).
 
 The transferable work is numerical software and verification. A correct result inside this rule model does not establish a model for financial risk or another real world decision.
 

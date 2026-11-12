@@ -147,7 +147,7 @@ hand with more than two cards is invalid. A split 21 does not become a natural.
 The flags work with text advice, JSON and `--table`. The chart caption names
 enabled ace resplitting and the selected hitting rule. Supplied counts still
 include the reserved hole and already exclude visible cards. Choosing a flag
-declares your rules; it does not verify permissions at an external table.
+declares your rules. It does not verify permissions at an external table.
 
 Save successful stdout as described above and replay without either flag:
 
@@ -216,7 +216,7 @@ The controls restrict only the present alternatives. They do not change the
 rules, later continuation policy or split approximation. In particular,
 `--no-das` is the separate rule about doubling after splitting. Existing cards,
 retained counts, hand cap and split-state inputs keep their meaning. Neither
-disable can accompany `--table` or `--replay`; replay takes its controls from
+disable can accompany `--table` or `--replay`. Replay takes its controls from
 the saved state and refuses overrides before reading the file.
 
 The public `advise`, `decision_record` and `decision_json` wrappers accept

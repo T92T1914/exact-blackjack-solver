@@ -211,7 +211,7 @@ bj-advise --replay run-001/result/decision.json --json
 
 Replay reports agreement or differences separately from calculation/failure
 outcomes. It trusts no saved answer as a calculation input. Replay retains
-caller-owned execution. Legacy models have no algorithmic bound; schema 3 uses
+caller-owned execution. Legacy models have no algorithmic bound. Schema 3 uses
 its recorded common-model state cap and schema 4 uses its late-surrender
 root-only cap. The calculation worker's deadline and
 memory policy do not silently apply to this later replay command.

@@ -46,7 +46,7 @@ was separately completed at 232,005 combined root and joint entries under a
 private verification-only ceiling of 500,000. That observer counts every
 entered body and resets afterward. It does not change the installed product's
 100,000 maximum, produce an old-product result under that maximum, or permit a
-cap increase in a request. Its original joint dealer count was 169,528; the
+cap increase in a request. Its original joint dealer count was 169,528. The
 current count is 29,881. Other state-family counts are unchanged in this case.
 
 The larger verification bound supplies old/new computation comparison, not
@@ -72,7 +72,7 @@ is retained in the raw file, including the refused repetitions.
 The actual timer includes the calculation and small hexadecimal answer-map
 assembly through exception/result handling. Imports, rules construction, file
 serialization and process startup/retirement are outside it. The frozen plan
-described a call-only interval; this additional answer assembly is reported
+described a call-only interval. This additional answer assembly is reported
 explicitly rather than silently relabeled. Instrumented exploratory profiles
 are separate qualification evidence and are not timing speedups.
 
