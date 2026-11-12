@@ -1,7 +1,7 @@
 # Changelog
 
 Notable changes to this project, newest first. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version numbers
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version numbers
 follow [Semantic Versioning](https://semver.org/). The version the package
 reports is `bj.__version__`.
 
@@ -9,7 +9,7 @@ reports is `bj.__version__`.
 
 ### Added
 * `pyproject.toml`: `pip install -e .` installs the package and a `bj-advise`
-  command; pytest and ruff configuration live there too.
+  command. Pytest and ruff configuration live there too.
 * `bj/cli.py`: the command line, with `--table` (the basic strategy chart the
   solver derives, as Markdown), `--decks`, `--h17` and `--no-das`.
 * `bj/chart.py`: renders a chart as Markdown and parses one back, so the chart
@@ -88,12 +88,12 @@ reports is `bj.__version__`.
 * GitHub Actions moved to the Node 24 releases: `actions/checkout@v5`,
   `actions/setup-python@v6`.
 * Docstrings and comments no longer refer to the private project's design
-  document, UI, or files that are not in this repository; "the spec" is
+  document, UI, or files that are not in this repository. "The spec" is
   defined once in `bj/__init__.py`, and the package docstring states the
   problem being solved (a single agent finite horizon MDP, not game theory).
-* Type hints use built in generics (PEP 585) and `X | None` (PEP 604);
+* Type hints use built in generics (PEP 585) and `X | None` (PEP 604).
   `bj/core.py` gains a `CardLike` alias and hints on the shoe helpers.
-* `demo.py` is a thin front door over `bj.cli.main`; its output for a hand is
+* `demo.py` is a thin front door over `bj.cli.main`. Its output for a hand is
   unchanged and pinned by `tests/test_cli.py`.
 * `bj.cli.table(rules)` labels the returned chart with its modeled peek and no
   surrender scope and adds a note when a caller asks for other flags. The

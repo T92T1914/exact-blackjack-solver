@@ -57,7 +57,7 @@ BJ_SLOW=1 python -m pytest -q
 
 Open this repository in Codespaces or use VS Code Dev Containers. The container uses Python 3.11 and installs the project into `.venv` during setup. Its image is pinned by digest. The `Project access` workflow builds that same environment and runs `.devcontainer/smoke.sh`. Runtime dependencies still follow the project configuration. Codespaces uses the creating account's compute and storage allowance.
 
-Run `python tools/build_site.py` to assemble the public page in `_site`, then `python -m http.server 8080 --directory _site` to preview it. The builder copies only the listed example files. The page reads saved evidence; it does not silently rerun the experiment or claim current results. Pages deploys from `main` after the site and development environment checks pass.
+Run `python tools/build_site.py` to assemble the public page in `_site`, then `python -m http.server 8080 --directory _site` to preview it. The builder copies only the listed example files. The page reads saved evidence. It does not silently rerun the experiment or claim current results. Pages deploys from `main` after the site and development environment checks pass.
 
 The appearance adapter reads the pinned `presentation/tokens.json` from
 Clair/Obscur revision `7a57fe750ff50205a17e1d342106a0d3f2777159` and generates

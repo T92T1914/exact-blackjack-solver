@@ -220,7 +220,7 @@ between families is not evidence of an engine regression.
 
 The engine enumerates the declared finite model using binary floating point.
 It does not return symbolic fractions. Raw original ties use stand, hit,
-double, split order; eligible ace ties use stand before resplit. No policy
+double, split order. Eligible ace ties use stand before resplit. No policy
 epsilon is added. A small floating-point difference can select differently
 at an exact rational tie. Independent tiny-shoe tests use complete physical
 deals and exact fractions for hidden information, shared resplitting,

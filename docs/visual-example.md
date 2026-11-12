@@ -35,7 +35,7 @@ Values are expected net return per original wager, not probabilities of
 winning. The displayed margins are small, and neither recommended action
 makes the expected return positive. These hit and stand values use exact
 enumeration within the supported model. No split approximation is involved
-in this example. A three card 16 does not always call for standing; the
+in this example. A three card 16 does not always call for standing. The
 particular composition matters.
 
 The figure's split limitation describes the original split path. Separately
