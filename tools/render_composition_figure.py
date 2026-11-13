@@ -195,7 +195,7 @@ def check_outputs():
         raise ValueError('The retained Clair editions changed')
     for name in RETAINED_CLAIR:
         if record['retained_clair']['files'][name] != digest(ROOT / name):
-            raise ValueError(f'Retained Clair edition changed: {name}')
+            raise ValueError(f'Figure output changed: retained Clair edition {name}')
     for name, checksum in record['outputs_sha256'].items():
         if digest(ROOT / name) != checksum:
             raise ValueError(f'Figure output changed: {name}')
@@ -232,7 +232,7 @@ def main():
             files={name: old['outputs_sha256'][name] for name in RETAINED_CLAIR})
         for name in RETAINED_CLAIR:
             if digest(ROOT / name) != retained['files'][name]:
-                raise ValueError(f'Retained Clair edition changed: {name}')
+                raise ValueError(f'Figure output changed: retained Clair edition {name}')
         record = dict(schema_version=3, evidence=semantic_record(data),
                       renderer=dict(matplotlib=matplotlib.__version__, backend='Agg'),
                       layout=layouts, wide_layout=wide_layouts, retained_clair=retained,
