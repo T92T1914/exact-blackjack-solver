@@ -20,17 +20,19 @@
     "source_sha256": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c"
   },
   "inputs_sha256_lf": {
-    "tools/render_share_preview.py": "b7deaa3ab95a0993eecc909b12440727ac00cdbb54f516994a75d2323a6c28f1",
+    "tools/render_share_preview.py": "c06472b08302a1202135de8abccc48a6863ed547c9635fef44ef790a2b54c22a",
     "docs/sharing-card.json": "d258dbe25e040ece9342003855215626d087cbad7c63af1bfe89aee5b5a624d3",
     "docs/visual-example-data.json": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c",
     "presentation/tokens.json": "a49f96e5b2cfcd8a29ef426bc9969be96a701faa5c69f3e22b3f52a534242aa5",
-    "tools/render_composition_figure.py": "3f3adf6019b83f59e209006933a6b3ba69851da7a4ba11aa429531b6d96e88eb"
+    "tools/render_composition_figure.py": "a3d123144b8cfbab73707428f2febee6e842c6185bb895337232091d957aefe0"
   },
-  "png_sha256": "08b29309a7f11b0384f2a8d9bf0ab70f2f12c8d20f6961b12cf55a7daf4a437e",
+  "png_sha256": "5dd66de295368509aef8cbc873f6b90ec9e31ea677fd8ff457bf967f8e6bbeb9",
   "dimensions": [
-    1280,
-    640
+    1800,
+    900
   ],
+  "floor_px": 42,
+  "minimum_label_px": 42,
   "appearance": "obscur",
   "opaque": true,
   "renderer": {
@@ -61,111 +63,111 @@
       "text": "Exact Blackjack Solver",
       "face": "Inter-Bold",
       "bounds": [
-        68,
-        52,
-        774,
-        115
+        72,
+        72,
+        910,
+        146
       ],
-      "size": 64
+      "size": 76
     },
     {
       "text": "Same total. Different decision.",
       "face": "Inter-SemiBold",
       "bounds": [
-        68,
-        136,
-        679,
-        169
+        72,
+        185,
+        741,
+        222
       ],
-      "size": 42
+      "size": 46
     },
     {
       "text": "Both total 16 | Dealer shows 10 | Saved six-deck example",
       "face": "Inter-Regular",
       "bounds": [
-        68,
-        208,
-        874,
-        245
+        72,
+        259,
+        1200,
+        309
       ],
-      "size": 30
+      "size": 42
     },
     {
       "text": "10 + 6",
       "face": "Inter-SemiBold",
       "bounds": [
-        94,
-        298,
-        187,
-        322
+        100,
+        402,
+        228,
+        434
       ],
-      "size": 32
+      "size": 44
     },
     {
       "text": "HIT",
       "face": "Inter-Bold",
       "bounds": [
-        94,
-        350,
-        209,
-        400
+        100,
+        473,
+        249,
+        538
       ],
-      "size": 68
+      "size": 88
     },
     {
       "text": "-0.534676 / original wager",
       "face": "Inter-Regular",
       "bounds": [
-        94,
-        451,
-        473,
-        481
+        100,
+        601,
+        630,
+        641
       ],
-      "size": 30
+      "size": 42
     },
     {
       "text": "8 + 5 + 3",
       "face": "Inter-SemiBold",
       "bounds": [
-        682,
-        298,
-        818,
-        322
+        952,
+        402,
+        1139,
+        434
       ],
-      "size": 32
+      "size": 44
     },
     {
       "text": "STAND",
       "face": "Inter-Bold",
       "bounds": [
-        682,
-        350,
-        917,
-        402
+        952,
+        473,
+        1256,
+        540
       ],
-      "size": 68
+      "size": 88
     },
     {
       "text": "-0.539887 / original wager",
       "face": "Inter-Regular",
       "bounds": [
-        682,
-        451,
-        1060,
-        481
+        952,
+        601,
+        1482,
+        641
       ],
-      "size": 30
+      "size": 42
     },
     {
       "text": "Original split path approximate. Bounded models have own limits.",
       "face": "Inter-SemiBold",
       "bounds": [
-        68,
-        548,
-        1012,
-        577
+        72,
+        744,
+        1394,
+        784
       ],
-      "size": 30
+      "size": 42
     }
   ],
   "experimental_work_rerun": false,

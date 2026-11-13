@@ -79,6 +79,40 @@ def semantic_record(data):
                 split_reference='The later joint split study is separate evidence.')
 
 
+DPI = 200
+FLOOR_POINTS_AT_100_DPI = 30
+INSET = 12
+NBSP = ' '
+
+
+def floor_points(dpi):
+    """The 30 pt at 100 dpi floor of Obscur, as points at another resolution."""
+    return FLOOR_POINTS_AT_100_DPI * 100 / dpi
+
+
+def text_width(renderer, font, text):
+    width, _, _ = renderer.get_text_width_height_descent(text.replace(NBSP, ' '), font, False)
+    return width
+
+
+def wrap_text(renderer, font, text, limit):
+    """Wrap by measured width. A non-breaking space keeps its words together."""
+    lines = []
+    for paragraph in text.split('\n'):
+        current = ''
+        for word in paragraph.split(' '):
+            trial = f'{current} {word}' if current else word
+            if text_width(renderer, font, trial) <= limit:
+                current = trial
+            elif not current:
+                raise ValueError(f'A word does not fit its line, change the layout: {word}')
+            else:
+                lines.append(current)
+                current = word
+        lines.append(current)
+    return '\n'.join(line.replace(NBSP, ' ') for line in lines)
+
+
 def draw(data, tokens, mode, files, output, wide=False):
     import matplotlib
     matplotlib.use('Agg')
@@ -89,82 +123,139 @@ def draw(data, tokens, mode, files, output, wide=False):
     from matplotlib.patches import FancyBboxPatch
 
     roles = tokens['themes'][mode.capitalize()]
+    width = 1800 if wide else 960
+    margin = 72 if wide else 48
+    scale = 1.0 if wide else 1.1
     fonts = {name: FontProperties(fname=str(path)) for name, path in files.items()}
-    with rc_context({'svg.fonttype': 'path', 'svg.hashsalt': 'solver-composition-v1'}):
-        fig = Figure(figsize=(9, 6.4) if wide else (4.8, 10.4), dpi=200, facecolor=roles['canvas'])
-        labels = []
+    floor = floor_points(DPI)
+    # The narrow edition follows the larger type of the Obscur table, 33 pt against 30 pt.
+    small = 15 * scale
 
-        def label(x, y, text, size=13, face='Regular', color=None, gid=None, **kwargs):
-            item = fig.text(x, y, text, fontsize=size, fontproperties=fonts[face],
-                            color=color or roles['text'], va='top', linespacing=1.3,
-                            gid=gid, **kwargs)
+    def build(fig, height):
+        """Place every label top down in pixels. Return what was placed and where it ends."""
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_xlim(0, width)
+        ax.set_ylim(height, 0)
+        ax.axis('off')
+        renderer = FigureCanvasAgg(fig).get_renderer()
+        labels, cards = [], []
+
+        def font(points, face):
+            prop = fonts[face].copy()
+            prop.set_size(points)
+            return prop
+
+        def put(x, top, text, points, face='Regular', color=None, gid=None, ha='left',
+                limit=None):
+            if points < floor:
+                raise ValueError('A label is below the Obscur type floor')
+            prop = font(points, face)
+            if limit is not None:
+                text = wrap_text(renderer, prop, text, limit)
+            item = ax.text(x, top, text.replace(NBSP, ' '), fontproperties=prop,
+                           color=color or roles['text'], va='top', ha=ha, linespacing=1.3,
+                           gid=gid, zorder=3)
             labels.append(item)
             return item
 
-        label(.055 if wide else .075, .96, 'EXACT BLACKJACK SOLVER',
-              12, 'SemiBold', roles['accent'])
-        label(.055 if wide else .075, .90 if wide else .918,
-              'Same total. Different decision.' if wide else 'Same total.\nDifferent decision.',
-              26, 'Bold')
-        label(.055 if wide else .075, .815, 'Both hands total 16 against a dealer ten.', 12.5)
-        for index, hand in enumerate(data['hands']):
-            top = .72 if wide else .762 - index * .235
-            left = .055 + index * .48 if wide else .055
-            text_x = left + .02 if wide else .085
-            right = left + (.385 if wide else .86)
-            scale = 1.55 if wide else 1
-            panel = FancyBboxPatch((left, top - .214 * scale), .41 if wide else .89, .212 * scale,
-                                   boxstyle='round,pad=0.006,rounding_size=0.012',
-                                   transform=fig.transFigure, facecolor=roles['control'],
-                                   edgecolor=roles['border'], linewidth=.72)
-            fig.add_artist(panel)
-            title = '10 + 6' if index == 0 else '8 + 5 + 3'
-            label(text_x, top - .018 * scale, title, 22, 'Bold')
+        def extent(item):
+            box = item.get_window_extent(renderer)
+            return box.x0, height - box.y1, box.x1, height - box.y0
+
+        def card(left, top, card_width, index, hand):
+            pad_x, pad_top = 28, 32
+            x0, x1 = left + pad_x, left + card_width - pad_x
+            inside = x1 - x0
+            title = put(x0, top + pad_top, '10 + 6' if index == 0 else '8 + 5 + 3', 22, 'Bold')
             recommended = 'Hit' if hand['action'] == 'H' else 'Stand'
-            label(right, top - .025 * scale, recommended, 15, 'SemiBold',
-                  roles[ACTIONS[hand['action']]], ha='right', gid=f'recommendation-{index}')
-            for j, action in enumerate(('H', 'S')):
-                y = top - (.077 + j * .046) * scale
-                color = roles[ACTIONS[action]]
-                label(text_x, y, 'Hit' if action == 'H' else 'Stand', 14, 'SemiBold', color,
-                      gid=f'action-{index}-{action}')
-                label(right, y, f"{hand['values'][action]:.6f}", 14,
-                      'Bold' if action == hand['action'] else 'Regular',
-                      ha='right', gid=f'value-{index}-{action}')
-            label(text_x, top - .172 * scale, f"Margin: {hand['margin']:.6f} wager units", 12.5,
-                  'SemiBold', roles['muted'], gid=f'margin-{index}')
+            mark = put(x1, top + pad_top, recommended, 16 * scale, 'SemiBold',
+                       roles[ACTIONS[hand['action']]], ha='right',
+                       gid=f'recommendation-{index}')
+            title_box, mark_box = extent(title), extent(mark)
+            mark.set_y(top + pad_top + ((title_box[3] - title_box[1])
+                                        - (mark_box[3] - mark_box[1])) / 2)
+            cursor = max(extent(title)[3], extent(mark)[3]) + 20
+            members = [title, mark]
+            for action in ('H', 'S'):
+                name = put(x0, cursor, 'Hit' if action == 'H' else 'Stand', 16 * scale,
+                           'SemiBold', roles[ACTIONS[action]], gid=f'action-{index}-{action}')
+                value = put(x1, cursor, f"{hand['values'][action]:.6f}", 16 * scale,
+                            'Bold' if action == hand['action'] else 'Regular', ha='right',
+                            gid=f'value-{index}-{action}')
+                members += [name, value]
+                cursor = max(extent(name)[3], extent(value)[3]) + 14
+            note = put(x0, cursor, f"Margin: {hand['margin']:.6f} wager units", small,
+                       'SemiBold', roles['muted'], gid=f'margin-{index}', limit=inside)
+            members.append(note)
+            bottom = extent(note)[3] + pad_top
+            ax.add_patch(FancyBboxPatch(
+                (left, top), card_width, bottom - top, boxstyle='round,pad=0,rounding_size=18',
+                facecolor=roles['control'], edgecolor=roles['border'], linewidth=.72,
+                zorder=1))
+            cards.append(((left, top, left + card_width, bottom), members))
+            return bottom
+
+        limit = width - 2 * margin
+        put(margin, margin, 'EXACT BLACKJACK SOLVER', small, 'SemiBold', roles['accent'])
+        headline = 'Same total. Different decision.' if wide else 'Same total.\nDifferent decision.'
+        title = put(margin, margin + 70, headline, 26, 'Bold')
+        subtitle = put(margin, extent(title)[3] + 22, 'Both hands total 16 against a dealer ten.',
+                       small, limit=limit)
+        top = extent(subtitle)[3] + 40
         if wide:
-            label(.055, .35, 'Both expected returns are negative.', 14, 'Bold')
-            label(.055, .30, 'Expected net return per original wager. Not a win probability.',
-                  13, 'Regular', roles['muted'])
-            label(.055, .24, 'Only hit and stand shown. Doubling 10 + 6 is worse. '
-                  'No double on 8 + 5 + 3.', 12.5)
-            label(.055, .185, 'Six decks. Dealer stands on soft 17. '
-                  'Peek found no blackjack. Visible cards removed.',
-                  12.5, color=roles['muted'])
-            label(.055, .13, 'Exact hit and stand values in this model. '
-                  'Original split path is approximate.', 12.5)
-            label(.055, .07, 'Recorded source: 23a42e6.', 12, 'SemiBold', roles['muted'])
+            card_width = (width - 2 * margin - 78) / 2
+            bottoms = [card(margin + index * (card_width + 78), top, card_width, index, hand)
+                       for index, hand in enumerate(data['hands'])]
+            cursor = max(bottoms)
         else:
-            label(.075, .283, 'Both expected returns are negative.', 13.5, 'Bold')
-            label(.075, .246, 'Expected net return per original wager.\nNot a win probability.',
-                  12.5, 'Regular', roles['muted'])
-            label(.075, .191, 'Only hit and stand shown. Doubling 10 + 6\n'
-                  'is worse. No double on 8 + 5 + 3.', 12.2)
-            label(.075, .135, 'Six decks. Dealer stands on soft 17.\n'
-                  'Peek found no blackjack. Visible cards removed.', 11.8, color=roles['muted'])
-            label(.075, .080, 'Exact hit and stand values in this model.\n'
-                  'Original split path is approximate.', 12.2)
-            label(.075, .027, 'Recorded source: 23a42e6.', 12, 'SemiBold', roles['muted'])
+            cursor = top
+            for index, hand in enumerate(data['hands']):
+                cursor = card(margin, cursor, width - 2 * margin, index, hand) + (
+                    24 if index == 0 else 0)
+        cursor += 56
+        paragraphs = [
+            ('Both expected returns are negative.', 'Bold', None),
+            ('Expected net return per original wager. Not a win probability.', 'Regular',
+             'muted'),
+            (f'Only hit and stand shown. Doubling 10{NBSP}+{NBSP}6 is worse. '
+             f'No double on 8{NBSP}+{NBSP}5{NBSP}+{NBSP}3.', 'Regular', None),
+            ('Six decks. Dealer stands on soft 17. Peek found no blackjack. '
+             'Visible cards removed.', 'Regular', 'muted'),
+            ('Exact hit and stand values in this model. '
+             'Original split path is approximate.', 'Regular', None),
+            ('Recorded source: 23a42e6.', 'SemiBold', 'muted'),
+        ]
+        for text, face, role in paragraphs:
+            item = put(margin, cursor, text, small, face, roles[role] if role else None,
+                       limit=limit)
+            cursor = extent(item)[3] + 22
+        # Canvas height grows to fit the footer plus 49 px.
+        bottom = max(extent(item)[3] for item in labels) + 49
+        return ax, labels, cards, extent, bottom
+
+    with rc_context({'svg.fonttype': 'path', 'svg.hashsalt': 'solver-composition-v1'}):
+        scratch = Figure(figsize=(width / DPI, 6000 / DPI), dpi=DPI)
+        height = math.ceil(build(scratch, 6000)[4])
+        fig = Figure(figsize=(width / DPI, height / DPI), dpi=DPI, facecolor=roles['canvas'])
+        _, labels, cards, extent, _ = build(fig, height)
         canvas = FigureCanvasAgg(fig)
         canvas.draw()
-        bounds = [item.get_window_extent(canvas.get_renderer()) for item in labels]
-        if any(b.x0 < 0 or b.y0 < 0 or b.x1 > fig.bbox.width or b.y1 > fig.bbox.height
-               for b in bounds):
+        boxes = [extent(item) for item in labels]
+        if any(b[0] < INSET or b[1] < INSET or b[2] > width - INSET or b[3] > height - INSET
+               for b in boxes):
             raise ValueError('A figure label extends outside the canvas')
-        layout = dict(width=int(fig.bbox.width), height=int(fig.bbox.height),
-                      labels_within_canvas=len(bounds),
-                      minimum_font_points=min(item.get_fontsize() for item in labels))
+        for (left, top, right, bottom), members in cards:
+            if any(box[0] < left + INSET or box[1] < top + INSET or box[2] > right - INSET
+                   or box[3] > bottom - INSET for box in map(extent, members)):
+                raise ValueError('A figure label is closer than 12 px to its card edge')
+        minimum = min(item.get_fontsize() for item in labels)
+        if minimum < floor:
+            raise ValueError('A figure label is below the Obscur type floor')
+        layout = dict(width=width, height=height, dpi=DPI, labels_within_canvas=len(boxes),
+                      minimum_font_points=minimum,
+                      minimum_font_points_at_100_dpi=minimum * DPI / 100,
+                      floor_points_at_100_dpi=FLOOR_POINTS_AT_100_DPI,
+                      minimum_inset_px=INSET)
         for ext in ('png', 'svg'):
             metadata = {'Description': json.dumps(semantic_record(data), sort_keys=True)}
             if ext == 'svg':

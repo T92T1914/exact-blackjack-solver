@@ -62,17 +62,25 @@
   "layout": {
     "obscur": {
       "width": 960,
-      "height": 2080,
+      "height": 2452,
+      "dpi": 200,
       "labels_within_canvas": 23,
-      "minimum_font_points": 11.8
+      "minimum_font_points": 16.5,
+      "minimum_font_points_at_100_dpi": 33.0,
+      "floor_points_at_100_dpi": 30,
+      "minimum_inset_px": 12
     }
   },
   "wide_layout": {
     "obscur": {
       "width": 1800,
-      "height": 1280,
+      "height": 1471,
+      "dpi": 200,
       "labels_within_canvas": 23,
-      "minimum_font_points": 12.0
+      "minimum_font_points": 15.0,
+      "minimum_font_points_at_100_dpi": 30.0,
+      "floor_points_at_100_dpi": 30,
+      "minimum_inset_px": 12
     }
   },
   "retained_clair": {
@@ -180,16 +188,16 @@
     "docs/visual-example-data.json": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c",
     "presentation/tokens.json": "a49f96e5b2cfcd8a29ef426bc9969be96a701faa5c69f3e22b3f52a534242aa5",
     "tools/presentation.py": "5c29646294b5077b0fc07e01501323ee0b095035140694efaf460d5b5700a2b3",
-    "tools/render_composition_figure.py": "3f3adf6019b83f59e209006933a6b3ba69851da7a4ba11aa429531b6d96e88eb"
+    "tools/render_composition_figure.py": "a3d123144b8cfbab73707428f2febee6e842c6185bb895337232091d957aefe0"
   },
   "outputs_sha256": {
     "docs/blackjack-composition-clair-wide.png": "c42702344c746e04337ac0c0f0f932d32c73e67bfea099122a472015b74d8864",
     "docs/blackjack-composition-clair-wide.svg": "c05a9f11afc2779362fae9f6e5561242f60d2c62123e5e89e78fd131eefafa4c",
     "docs/blackjack-composition-clair.png": "95a1d4e7e0fbc8e3bd41732e9f30eb1b48357e1f0e778b608c8d72931dff934a",
     "docs/blackjack-composition-clair.svg": "222ca0f698242de35bd7002df0d1a07915456ae4d44739977ecbe92efdb9decd",
-    "docs/blackjack-composition-obscur-wide.png": "65e70fe79df1a63d7d92b04184272dbb5139d3bc6dff2e6a98e1702da2ec2805",
-    "docs/blackjack-composition-obscur-wide.svg": "21012aed4e870ff99d8b2837ac8547ac5f08af29ef24eedd715d0a1ee34fdd04",
-    "docs/blackjack-composition-obscur.png": "8a2fb8bd2fbadcf9c172568afa029ae09ae8edb6249171b4384a406b9d9d1610",
-    "docs/blackjack-composition-obscur.svg": "c1564d2944803c6b32a8d7b247e13b92b010e8c727b78dcc59b082e3d50435aa"
+    "docs/blackjack-composition-obscur-wide.png": "9a46905986d8abede0e8f0b5c3c8cd72ad9358beb3ec4b4f8eaa31d5f84547ed",
+    "docs/blackjack-composition-obscur-wide.svg": "05dbb6d16793cd19ad5897e86c93088a92c1f26cb2bc286bea697a155721951b",
+    "docs/blackjack-composition-obscur.png": "74995f455490f7a3242c4a8fb9f792519b1c76442f42b0818998b5096066a4d2",
+    "docs/blackjack-composition-obscur.svg": "e2840848023d58bc71f811cc40be99e1c770cbe6b9431c05b921e26f54035696"
   }
 }

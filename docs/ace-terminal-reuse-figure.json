@@ -67,8 +67,8 @@
     "examples/bounded-ace-resplit-h17-request.json": "8fc3c209a9f65fd87b4ee2cdda8aa6d57456c7748aea57331fe4f26892436cb4",
     "presentation/tokens.json": "a49f96e5b2cfcd8a29ef426bc9969be96a701faa5c69f3e22b3f52a534242aa5",
     "tools/presentation.py": "5c29646294b5077b0fc07e01501323ee0b095035140694efaf460d5b5700a2b3",
-    "tools/render_composition_figure.py": "3f3adf6019b83f59e209006933a6b3ba69851da7a4ba11aa429531b6d96e88eb",
-    "tools/render_evidence_figure.py": "49050ac9dc7ec712c51b41a810b5ebc4b9466d36b2197fc48da58e014b3b5050"
+    "tools/render_composition_figure.py": "a3d123144b8cfbab73707428f2febee6e842c6185bb895337232091d957aefe0",
+    "tools/render_evidence_figure.py": "db5dee709cf4c2bf5276acdae18cf960f5f1b876c6ae2df58e9a2c985c11c901"
   },
   "editions": {
     "clair": {
@@ -86,13 +86,13 @@
     "obscur": {
       "png": {
         "path": "docs/ace-terminal-reuse-obscur.png",
-        "sha256": "2987bf3cbdec6d69c63970559463fbbb25c532f80d3fb69479b1ceab8c02326e",
+        "sha256": "a12e1b8b9667cdb32438beb98bfefe41f1b6104237ec47fa3f9f8ef5a2a97aa9",
         "width": 1440,
-        "height": 720
+        "height": 912
       },
       "svg": {
         "path": "docs/ace-terminal-reuse-obscur.svg",
-        "sha256": "54bea9dc5ed996490b5ee6b828d596db6627a042da033cc687f0ea6998e5a855"
+        "sha256": "622479c0bbf8e44df00edad24c66166c9a517f135bd87dc3ba30abeb4623ac02"
       }
     }
   },
@@ -154,6 +154,18 @@
       "docs/ace-terminal-reuse-clair.svg": {
         "sha256": "4d20e98284977f02213410e96f4a18b8c30d7bd76e61c2590109bc16caf2ba1e"
       }
+    }
+  },
+  "layout": {
+    "obscur": {
+      "width": 1440,
+      "height": 912,
+      "dpi": 120,
+      "labels_within_canvas": 10,
+      "minimum_font_points": 25.0,
+      "minimum_font_points_at_100_dpi": 30.0,
+      "floor_points_at_100_dpi": 30,
+      "minimum_inset_px": 12
     }
   },
   "rendering": {
@@ -239,7 +251,7 @@
       "Bold"
     ],
     "png": "Rasterized from the validated static Inter files",
-    "svg": "Real text; visitor resolves local Inter or browser fallback",
+    "svg": "Labels outlined from the same Inter files. The title and the description stay selectable text. The source link is an anchor with an accessible name around outlined glyphs",
     "font_binaries_distributed": false
   }
 }
