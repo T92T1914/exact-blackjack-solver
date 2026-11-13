@@ -24,7 +24,7 @@
     "docs/sharing-card.json": "d258dbe25e040ece9342003855215626d087cbad7c63af1bfe89aee5b5a624d3",
     "docs/visual-example-data.json": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c",
     "presentation/tokens.json": "a49f96e5b2cfcd8a29ef426bc9969be96a701faa5c69f3e22b3f52a534242aa5",
-    "tools/render_composition_figure.py": "54288368abed9393b629fc79e86c9d082ffb2734ebe5c52e1d453206b8d03125"
+    "tools/render_composition_figure.py": "77727a9b7252379904fddb56d6a121310125eddd291bfce2d8ff5c2f7c30c23b"
   },
   "png_sha256": "08b29309a7f11b0384f2a8d9bf0ab70f2f12c8d20f6961b12cf55a7daf4a437e",
   "dimensions": [

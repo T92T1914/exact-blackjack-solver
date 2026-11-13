@@ -64,9 +64,6 @@ def test_painted_numeric_labels_retain_values_and_geometry_in_both_editions(suff
     tokens = figure.load_tokens()
     for index, hand in enumerate(figure.load_data()['hands']):
         for mode, root in zip(('clair', 'obscur'), roots, strict=True):
-            if mode == 'clair':
-                # The retained Clair edition keeps its first tokens, which tokens.json still holds.
-                assert tokens['themes']['Clair'][figure.ACTIONS['H']]
             for action in ('H', 'S'):
                 value = root.find(f".//s:g[@id='value-{index}-{action}']", NS)
                 assert comment_text(value) == f"{hand['values'][action]:.6f}"

@@ -193,6 +193,9 @@ def check_outputs():
         raise ValueError('Both PNG and SVG editions are required')
     if set(record['retained_clair']['files']) != set(RETAINED_CLAIR):
         raise ValueError('The retained Clair editions changed')
+    for name in RETAINED_CLAIR:
+        if record['retained_clair']['files'][name] != digest(ROOT / name):
+            raise ValueError(f'Retained Clair edition changed: {name}')
     for name, checksum in record['outputs_sha256'].items():
         if digest(ROOT / name) != checksum:
             raise ValueError(f'Figure output changed: {name}')
