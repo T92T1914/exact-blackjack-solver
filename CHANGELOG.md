@@ -108,6 +108,8 @@ reports is `bj.__version__`.
 * The browser demo starts in Obscur and leads with the saved examples. Clair
   and Auto remain selectable (#58). README figures stay Obscur in either
   appearance, with Clair editions linked (#64).
+* The Obscur figures and the sharing card use the monochrome Obscur values and three
+  static Inter faces with no italics. The Clair editions stay as first drawn.
 * The demo keeps selectors inside narrow panels and makes wide evidence tables
   keyboard scrollable (#7). At phone width with enlarged text, headings and
   prose wrap instead of widening the page (#19).

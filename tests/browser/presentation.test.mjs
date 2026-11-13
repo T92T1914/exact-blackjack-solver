@@ -1247,7 +1247,7 @@ for (const route of ['index.html','joint-split.html'])
     await page.goto(base+'/'+route);
     await page.locator('#appearance:not([disabled])').waitFor();
     assert.equal(await page.locator('#appearance').inputValue(), 'obscur');
-    assert.equal(await background(page), 'rgb(9, 9, 9)');
+    assert.equal(await background(page), 'rgb(0, 0, 0)');
     await capture(page, 'obscur-first-'+route, false);
     await page.setViewportSize({width:390,height:844});
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -1258,7 +1258,7 @@ for (const route of ['index.html','joint-split.html'])
     assert.equal(await page.locator('#appearance').inputValue(), 'auto');
     assert.equal(await background(page), 'rgb(248, 247, 243)');
     await page.emulateMedia({colorScheme:'dark'});
-    assert.equal(await background(page), 'rgb(9, 9, 9)');
+    assert.equal(await background(page), 'rgb(0, 0, 0)');
     assert.equal(await page.evaluate(() => localStorage.getItem('exact-blackjack-solver.appearance.v1')), 'auto');
   });
 
@@ -1272,7 +1272,7 @@ test('Auto and overrides preserve the selected hand, exact saved data and histor
     containsExample:element.querySelector('#interactive') !== null
   })), {parent:'main',afterHero:true,beforeModel:'model-route',containsExample:true});
   assert.equal(await page.locator('.actions a.button').first().getAttribute('href'), '#saved-example');
-  assert.equal(await background(page), 'rgb(9, 9, 9)');
+  assert.equal(await background(page), 'rgb(0, 0, 0)');
   await page.locator('#choice').selectOption('1');
   const before = await page.locator('#interactive').textContent();
   const selectedURL = page.url();
@@ -1287,7 +1287,7 @@ test('Auto and overrides preserve the selected hand, exact saved data and histor
   await page.emulateMedia({colorScheme:'dark'});
   assert.equal(await background(page), 'rgb(248, 247, 243)');
   await page.locator('#appearance').selectOption('auto');
-  assert.equal(await background(page), 'rgb(9, 9, 9)');
+  assert.equal(await background(page), 'rgb(0, 0, 0)');
   await page.emulateMedia({colorScheme:'light'});
   assert.equal(await background(page), 'rgb(248, 247, 243)');
   await page.reload();
@@ -1307,12 +1307,12 @@ test('Auto and overrides preserve the selected hand, exact saved data and histor
 test('blocked storage leaves the controls usable without claiming persistence', async t => {
   const page = await fixture(t, {colorScheme:'light'}, true);
   await ready(page);
-  assert.equal(await background(page), 'rgb(9, 9, 9)');
+  assert.equal(await background(page), 'rgb(0, 0, 0)');
   await page.locator('#appearance').selectOption('clair');
   assert.equal(await background(page), 'rgb(248, 247, 243)');
   await page.reload();
   assert.equal(await page.locator('#appearance').inputValue(), 'obscur');
-  assert.equal(await background(page), 'rgb(9, 9, 9)');
+  assert.equal(await background(page), 'rgb(0, 0, 0)');
 });
 
 test('no JavaScript keeps Obscur, original evidence and model boundaries available', async t => {
@@ -1328,7 +1328,7 @@ test('no JavaScript keeps Obscur, original evidence and model boundaries availab
   assert.equal(await fallback.isVisible(), true);
   await fallback.click();
   assert.equal(new URL(page.url()).hash, '#composition-figure');
-  assert.equal(await background(page), 'rgb(9, 9, 9)');
+  assert.equal(await background(page), 'rgb(0, 0, 0)');
   await page.locator('#composition-figure img:visible').scrollIntoViewIfNeeded();
   await page.waitForFunction(() => [...document.querySelectorAll('#composition-figure img')]
     .filter(e => getComputedStyle(e).display !== 'none').every(e => e.complete && e.naturalWidth > 0));
@@ -1339,7 +1339,7 @@ test('no JavaScript keeps Obscur, original evidence and model boundaries availab
   assert.match(await page.locator('#model-route').textContent(),/binary floating point, not symbolic fractions/);
   assert.equal(await page.locator('a[href="data.json"]').first().isVisible(), true);
   await page.emulateMedia({colorScheme:'light'});
-  assert.equal(await background(page), 'rgb(9, 9, 9)');
+  assert.equal(await background(page), 'rgb(0, 0, 0)');
 });
 
 for (const mode of ['clair','obscur']) test(`${mode} preserves loss values and evidence at narrow and enlarged sizes`, async t => {
@@ -1392,7 +1392,7 @@ test('print uses Clair and forced colors preserve focus without changing the pre
   assert.equal(await page.locator('#choice').evaluate(e => getComputedStyle(e).outlineStyle), 'solid');
   assert.equal(await page.evaluate(() => matchMedia('(forced-colors: active)').matches), true);
   await page.emulateMedia({forcedColors:'none'});
-  assert.equal(await background(page), 'rgb(9, 9, 9)');
+  assert.equal(await background(page), 'rgb(0, 0, 0)');
 });
 
 async function fonts(page, selector) {
@@ -1483,14 +1483,14 @@ for (const mode of ['clair','obscur']) test(`joint report ${mode} preserves ever
 test('joint report Auto, blocked storage, no script and print retain readable evidence', async t => {
   const page = await fixture(t,{colorScheme:'dark'},true);
   await page.goto(base+'/joint-split.html');
-  assert.equal(await background(page),'rgb(9, 9, 9)');
+  assert.equal(await background(page),'rgb(0, 0, 0)');
   await page.locator('#appearance').selectOption('clair');
   assert.equal(await background(page),'rgb(248, 247, 243)');
   await page.reload();
   assert.equal(await page.locator('#appearance').inputValue(),'obscur');
-  assert.equal(await background(page),'rgb(9, 9, 9)');
+  assert.equal(await background(page),'rgb(0, 0, 0)');
   await page.emulateMedia({colorScheme:'light'});
-  assert.equal(await background(page),'rgb(9, 9, 9)');
+  assert.equal(await background(page),'rgb(0, 0, 0)');
   await page.locator('#appearance').selectOption('auto');
   assert.equal(await background(page),'rgb(248, 247, 243)');
   await page.locator('#appearance').selectOption('obscur');
@@ -1504,10 +1504,10 @@ test('joint report Auto, blocked storage, no script and print retain readable ev
   assert.equal(await noScript.locator('#appearance').isDisabled(),true);
   assert.equal(await noScript.locator('#conditions tbody tr').count(),48);
   assert.equal(await noScript.locator('[data-condition]').count(),48);
-  assert.equal(await background(noScript),'rgb(9, 9, 9)');
+  assert.equal(await background(noScript),'rgb(0, 0, 0)');
   assert.equal(await noScript.locator('a[href="joint-split.csv"]').isVisible(),true);
   await noScript.emulateMedia({colorScheme:'light'});
-  assert.equal(await background(noScript),'rgb(9, 9, 9)');
+  assert.equal(await background(noScript),'rgb(0, 0, 0)');
 });
 
 test('joint report and standalone figures use real local Inter glyph providers',
@@ -1576,7 +1576,7 @@ test('composition editions follow Auto and overrides without changing saved evid
   const receipt = await (await page.request.get(base+'/composition-figure.json')).json();
   assert.deepEqual(receipt.evidence.retained_values,evidence);
   assert.equal(receipt.evidence.solver_rerun,false);
-  assert.equal(receipt.typography.painted_faces.length,6);
+  assert.equal(receipt.typography.painted_faces.length,3);
   for (const mode of ['clair','obscur']) {
     await page.locator('#appearance').selectOption(mode);
     assert.equal(await visible.getAttribute('src'),`composition-${mode}.png`);

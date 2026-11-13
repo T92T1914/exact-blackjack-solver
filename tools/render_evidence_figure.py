@@ -10,12 +10,12 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 try:
-    from .presentation import TOKEN_REVISION, load_tokens
+    from .presentation import OBSCUR_REVISION, TOKEN_REVISION, load_tokens
     from .render_composition_figure import FACES, font_files
 except ImportError:
     from render_composition_figure import FACES, font_files
 
-    from presentation import TOKEN_REVISION, load_tokens
+    from presentation import OBSCUR_REVISION, TOKEN_REVISION, load_tokens
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = "docs/ace-terminal-reuse.md"
@@ -39,6 +39,7 @@ WIDTH, HEIGHT, DPI = 1440, 720, 120
 SVG = "http://www.w3.org/2000/svg"
 DC = "http://purl.org/dc/elements/1.1/"
 NS = {"s": SVG}
+RETAINED_CLAIR = tuple(f"docs/{STEM}-clair.{ext}" for ext in ("png", "svg"))
 TITLE = "H17 request completed"
 DESCRIPTION = (
     "One retained cold H17 ace-resplit request entered 82,780 numerical states "
@@ -223,6 +224,8 @@ def check_outputs():
         or record["rendering"]["new_measurement"] is not False
         or record["typography"]["font_binaries_distributed"] is not False
         or set(record["typography"]["files"]) != set(FACES)
+        or {name: item["sha256"] for name, item in record["retained_clair"]["files"].items()}
+        != {name: digest(ROOT / name) for name in RETAINED_CLAIR}
     ):
         raise ValueError("Figure appearance or font provenance changed")
     for face, (weight, italic) in FACES.items():
@@ -295,7 +298,7 @@ def check_outputs():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--font-dir", type=Path, help="Six official static Inter TTFs")
+    parser.add_argument("--font-dir", type=Path, help="The three official static Inter TTFs")
     parser.add_argument("--check", action="store_true", help="Check without rendering")
     args = parser.parse_args()
     if args.check:
@@ -308,12 +311,24 @@ def main():
     files, evidence = font_files(args.font_dir)
     with tempfile.TemporaryDirectory(prefix="solver-evidence-") as directory:
         output = Path(directory)
-        for mode in ("clair", "obscur"):
-            draw(values, tokens, mode, files, output)
+        draw(values, tokens, "obscur", files, output)
         import matplotlib
 
-        editions = {}
-        for mode in ("clair", "obscur"):
+        old = json.loads((ROOT / MANIFEST).read_text(encoding="utf-8"))
+        retained = old.get("retained_clair") or {
+            "note": "The Clair edition is kept as first rendered. It was drawn with six "
+            "Inter faces, including italics, and this renderer no longer draws it.",
+            "typography": old["typography"],
+            "files": {
+                item["path"]: {"sha256": item["sha256"]}
+                for item in old["editions"]["clair"].values()
+            },
+        }
+        for name in RETAINED_CLAIR:
+            if digest(ROOT / name) != retained["files"][name]["sha256"]:
+                raise ValueError(f"Retained Clair edition changed: {name}")
+        editions = {"clair": old["editions"]["clair"]}
+        for mode in ("obscur",):
             editions[mode] = {}
             for extension in ("png", "svg"):
                 path = output / f"{STEM}-{mode}.{extension}"
@@ -327,19 +342,19 @@ def main():
             "source": source_record(), "source_commit": REVISION, "values": values,
             "request": request_record(),
             "source_sha256_lf": {n: digest(ROOT / n, text=True) for n in INPUTS},
-            "editions": editions,
+            "editions": editions, "retained_clair": retained,
             "rendering": {
                 "renderer": "tools/render_evidence_figure.py", "version": 1,
                 "matplotlib": matplotlib.__version__, "backend": "Agg",
                 "new_measurement": False, "series_role": "accent",
                 "cap_role": "warning", "axis": [0, 112000],
-                "token_revision": TOKEN_REVISION,
+                "token_revision": TOKEN_REVISION, "obscur_revision": OBSCUR_REVISION,
                 "theme_roles": {
                     mode: tokens["themes"][mode.capitalize()] for mode in editions
                 },
             },
             "typography": {
-                "source": "Six official static Inter faces supplied by --font-dir",
+                "source": "Three official static Inter faces supplied by --font-dir",
                 "files": evidence, "painted_faces": ["Regular", "SemiBold", "Bold"],
                 "png": "Rasterized from the validated static Inter files",
                 "svg": "Real text; visitor resolves local Inter or browser fallback",

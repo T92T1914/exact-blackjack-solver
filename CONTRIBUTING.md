@@ -59,8 +59,10 @@ Open this repository in Codespaces or use VS Code Dev Containers. The container 
 
 Run `python tools/build_site.py` to assemble the public page in `_site`, then `python -m http.server 8080 --directory _site` to preview it. The builder copies only the listed example files. The page reads saved evidence. It does not silently rerun the experiment or claim current results. Pages deploys from `main` after the site and development environment checks pass.
 
-The appearance adapter reads the pinned `presentation/tokens.json` from
-Clair/Obscur revision `7a57fe750ff50205a17e1d342106a0d3f2777159` and generates
+The appearance adapter reads the pinned `presentation/tokens.json`. Its Clair
+values come from Clair/Obscur revision `7a57fe750ff50205a17e1d342106a0d3f2777159`
+and its Obscur values from revision `4693831b51f2b3fa268d830fd9b977fb70c83e3d`.
+It generates
 `_site/appearance.css`. Review the pin and token changes together. The six local
 Inter aliases cover 400, 600 and 700 with genuine italics. Code keeps a monospace
 font, other scripts can use language fallbacks, and visitors without Inter keep

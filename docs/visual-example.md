@@ -55,8 +55,9 @@ screenshot of an external application.
 ## Rebuild the authored editions
 
 The maintained renderer reads the retained source data. It does not calculate
-new action values or rerun the separate joint split study. Supply the six
-official static Inter TTFs from one release in a local directory:
+new action values or rerun the separate joint split study. Supply the three
+official static Inter TTFs from one release in a local directory, Regular,
+SemiBold and Bold:
 
 ```sh
 python -m pip install -r requirements-figures.txt
@@ -65,7 +66,10 @@ python tools/render_composition_figure.py --check
 ```
 
 The renderer checks each font's name, weight, italic flag and Latin glyph
-coverage. All six real faces supply labels in the final PNG and SVG editions.
+coverage. All three real faces supply labels in the final Obscur PNG and SVG
+editions, and none of them is italic. The Clair editions stay as they were first
+drawn, with six faces, and the renderer no longer redraws them. Their hashes are
+kept in the rendering record and checked.
 The [rendering record](blackjack-composition-figure.json) records font hashes,
 retained values, renderer and token identities, output hashes and layout bounds.
 PNG glyphs are rasterized from the supplied files. SVG glyphs are outlined from
@@ -73,8 +77,9 @@ the same files, so viewing them does not depend on installed Inter. Selectable
 explanations and the original numerical data accompany the images. No font
 files are distributed or downloaded.
 
-Hit stays blue and stand amber. The chosen value is bold, with the recommendation
-also written explicitly. The two hands keep separate margins and every displayed
+In the Clair editions hit stays blue and stand amber. The Obscur editions use no
+hue, so the action names carry the difference. In both, the chosen value is bold,
+with the recommendation also written explicitly. The two hands keep separate margins and every displayed
 value remains negative. GitHub uses light and dark picture sources with a Clair
 fallback. The site follows Auto, Clair or Obscur and prints Clair. The compact
 portrait layout keeps the values readable in a narrow README. Site builds check
