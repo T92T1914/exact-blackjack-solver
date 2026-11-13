@@ -14,7 +14,7 @@ from tools import render_composition_figure as figure
 NS = {'s': 'http://www.w3.org/2000/svg', 'dc': 'http://purl.org/dc/elements/1.1/'}
 
 
-def test_receipt_retains_negative_returns_margins_and_six_genuine_faces():
+def test_receipt_retains_negative_returns_margins_and_three_genuine_faces():
     record = figure.check_outputs()
     evidence = record['evidence']
     assert evidence['retained_values']['source_commit'] == '23a42e6'
@@ -22,8 +22,14 @@ def test_receipt_retains_negative_returns_margins_and_six_genuine_faces():
     assert evidence['displayed_actions'] == ['H', 'S']
     assert evidence['recommendation'] == ['Hit', 'Stand']
     assert 'No split approximation' in evidence['scope']
-    assert record['layout']['clair'] == record['layout']['obscur']
+    assert set(record['layout']) == set(record['wide_layout']) == {'obscur'}
+    assert record['retained_clair']['layout'] == {
+        'width': 960, 'height': 2080, 'labels_within_canvas': 23, 'minimum_font_points': 11.8}
+    assert set(figure.FACES) == {'Regular', 'SemiBold', 'Bold'}
     assert set(record['typography']['painted_faces']) == set(figure.FACES)
+    assert set(record['typography']['files']) == set(figure.FACES)
+    assert set(record['retained_clair']['typography']['files']) == {
+        'Regular', 'SemiBold', 'Bold', 'Italic', 'SemiBoldItalic', 'BoldItalic'}
     for name, (weight, italic) in figure.FACES.items():
         actual = record['typography']['files'][name]
         assert (actual['postscript'], actual['weight'], actual['italic']) == (
@@ -68,8 +74,6 @@ def test_painted_numeric_labels_retain_values_and_geometry_in_both_editions(suff
                 f"Margin: {hand['margin']:.6f} wager units")
             assert comment_text(root.find(f".//s:g[@id='recommendation-{index}']", NS)) == (
                 'Hit' if index == 0 else 'Stand')
-    paths = [[node.attrib.get('d') for node in root.findall('.//s:path', NS)] for root in roots]
-    assert paths[0] == paths[1]
 
 
 @pytest.mark.parametrize("suffix", ["", "-wide"])
@@ -100,6 +104,8 @@ def test_every_inter_face_supplies_outlines_without_an_external_font_dependency(
         for name in figure.FACES:
             assert f'id="Inter-{name}-' in raw
             assert any(value.startswith(f'#Inter-{name}-') for value in references)
+        if mode == 'obscur':
+            assert 'Italic' not in raw
         assert 'DejaVu' not in raw and '<text' not in raw and '@font-face' not in raw
         for node in ET.fromstring(raw).iter():
             for name, value in node.attrib.items():

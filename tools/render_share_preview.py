@@ -106,7 +106,6 @@ def font_files(config, directory):
         ("Regular", 400, False),
         ("SemiBold", 600, False),
         ("Bold", 700, False),
-        ("Italic", 400, True),
     ]:
         path = directory / ("Inter-" + face + ".ttf")
         with TTFont(path) as font:
@@ -207,7 +206,7 @@ def main():
         label(x + 26, 298, name, 32, "SemiBold", max_width=502)
         label(x + 26, 350, value, 68 if len(value) < 10 else 56, "Bold", accents[i], max_width=502)
         label(x + 26, 451, detail, 30, max_width=502)
-    label(68, 548, data["footer"], 30, "Italic", palette["muted"])
+    label(68, 548, data["footer"], 30, "SemiBold", palette["muted"])
     output = ROOT / config["output"]
     output.parent.mkdir(parents=True, exist_ok=True)
     image.save(output, optimize=True)

@@ -16,8 +16,9 @@ DATA = 'docs/visual-example-data.json'
 MANIFEST = 'docs/blackjack-composition-figure.json'
 INPUTS = (DATA, 'presentation/tokens.json', 'tools/presentation.py',
           'tools/render_composition_figure.py')
-FACES = {'Regular': (400, False), 'SemiBold': (600, False), 'Bold': (700, False),
-         'Italic': (400, True), 'SemiBoldItalic': (600, True), 'BoldItalic': (700, True)}
+FACES = {'Regular': (400, False), 'SemiBold': (600, False), 'Bold': (700, False)}
+RETAINED_CLAIR = tuple(f'docs/blackjack-composition-clair{suffix}.{ext}'
+                       for suffix in ('', '-wide') for ext in ('png', 'svg'))
 ACTIONS = {'H': 'accent', 'S': 'warning'}
 
 
@@ -51,7 +52,7 @@ def load_data():
 
 
 def font_files(directory):
-    """Require six actual static Inter faces without fallback or a font download."""
+    """Require the three static Inter faces Obscur allows, with no fallback or download."""
     from fontTools.ttLib import TTFont
 
     files, evidence = {}, {}
@@ -114,8 +115,8 @@ def draw(data, tokens, mode, files, output, wide=False):
             scale = 1.55 if wide else 1
             panel = FancyBboxPatch((left, top - .214 * scale), .41 if wide else .89, .212 * scale,
                                    boxstyle='round,pad=0.006,rounding_size=0.012',
-                                   transform=fig.transFigure, facecolor=roles['panel'],
-                                   edgecolor=roles['divider'], linewidth=.8)
+                                   transform=fig.transFigure, facecolor=roles['control'],
+                                   edgecolor=roles['border'], linewidth=.72)
             fig.add_artist(panel)
             title = '10 + 6' if index == 0 else '8 + 5 + 3'
             label(text_x, top - .018 * scale, title, 22, 'Bold')
@@ -131,11 +132,11 @@ def draw(data, tokens, mode, files, output, wide=False):
                       'Bold' if action == hand['action'] else 'Regular',
                       ha='right', gid=f'value-{index}-{action}')
             label(text_x, top - .172 * scale, f"Margin: {hand['margin']:.6f} wager units", 12.5,
-                  'SemiBoldItalic', roles['muted'], gid=f'margin-{index}')
+                  'SemiBold', roles['muted'], gid=f'margin-{index}')
         if wide:
-            label(.055, .35, 'Both expected returns are negative.', 14, 'BoldItalic')
+            label(.055, .35, 'Both expected returns are negative.', 14, 'Bold')
             label(.055, .30, 'Expected net return per original wager. Not a win probability.',
-                  13, 'Italic', roles['muted'])
+                  13, 'Regular', roles['muted'])
             label(.055, .24, 'Only hit and stand shown. Doubling 10 + 6 is worse. '
                   'No double on 8 + 5 + 3.', 12.5)
             label(.055, .185, 'Six decks. Dealer stands on soft 17. '
@@ -145,9 +146,9 @@ def draw(data, tokens, mode, files, output, wide=False):
                   'Original split path is approximate.', 12.5)
             label(.055, .07, 'Recorded source: 23a42e6.', 12, 'SemiBold', roles['muted'])
         else:
-            label(.075, .283, 'Both expected returns are negative.', 13.5, 'BoldItalic')
+            label(.075, .283, 'Both expected returns are negative.', 13.5, 'Bold')
             label(.075, .246, 'Expected net return per original wager.\nNot a win probability.',
-                  12.5, 'Italic', roles['muted'])
+                  12.5, 'Regular', roles['muted'])
             label(.075, .191, 'Only hit and stand shown. Doubling 10 + 6\n'
                   'is worse. No double on 8 + 5 + 3.', 12.2)
             label(.075, .135, 'Six decks. Dealer stands on soft 17.\n'
@@ -190,6 +191,11 @@ def check_outputs():
                 for ext in ('png', 'svg')}
     if set(record['outputs_sha256']) != expected:
         raise ValueError('Both PNG and SVG editions are required')
+    if set(record['retained_clair']['files']) != set(RETAINED_CLAIR):
+        raise ValueError('The retained Clair editions changed')
+    for name in RETAINED_CLAIR:
+        if record['retained_clair']['files'][name] != digest(ROOT / name):
+            raise ValueError(f'Figure output changed: retained Clair edition {name}')
     for name, checksum in record['outputs_sha256'].items():
         if digest(ROOT / name) != checksum:
             raise ValueError(f'Figure output changed: {name}')
@@ -198,7 +204,8 @@ def check_outputs():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--font-dir', type=Path, help='Directory of six official static Inter TTFs')
+    parser.add_argument('--font-dir', type=Path,
+                        help='Directory of the three official static Inter TTFs')
     parser.add_argument('--check', action='store_true',
                         help='Verify committed output without rendering')
     args = parser.parse_args()
@@ -212,26 +219,36 @@ def main():
     files, font_evidence = font_files(args.font_dir)
     with tempfile.TemporaryDirectory() as temp:
         output = Path(temp)
-        layouts = {mode: draw(data, load_tokens(), mode, files, output)
-                   for mode in ('clair', 'obscur')}
-        wide_layouts = {mode: draw(data, load_tokens(), mode, files, output, wide=True)
-                        for mode in ('clair', 'obscur')}
+        layouts = dict(obscur=draw(data, load_tokens(), 'obscur', files, output))
+        wide_layouts = dict(obscur=draw(data, load_tokens(), 'obscur', files, output, wide=True))
         import matplotlib
-        record = dict(schema_version=2, evidence=semantic_record(data),
+        old = json.loads((ROOT / MANIFEST).read_text(encoding='utf-8'))
+        retained = old.get('retained_clair') or dict(
+            note='Clair editions are kept as first rendered. They were drawn with six Inter '
+                 'faces, including italics, and are not redrawn by this renderer.',
+            token_revision=old['evidence']['token_revision'],
+            layout=old['layout']['clair'], wide_layout=old['wide_layout']['clair'],
+            typography=old['typography'],
+            files={name: old['outputs_sha256'][name] for name in RETAINED_CLAIR})
+        for name in RETAINED_CLAIR:
+            if digest(ROOT / name) != retained['files'][name]:
+                raise ValueError(f'Figure output changed: retained Clair edition {name}')
+        record = dict(schema_version=3, evidence=semantic_record(data),
                       renderer=dict(matplotlib=matplotlib.__version__, backend='Agg'),
-                      layout=layouts, wide_layout=wide_layouts,
+                      layout=layouts, wide_layout=wide_layouts, retained_clair=retained,
                       typography=dict(files=font_evidence, painted_faces=list(FACES),
                                       png='Glyphs rasterized from explicit Inter files',
                                       svg='Labels outlined from the same Inter files. '
                                           'Selectable explanations and data accompany them.'),
                       inputs_sha256_lf={name: digest(ROOT / name, text=True) for name in INPUTS},
-                      outputs_sha256={'docs/' + p.name: digest(p)
-                                      for p in sorted(output.iterdir())})
+                      outputs_sha256=dict(sorted(
+                          {**{'docs/' + p.name: digest(p) for p in output.iterdir()},
+                           **retained['files']}.items())))
         for path in output.iterdir():
             (ROOT / 'docs' / path.name).write_bytes(path.read_bytes())
         (ROOT / MANIFEST).write_text(json.dumps(record, indent=2) + '\n', encoding='utf-8')
     check_outputs()
-    print('Rendered both editions from retained data with six verified Inter faces')
+    print('Rendered the Obscur editions from retained data with three verified Inter faces')
 
 
 if __name__ == '__main__':

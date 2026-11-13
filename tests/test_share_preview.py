@@ -31,7 +31,7 @@ class SharingTests(unittest.TestCase):
         self.assertFalse(receipt["experimental_work_rerun"])
         self.assertEqual(
             {x["face"] for x in receipt["painted_labels"]},
-            {"Inter-Regular", "Inter-SemiBold", "Inter-Bold", "Inter-Italic"},
+            {"Inter-Regular", "Inter-SemiBold", "Inter-Bold"},
         )
         for relative, canonical in config["page_urls"].items():
             head = Head()

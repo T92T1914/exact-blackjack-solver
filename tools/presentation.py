@@ -6,7 +6,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN_REVISION = "7a57fe750ff50205a17e1d342106a0d3f2777159"
-TOKEN_SHA256 = "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7"
+OBSCUR_REVISION = "4693831b51f2b3fa268d830fd9b977fb70c83e3d"
+TOKEN_SHA256 = "a49f96e5b2cfcd8a29ef426bc9969be96a701faa5c69f3e22b3f52a534242aa5"
 FACES = (
     (400, "normal", "Inter Regular", "Inter-Regular"),
     (600, "normal", "Inter SemiBold", "Inter-SemiBold"),

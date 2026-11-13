@@ -20,13 +20,13 @@
     "source_sha256": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c"
   },
   "inputs_sha256_lf": {
-    "tools/render_share_preview.py": "1f7359d8a8077de7b3271b6af1360d51b96e3513649e3e70534865184dcf2db7",
+    "tools/render_share_preview.py": "b7deaa3ab95a0993eecc909b12440727ac00cdbb54f516994a75d2323a6c28f1",
     "docs/sharing-card.json": "d258dbe25e040ece9342003855215626d087cbad7c63af1bfe89aee5b5a624d3",
     "docs/visual-example-data.json": "1ac4d099c647d3db974e53258639c884c61d86b1ca4e84011e5b7fed1138001c",
-    "presentation/tokens.json": "889df65e0f4f4eea99a81c535d542e7332b537c000c332402a3ffa6a6cbb15b7",
-    "tools/render_composition_figure.py": "a89afeaf76fef708f21d0e6e6be37525ce89403e53f450af6d3586a019fd66d4"
+    "presentation/tokens.json": "a49f96e5b2cfcd8a29ef426bc9969be96a701faa5c69f3e22b3f52a534242aa5",
+    "tools/render_composition_figure.py": "3f3adf6019b83f59e209006933a6b3ba69851da7a4ba11aa429531b6d96e88eb"
   },
-  "png_sha256": "40dcd4f22e8fad06cf08b5f4cef28a13b89079d6774b44e8a920113778b7e70e",
+  "png_sha256": "08b29309a7f11b0384f2a8d9bf0ab70f2f12c8d20f6961b12cf55a7daf4a437e",
   "dimensions": [
     1280,
     640
@@ -54,24 +54,6 @@
       "postscript": "Inter-Bold",
       "weight": 700,
       "italic": false
-    },
-    "Italic": {
-      "sha256": "bbc051dd204b5019a1aa0bc0ae2aa8a05ab13e7a3f979fa357631dc7feb6833a",
-      "postscript": "Inter-Italic",
-      "weight": 400,
-      "italic": true
-    },
-    "SemiBoldItalic": {
-      "sha256": "eff2930c3d3b35d3fcf5f76252b6baef4c3e907d9d2fde1d16cf5d417f8deef4",
-      "postscript": "Inter-SemiBoldItalic",
-      "weight": 600,
-      "italic": true
-    },
-    "BoldItalic": {
-      "sha256": "948405a16cdc62701da5f4005ed068ca5f4d27061d98f7974ccfc37831d9581d",
-      "postscript": "Inter-BoldItalic",
-      "weight": 700,
-      "italic": true
     }
   },
   "painted_labels": [
@@ -176,12 +158,12 @@
     },
     {
       "text": "Original split path approximate. Bounded models have own limits.",
-      "face": "Inter-Italic",
+      "face": "Inter-SemiBold",
       "bounds": [
         68,
         548,
-        998,
-        578
+        1012,
+        577
       ],
       "size": 30
     }
