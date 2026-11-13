@@ -13,6 +13,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 CONFIG_PATH = ROOT / "docs/sharing-card.json"
 RECEIPT = ROOT / "docs/sharing-card-receipt.json"
+# The card keeps the 2 to 1 shape of a repository social preview at the width of the wide
+# Obscur edition. The type floor is 30 pt at 100 dpi, which is 41.67 px, so 42 px.
+SIZE = (1800, 900)
+MARGIN = 72
+LIMIT = SIZE[0] - 2 * MARGIN
+INSET = 12
+FLOOR_PX = 42
+PAD_Y = 40
+GAP = 14
 
 
 def digest(path):
@@ -145,11 +154,19 @@ def check():
     if (
         hashlib.sha256(data).hexdigest() != receipt["png_sha256"]
         or data[:8] != b"\x89PNG\r\n\x1a\n"
-        or struct.unpack(">II", data[16:24]) != (1280, 640)
+        or struct.unpack(">II", data[16:24]) != SIZE
         or data[25] != 2
         or len(data) >= 1_000_000
     ):
         raise ValueError("Sharing PNG identity, dimensions, opacity or size differs")
+    if (
+        receipt["dimensions"] != list(SIZE)
+        or not receipt["painted_labels"]
+        or min(item["size"] for item in receipt["painted_labels"]) < FLOOR_PX
+        or receipt["minimum_label_px"] < FLOOR_PX
+        or receipt["floor_px"] != FLOOR_PX
+    ):
+        raise ValueError("Sharing labels are below the Obscur type floor")
     return receipt
 
 
@@ -169,44 +186,97 @@ def main():
     config = json.loads(CONFIG_PATH.read_text())
     data, palette = content(config), roles(config)
     files, faces = font_files(config, args.font_dir)
-    image = Image.new("RGB", (1280, 640), palette["canvas"])
+    image = Image.new("RGB", SIZE, palette["canvas"])
     draw = ImageDraw.Draw(image)
     labels = []
 
-    def label(x, y, text, size, face="Regular", color=None, max_width=1144):
-        font = ImageFont.truetype(str(files[face]), size)
-        bounds = draw.textbbox((x, y), text, font=font, anchor="lt")
-        if (
-            bounds[0] < 60
-            or bounds[1] < 40
-            or bounds[2] > 1220
-            or bounds[3] > 602
-            or bounds[2] - bounds[0] > max_width
-        ):
-            raise ValueError("Sharing label leaves its safe region: " + text)
-        draw.text((x, y), text, font=font, fill=color or palette["text"], anchor="lt")
-        labels.append(dict(text=text, face="Inter-" + face, bounds=list(bounds), size=size))
+    def wrapped(text, font, max_width):
+        """Wrap by measured width. A word that does not fit means the layout must change."""
+        lines = []
+        for paragraph in text.split("\n"):
+            current = ""
+            for word in paragraph.split(" "):
+                trial = f"{current} {word}" if current else word
+                if font.getlength(trial) <= max_width:
+                    current = trial
+                elif not current:
+                    raise ValueError("A word does not fit its line, change the layout: " + word)
+                else:
+                    lines.append(current)
+                    current = word
+            lines.append(current)
+        return lines
 
-    label(68, 52, data["title"], 64, "Bold")
-    label(68, 136, data["subtitle"], 42, "SemiBold", palette["accent"])
-    label(68, 208, data["context"], 30)
+    def label(x, y, text, size, face="Regular", color=None, max_width=LIMIT, paint=True,
+              box=None):
+        """Paint wrapped lines from y down and return where the label ends."""
+        if size < FLOOR_PX:
+            raise ValueError("Sharing label is below the Obscur type floor: " + text)
+        font = ImageFont.truetype(str(files[face]), size)
+        lines = wrapped(text, font, max_width)
+        for index, line in enumerate(lines):
+            top = y + index * round(size * 1.3)
+            bounds = draw.textbbox((x, top), line, font=font, anchor="lt")
+            left, above, right, below = box or (0, 0, SIZE[0], SIZE[1])
+            inset = INSET if box else MARGIN - 24
+            if (
+                bounds[0] < left + inset
+                or bounds[1] < above + (INSET if box else 48)
+                or bounds[2] > right - inset
+                or bounds[3] > below - (INSET if box else 48)
+            ):
+                raise ValueError("Sharing label leaves its safe region: " + line)
+            if paint:
+                draw.text((x, top), line, font=font, fill=color or palette["text"], anchor="lt")
+                labels.append(
+                    dict(text=line, face="Inter-" + face, bounds=list(bounds), size=size)
+                )
+        return y + len(lines) * round(size * 1.3)
+
+    y = label(MARGIN, 72, data["title"], 76, "Bold") + 14
+    y = label(MARGIN, y, data["subtitle"], 46, "SemiBold", palette["accent"]) + 14
+    y = label(MARGIN, y, data["context"], 42) + 48
     accents = [palette["accent"], palette.get("warning", palette["muted"])]
     if config["kind"] == "freight":
         series = json.loads((ROOT / config["tokens"]).read_text())["series"]
         accents = [series["model"]["obscur"], series["seasonal_naive"]["obscur"]]
+    panel_width = (SIZE[0] - 2 * MARGIN - 48) // 2
+    inner = panel_width - 56
+
+    def value_size(value):
+        return 88 if len(value) < 10 else 72
+
+    def panel_height():
+        total = 0
+        for name, value, detail in data["panels"]:
+            height = PAD_Y + 2 * GAP
+            for text, size, face, width in (
+                (name, 44, "SemiBold", inner),
+                (value, value_size(value), "Bold", inner),
+                (detail, 42, "Regular", inner),
+            ):
+                font = ImageFont.truetype(str(files[face]), size)
+                height += len(wrapped(text, font, width)) * round(size * 1.3)
+            total = max(total, height + PAD_Y)
+        return total
+
+    top, height = y, panel_height()
     for i, (name, value, detail) in enumerate(data["panels"]):
-        x = 68 + i * 588
+        x = MARGIN + i * (panel_width + 48)
+        box = (x, top, x + panel_width, top + height)
         draw.rounded_rectangle(
-            (x, 273, x + 556, 505),
-            radius=16,
-            fill=palette["panel"],
-            outline=palette["divider"],
-            width=2,
+            box, radius=18, fill=palette["panel"], outline=palette["divider"], width=2
         )
-        label(x + 26, 298, name, 32, "SemiBold", max_width=502)
-        label(x + 26, 350, value, 68 if len(value) < 10 else 56, "Bold", accents[i], max_width=502)
-        label(x + 26, 451, detail, 30, max_width=502)
-    label(68, 548, data["footer"], 30, "SemiBold", palette["muted"])
+        inside = dict(max_width=inner, box=box)
+        cursor = label(x + 28, top + PAD_Y, name, 44, "SemiBold", **inside) + GAP
+        cursor = label(
+            x + 28, cursor, value, value_size(value), "Bold", accents[i], **inside
+        ) + GAP
+        label(x + 28, cursor, detail, 42, **inside)
+    y = top + height + 48
+    end = label(MARGIN, y, data["footer"], 42, "SemiBold", palette["muted"])
+    if end > SIZE[1] - 49:
+        raise ValueError("The sharing footer leaves less than 49 px below it")
     output = ROOT / config["output"]
     output.parent.mkdir(parents=True, exist_ok=True)
     image.save(output, optimize=True)
@@ -215,7 +285,9 @@ def main():
         content=data,
         inputs_sha256_lf=inputs(config),
         png_sha256=hashlib.sha256(output.read_bytes()).hexdigest(),
-        dimensions=[1280, 640],
+        dimensions=list(SIZE),
+        floor_px=FLOOR_PX,
+        minimum_label_px=min(item["size"] for item in labels),
         appearance="obscur",
         opaque=True,
         renderer={"Pillow": __version__},

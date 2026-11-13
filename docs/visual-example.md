@@ -77,6 +77,13 @@ the same files, so viewing them does not depend on installed Inter. Selectable
 explanations and the original numerical data accompany the images. No font
 files are distributed or downloaded.
 
+Every Obscur label is at least 30 pt at 100 dpi. That is 15 pt at the 200 dpi of
+these files, 16.5 pt in the portrait edition. Text wraps by measured width, so
+the Obscur canvases are taller than the Clair ones: 960 by 2452 pixels in the
+portrait edition and 1800 by 1471 in the wide edition. The renderer refuses a
+label that comes within 12 px of its card or the canvas edge. The Clair editions
+keep their first sizes.
+
 In the Clair editions hit stays blue and stand amber. The Obscur editions use no
 hue, so the action names carry the difference. In both, the chosen value is bold,
 with the recommendation also written explicitly. The two hands keep separate margins and every displayed

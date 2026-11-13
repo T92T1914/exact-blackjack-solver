@@ -307,7 +307,9 @@ test('same-cap H17 figure keeps source values and both appearance editions',asyn
     const image=figure.locator('img:visible');assert.equal(await image.count(),1);
     assert.equal(await image.getAttribute('src'),`ace-terminal-reuse-${mode}.png`);
     await image.evaluate(e=>{e.loading='eager';return e.decode();});
-    assert.deepEqual(await image.evaluate(e=>[e.naturalWidth,e.naturalHeight]),[1440,720]);
+    assert.deepEqual(await image.evaluate(e=>[e.naturalWidth,e.naturalHeight]),
+      [data.editions[mode].png.width,data.editions[mode].png.height]);
+    assert.equal(data.editions[mode].png.height,mode==='clair'?720:912);
     assert.match(await image.getAttribute('alt'),/82,780 entered states/);
     assert.match(await image.getAttribute('alt'),/unchanged 100,000-state cap/);
     for (const format of ['png','svg']) {
@@ -1667,7 +1669,8 @@ test('wide figure follows its container and preserves every delivered file', asy
     assert.equal(await visible.count(),1);
     assert.equal(await visible.getAttribute('src'),`composition-${mode}-wide.png`);
     await visible.scrollIntoViewIfNeeded(); await visible.evaluate(e=>e.decode());
-    assert.deepEqual(await visible.evaluate(e=>[e.naturalWidth,e.naturalHeight]),[1800,1280]);
+    assert.deepEqual(await visible.evaluate(e=>[e.naturalWidth,e.naturalHeight]),
+      mode==='clair'?[1800,1280]:[1800,1471]);
     const destination=process.env.SOLVER_SCREENSHOT_DIR;
     if(destination){await mkdir(destination,{recursive:true});await visible.screenshot({path:path.join(destination,`composition-${mode}-wide.png`)});}
     await page.locator('#composition-figure').evaluate(e=>e.style.width='400px');

@@ -81,7 +81,12 @@ def test_png_dimensions_and_metadata_match_the_vector_evidence(suffix):
     for mode in ('clair', 'obscur'):
         raw = (figure.ROOT / f'docs/blackjack-composition-{mode}{suffix}.png').read_bytes()
         assert raw[:8] == b'\x89PNG\r\n\x1a\n'
-        assert struct.unpack('>II', raw[16:24]) == ((1800, 1280) if suffix else (960, 2080))
+        if mode == 'clair':
+            expected = (1800, 1280) if suffix else (960, 2080)
+        else:
+            layout = figure.check_outputs()['wide_layout' if suffix else 'layout']['obscur']
+            expected = (layout['width'], layout['height'])
+        assert struct.unpack('>II', raw[16:24]) == expected
         offset, description = 8, None
         while offset < len(raw):
             length = struct.unpack('>I', raw[offset:offset + 4])[0]

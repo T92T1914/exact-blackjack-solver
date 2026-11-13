@@ -110,6 +110,10 @@ reports is `bj.__version__`.
   appearance, with Clair editions linked (#64).
 * The Obscur figures and the sharing card use the monochrome Obscur values and three
   static Inter faces with no italics. The Clair editions stay as first drawn.
+* The Obscur figures and the sharing card hold the 30 pt at 100 dpi type floor, with
+  every label wrapped by measured width. The Obscur composition and evidence figures
+  draw their labels as outlines in the SVG, and the sharing card is now 1800 by 900
+  pixels.
 * The demo keeps selectors inside narrow panels and makes wide evidence tables
   keyboard scrollable (#7). At phone width with enlarged text, headings and
   prose wrap instead of widening the page (#19).
