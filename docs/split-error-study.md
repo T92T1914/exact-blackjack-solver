@@ -76,8 +76,7 @@ Entries mean the same as in the first table.
 
 [Saved results](split-error-study-h17-results.json). The default is never above
 the common shoe value by more than 1.2e-15. The largest gap is 0.0000949498
-units for 7,7 against T, the same cell as in the first table and nearly the
-same size. In 73 of the 100 cells the two values are within 1e-12, and no cell
+units for 7,7 against T, smaller than the 0.000538738 of the first table. In 73 of the 100 cells the two values are within 1e-12, and no cell
 changes its best action. Playing the default's choices through the common shoe
 gives the default value to 1.9e-15 in every cell.
 
@@ -199,7 +198,7 @@ python tools/split_error_study.py --output new-split-error-study.json
 
 ## What this does not show
 
-This is one table, one deal order and two hands. The default table allows up
+This is three tables, one deal order and two hands. The default table allows up
 to four hands, and the derived chart and the whole game estimate use that
 limit. Resplitting adds the shared slot approximation described in `bj/ev.py`,
 and this study measures none of it. Other deck counts, other rule changes, H17 and no DAS together, and
