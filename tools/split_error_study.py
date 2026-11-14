@@ -51,8 +51,9 @@ TABLE_BEGIN = '<!-- split-error-table:begin -->'
 TABLE_END = '<!-- split-error-table:end -->'
 #: Six decks, S17, DAS, peek, one card to split aces, two hands and no resplit.
 TABLE = Rules(max_hands=2)
-#: A difference this small is rounding, not a different policy value.
-ROUNDING = 1e-12
+#: Differences this small print as 0, and actions this close share a rank.
+#: Rounding alone stays near 1e-15 here, so a smaller real gain can hide below it.
+TOLERANCE = 1e-12
 
 #: Production rank order, the same as `bj.core.RANKS`.
 RANKS = ('A', '2', '3', '4', '5', '6', '7', '8', '9', 'T')
@@ -286,17 +287,22 @@ class TwoHandSplit:
         self.shoe = tuple(int(c) for c in shoe)
         if len(self.shoe) != 10 or any(c < 0 for c in self.shoe):
             raise ValueError('shoe must contain ten nonnegative counts')
+        if sum(self.shoe) < 3:
+            raise ValueError('a split needs two drawable cards and the hidden hole')
         self.das = bool(double_after_split)
         self.excluded = _excluded(self.up)
         self.hands = _Hands(self.pair, self.shoe)
         self.dealer_graph = _DealerGraph(self.up, bool(stand_soft_17))
 
         # First hand endings: every node standing or complete, and every double.
-        endings = [(key, 1) for key in self.hands.counts]
+        # Two second cards can reach the same doubled multiset, so keep one row each.
+        endings = dict.fromkeys((key, 1) for key in self.hands.counts)
         if self.das and self.hands.levels:
             for key in self.hands.levels[0]:
                 if self.hands.internal[key]:
-                    endings.extend((child, 2) for _, child in self.hands.children(key))
+                    endings.update(dict.fromkeys(
+                        (child, 2) for _, child in self.hands.children(key)))
+        endings = list(endings)
         self.endings = endings
         self.first_keys = np.array([key for key, _ in endings], dtype=np.int64)
         self.first_wagers = np.array([wager for _, wager in endings], dtype=float)
@@ -411,7 +417,8 @@ def default_policy(model, rules):
 
     The default values each split hand against the shoe at the split minus that
     hand's own cards. This returns that choice at every node where play continues,
-    as an index into stand, hit and double, with the default's tie order.
+    as an index into stand, hit and double. Ties break the way `bj.ev` breaks
+    them: toward standing on two cards and toward hitting after a hit.
     """
     up = RANKS[model.up]
     policy = {}
@@ -422,13 +429,14 @@ def default_policy(model, rules):
             counts = model.hands.counts[key]
             shoe = tuple(c - k for c, k in zip(model.shoe, counts))
             total, soft = model.hands.total[key], model.hands.soft[key]
-            best, choice = ev._stand_ev(total, up, shoe, rules.s17), 0
+            stand = ev._stand_ev(total, up, shoe, rules.s17)
             hit = ev._hit_ev(total, soft, up, shoe, rules.s17)
-            if hit > best:
-                best, choice = hit, 1
-            if rules.das and depth == 0:
-                if ev._double_ev(total, soft, up, shoe, rules.s17) > best:
-                    choice = 2
+            if depth:
+                policy[key] = 0 if stand > hit else 1
+                continue
+            best, choice = (hit, 1) if hit > stand else (stand, 0)
+            if rules.das and ev._double_ev(total, soft, up, shoe, rules.s17) > best:
+                choice = 2
             policy[key] = choice
     return policy
 
@@ -439,12 +447,17 @@ def _ranking(values):
     """Actions within rounding of the best, in S, H, D, P order, and the margin."""
     ordered = sorted(values.values(), reverse=True)
     best = [action for action in OPTIONS + (SPLIT,)
-            if action in values and ordered[0] - values[action] <= ROUNDING]
+            if action in values and ordered[0] - values[action] <= TOLERANCE]
     return best, ordered[0] - ordered[1]
 
 
 def study_cell(pair, up, rules=TABLE):
     """One cell of the study on a fresh shoe minus the pair and the upcard."""
+    if rules.max_hands != 2 or rules.resplit_aces or rules.hit_split_aces:
+        # Otherwise the default would price resplits or drawing to split aces
+        # that the common shoe model does not have.
+        raise ValueError('the study compares two hands with no resplit and one card '
+                         'to each split ace')
     shoe = ev.initial_shoe_for((pair, pair), up, rules)
     default = ev.ev_split(pair, up, shoe, rules)
     model = TwoHandSplit(pair, up, shoe, double_after_split=rules.das,
@@ -476,8 +489,9 @@ def summarize(cells):
         cells=len(cells),
         worst=dict(pair=worst['pair'], up=worst['up'], difference=worst['difference']),
         mean_absolute_difference=math.fsum(abs(c['difference']) for c in cells) / len(cells),
-        zero_within_rounding=sum(abs(c['difference']) <= ROUNDING for c in cells),
-        default_above_common_shoe=sum(c['difference'] > ROUNDING for c in cells),
+        within_tolerance=sum(abs(c['difference']) <= TOLERANCE for c in cells),
+        default_above_common_shoe=sum(c['difference'] > TOLERANCE for c in cells),
+        largest_default_excess=max(c['difference'] for c in cells),
         largest_default_policy_difference=max(abs(c['default_policy_difference'])
                                               for c in cells),
         decision_changes=[f"{c['pair']},{c['pair']} vs {c['up']}" for c in cells
@@ -516,7 +530,7 @@ def run_study(pairs=PAIRS, upcards=RANKS[1:] + RANKS[:1], progress=None):
         study='split_error_two_hand_no_resplit',
         common_shoe_model=SPLIT_MODEL,
         rules=asdict(TABLE),
-        rounding=ROUNDING,
+        tolerance=TOLERANCE,
         evaluated_revision=revision,
         evaluated_sources_modified=dirty,
         source_sha256_lf=_sources(),
@@ -529,21 +543,22 @@ def run_study(pairs=PAIRS, upcards=RANKS[1:] + RANKS[:1], progress=None):
     )
 
 
-def _micro(difference):
-    if abs(difference) <= ROUNDING:
+def _entry(difference):
+    """Three significant digits, with a true minus sign, or 0 within tolerance."""
+    if abs(difference) <= TOLERANCE:
         return '0'
-    text = f'{difference * 1e6:.3f}'
-    return text.replace('-', '−')
+    mantissa, exponent = f'{difference:.2e}'.split('e')
+    return f'{mantissa}e{int(exponent)}'.replace('-', '−')
 
 
 def render_table(results):
-    """The document's table, in millionths of the original wager."""
+    """The document's table of differences in original wager units."""
     by_cell = {(c['pair'], c['up']): c for c in results['cells']}
     upcards = RANKS[1:] + RANKS[:1]
     lines = ['| Pair | ' + ' | '.join(upcards) + ' |',
              '|:---|' + '---:|' * len(upcards)]
     for pair in PAIRS:
-        row = [_micro(by_cell[(pair, up)]['difference']) for up in upcards]
+        row = [_entry(by_cell[(pair, up)]['difference']) for up in upcards]
         lines.append(f'| {pair},{pair} | ' + ' | '.join(row) + ' |')
     return '\n'.join(lines)
 
@@ -564,12 +579,12 @@ def compare(saved, fresh):
             continue
         for name, value in cell.items():
             if isinstance(value, float):
-                if not abs(value - other[name]) <= ROUNDING:
+                if not abs(value - other[name]) <= TOLERANCE:
                     problems.append(f"{cell['pair']} vs {cell['up']}: {name} "
                                     f"{value!r} became {other[name]!r}")
             elif name == 'other_actions':
                 for action, number in value.items():
-                    if not abs(number - other[name][action]) <= ROUNDING:
+                    if not abs(number - other[name][action]) <= TOLERANCE:
                         problems.append(f"{cell['pair']} vs {cell['up']}: {action} moved")
             elif value != other[name]:
                 problems.append(f"{cell['pair']} vs {cell['up']}: {name} "
