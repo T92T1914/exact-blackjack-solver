@@ -630,7 +630,8 @@ def check(results_path=RESULTS, document_path=DOCUMENT, progress=None):
     problems = []
     if summarize(saved['cells']) != saved['summary']:
         problems.append('the saved summary does not follow from the saved cells')
-    if document_table(Path(document_path).read_text(encoding='utf-8'), table) != render_table(saved):
+    document = Path(document_path).read_text(encoding='utf-8')
+    if document_table(document, table) != render_table(saved):
         problems.append('the document table does not match the saved cells')
     fresh = run_study(pairs=tuple(dict.fromkeys(c['pair'] for c in saved['cells'])),
                       upcards=tuple(dict.fromkeys(c['up'] for c in saved['cells'])),

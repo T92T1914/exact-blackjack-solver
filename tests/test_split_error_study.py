@@ -148,6 +148,73 @@ def test_output_never_replaces_an_existing_file(tmp_path, capsys):
     assert 'Choose a new path' in capsys.readouterr().err
 
 
+@pytest.mark.parametrize('table', ['h17', 'no-das'])
+def test_saved_variant_matches_its_document(table):
+    results = json.loads(study.results_path(table).read_text(encoding='utf-8'))
+    assert len(results['cells']) == 100
+    assert results['rules'] == asdict(study.TABLES[table])
+    assert study.table_name(Rules(**results['rules'])) == table
+    assert results['summary'] == study.summarize(results['cells'])
+    document = study.DOCUMENT.read_text(encoding='utf-8')
+    assert study.document_table(document, table) == study.render_table(results)
+    summary = results['summary']
+    assert summary['default_above_common_shoe'] == 0
+    assert summary['largest_default_excess'] <= study.TOLERANCE
+    assert summary['largest_default_policy_difference'] <= study.TOLERANCE
+    assert summary['decision_changes'] == []
+    # The prose states these numbers, so they must follow from the saved cells.
+    text = ' '.join(document.split())
+    heading = {'h17': 'Dealer hits soft 17', 'no-das': 'No double after split'}[table]
+    section = text[text.index(f'### {heading}'):]
+    rounding = sum(abs(c['difference']) <= 1.6e-15 for c in results['cells'])
+    section = section[:section.index(f"Of the {summary['within_tolerance']} cells")]
+    worst = summary['worst']
+    assert f"{summary['within_tolerance']} of the 100 cells" in section
+    assert f"{summary['largest_default_excess']:.1e}" in section
+    assert f"{summary['largest_default_policy_difference']:.1e}" in section
+    assert f"{worst['pair']},{worst['pair']} against {worst['up']}" in section
+    # Three or more significant digits, written to nine or ten decimal places.
+    assert any(f"{-worst['difference']:.{places}f}" in section for places in (9, 10))
+    assert 'no cell changes its best action' in section
+    after = text[text.index(f"Of the {summary['within_tolerance']} cells"):]
+    assert f"{rounding} differ by at most 1.6e-15" in after
+
+
+def test_variant_names_and_paths_are_distinct():
+    assert study.table_name(study.TABLE) == 'default'
+    assert study.table_name(Rules(max_hands=2, decks=8)) is None
+    assert study.results_path() == study.RESULTS
+    paths = {study.results_path(name) for name in study.TABLES}
+    assert len(paths) == len(study.TABLES)
+    assert len({study.table_markers(name) for name in study.TABLES}) == len(study.TABLES)
+
+
+@pytest.mark.parametrize('table', ['h17', 'no-das'])
+def test_cheap_variant_cells_recompute(table):
+    results = json.loads(study.results_path(table).read_text(encoding='utf-8'))
+    cells = [cell for cell in results['cells'] if cell['pair'] == 'A']
+    fresh = study.run_study(pairs=('A',), upcards=tuple(cell['up'] for cell in cells),
+                            rules=study.TABLES[table])
+    assert study.compare({'cells': cells}, fresh) == []
+
+
+def test_check_refuses_results_for_another_table(capsys):
+    with pytest.raises(SystemExit):
+        study.main(['--table', 'h17', '--results', str(study.RESULTS), '--check'])
+    assert 'does not hold the h17 table' in capsys.readouterr().err
+
+
+@SLOW
+@pytest.mark.slow
+@pytest.mark.parametrize('table', ['h17', 'no-das'])
+def test_check_mode_recomputes_every_saved_variant_cell(table):
+    result = subprocess.run([sys.executable, str(study.ROOT / 'tools/split_error_study.py'),
+                             '--table', table, '--check'], capture_output=True, text=True,
+                            cwd=study.ROOT)
+    assert result.returncode == 0, result.stdout[-4000:] + result.stderr[-4000:]
+    assert 'check passed' in result.stdout
+
+
 @SLOW
 @pytest.mark.slow
 def test_check_mode_recomputes_every_saved_cell():

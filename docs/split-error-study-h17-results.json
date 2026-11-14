@@ -1,0 +1,3948 @@
+{
+ "schema_version": 1,
+ "study": "split_error_two_hand_no_resplit",
+ "common_shoe_model": "common_shoe_sequential_two_hand_no_resplit_binary_float_v1",
+ "rules": {
+  "decks": 6,
+  "s17": false,
+  "das": true,
+  "peek": true,
+  "surrender": false,
+  "resplit_aces": false,
+  "hit_split_aces": false,
+  "max_hands": 2,
+  "blackjack_payout": 1.5,
+  "double_any_two": true,
+  "tens_are_pairs": true,
+  "insurance_payout": 2.0
+ },
+ "tolerance": 1e-12,
+ "evaluated_revision": "ec37d03e71f5d3c05e283f278559e657d2b681e8",
+ "evaluated_sources_modified": false,
+ "source_sha256_lf": {
+  "tools/split_error_study.py": "df50ff5ab7e33b6b30dc6fe508038b8b20a6605b78b589de5cfc3c62d0eacef1",
+  "bj/ev.py": "443e9f24ff3ba1d8bf6578a63d199f25928ae69feaf787d3131514cfbae49ef9",
+  "bj/dealer.py": "ed64f50a51de76309faa775d1dae4758e618c100077b9af2afdc19f835de2752",
+  "bj/core.py": "139219a38b818235a976e57fae8b9a6801bae748b0a50bf96de9bb56e454529d"
+ },
+ "python": "3.11.8",
+ "numpy": "2.4.6",
+ "platform": "Windows-10-10.0.26300-SP0",
+ "elapsed_seconds": 835.1432400000049,
+ "summary": {
+  "cells": 100,
+  "worst": {
+   "pair": "7",
+   "up": "T",
+   "difference": -9.494984691726938e-05
+  },
+  "mean_absolute_difference": 5.511003221637779e-06,
+  "within_tolerance": 73,
+  "default_above_common_shoe": 0,
+  "largest_default_excess": 1.2351231148954867e-15,
+  "largest_default_policy_difference": 1.942890293094024e-15,
+  "decision_changes": []
+ },
+ "cells": [
+  {
+   "pair": "A",
+   "up": "2",
+   "shoe": [
+    22,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.48537541330113404,
+   "common_shoe_split": 0.4853754133011329,
+   "difference": 1.1657341758564144e-15,
+   "default_policy_in_common_shoe": 0.4853754133011329,
+   "default_policy_difference": -1.1657341758564144e-15,
+   "other_actions": {
+    "S": -0.2840079470740219,
+    "H": 0.08202613297804971,
+    "D": -0.06007296850919325
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4033492803230843,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.40334928032308315,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "A",
+   "up": "3",
+   "shoe": [
+    22,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.532736574064642,
+   "common_shoe_split": 0.5327365740646424,
+   "difference": -3.3306690738754696e-16,
+   "default_policy_in_common_shoe": 0.5327365740646424,
+   "default_policy_difference": 3.3306690738754696e-16,
+   "other_actions": {
+    "S": -0.24366722783782413,
+    "H": 0.10444975959477787,
+    "D": 0.005586152969782848
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.42828681446986416,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.4282868144698645,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "A",
+   "up": "4",
+   "shoe": [
+    22,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.5822998408998449,
+   "common_shoe_split": 0.5822998408998457,
+   "difference": -7.771561172376096e-16,
+   "default_policy_in_common_shoe": 0.5822998408998457,
+   "default_policy_difference": 7.771561172376096e-16,
+   "other_actions": {
+    "S": -0.2008410464668221,
+    "H": 0.12929229818302307,
+    "D": 0.07367190419650996
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4530075427168218,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.4530075427168226,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "A",
+   "up": "5",
+   "shoe": [
+    22,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.63371208872683,
+   "common_shoe_split": 0.6337120887268307,
+   "difference": -6.661338147750939e-16,
+   "default_policy_in_common_shoe": 0.6337120887268307,
+   "default_policy_difference": 6.661338147750939e-16,
+   "other_actions": {
+    "S": -0.15875061844697252,
+    "H": 0.1608270105580868,
+    "D": 0.14183966215268798
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.47288507816874326,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.4728850781687439,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "A",
+   "up": "6",
+   "shoe": [
+    22,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.6796487173796572,
+   "common_shoe_split": 0.6796487173796569,
+   "difference": 2.220446049250313e-16,
+   "default_policy_in_common_shoe": 0.6796487173796569,
+   "default_policy_difference": -2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.11515924445012696,
+    "H": 0.18953611466264994,
+    "D": 0.20631176540957746
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4733369519700797,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.47333695197007947,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "A",
+   "up": "7",
+   "shoe": [
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.4756000220344406,
+   "common_shoe_split": 0.47560002203444157,
+   "difference": -9.992007221626409e-16,
+   "default_policy_in_common_shoe": 0.47560002203444157,
+   "default_policy_difference": 9.992007221626409e-16,
+   "other_actions": {
+    "S": -0.47174163923153184,
+    "H": 0.16433258324981095,
+    "D": -0.1764033574224169
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.3112674387846296,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.3112674387846306,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "A",
+   "up": "8",
+   "shoe": [
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    96
+   ],
+   "default_split": 0.35970781758048004,
+   "common_shoe_split": 0.35970781758048026,
+   "difference": -2.220446049250313e-16,
+   "default_policy_in_common_shoe": 0.35970781758048026,
+   "default_policy_difference": 2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.5087610844091086,
+    "H": 0.09458532761403719,
+    "D": -0.3115012302525
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.26512248996644283,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.26512248996644305,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "A",
+   "up": "9",
+   "shoe": [
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    96
+   ],
+   "default_split": 0.23775367024218516,
+   "common_shoe_split": 0.23775367024218547,
+   "difference": -3.0531133177191805e-16,
+   "default_policy_in_common_shoe": 0.23775367024218547,
+   "default_policy_difference": 3.0531133177191805e-16,
+   "other_actions": {
+    "S": -0.5380851645872994,
+    "H": -0.00033251013943702556,
+    "D": -0.4508808238041144
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.2380861803816222,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.2380861803816225,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "A",
+   "up": "T",
+   "shoe": [
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    95
+   ],
+   "default_split": 0.18198761677490802,
+   "common_shoe_split": 0.18198761677490774,
+   "difference": 2.7755575615628914e-16,
+   "default_policy_in_common_shoe": 0.18198761677490774,
+   "default_policy_difference": -2.7755575615628914e-16,
+   "other_actions": {
+    "S": -0.5387967288512433,
+    "H": -0.06630980147320456,
+    "D": -0.5066502498616804
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.24829741824811258,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.2482974182481123,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "A",
+   "up": "A",
+   "shoe": [
+    21,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.12098701034568127,
+   "common_shoe_split": 0.12098701034568166,
+   "difference": -3.885780586188048e-16,
+   "default_policy_in_common_shoe": 0.12098701034568166,
+   "default_policy_difference": 3.885780586188048e-16,
+   "other_actions": {
+    "S": -0.5975550394922887,
+    "H": -0.06475339443968892,
+    "D": -0.5851592906815759
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.18574040478537018,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.18574040478537057,
+   "decision_changed": false,
+   "hand_nodes": 10,
+   "first_hand_endings": 10,
+   "union_shoes": 55,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "T",
+   "up": "2",
+   "shoe": [
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    94
+   ],
+   "default_split": 0.35337468699592084,
+   "common_shoe_split": 0.35337468699592256,
+   "difference": -1.7208456881689926e-15,
+   "default_policy_in_common_shoe": 0.35337468699592256,
+   "default_policy_difference": 1.7208456881689926e-15,
+   "other_actions": {
+    "S": 0.63291048899493,
+    "H": -0.853995952583817,
+    "D": -1.707991905167634
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.2795358019990091,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.2795358019990074,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "T",
+   "up": "3",
+   "shoe": [
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    94
+   ],
+   "default_split": 0.4018576503662261,
+   "common_shoe_split": 0.4018576503662275,
+   "difference": -1.3877787807814457e-15,
+   "default_policy_in_common_shoe": 0.4018576503662275,
+   "default_policy_difference": 1.3877787807814457e-15,
+   "other_actions": {
+    "S": 0.6436341937852377,
+    "H": -0.8537156168913325,
+    "D": -1.707431233782665
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.24177654341901156,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.24177654341901017,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "T",
+   "up": "4",
+   "shoe": [
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    94
+   ],
+   "default_split": 0.4523425429097352,
+   "common_shoe_split": 0.45242637656853785,
+   "difference": -8.38336588026567e-05,
+   "default_policy_in_common_shoe": 0.45234254290973497,
+   "default_policy_difference": -2.220446049250313e-16,
+   "other_actions": {
+    "S": 0.6542674649587089,
+    "H": -0.8534741244156947,
+    "D": -1.7069482488313894
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.20192492204897372,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.20184108839017106,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "T",
+   "up": "5",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    94
+   ],
+   "default_split": 0.5092118532425335,
+   "common_shoe_split": 0.5092118532425335,
+   "difference": 0.0,
+   "default_policy_in_common_shoe": 0.5092118532425335,
+   "default_policy_difference": 0.0,
+   "other_actions": {
+    "S": 0.6689269831648922,
+    "H": -0.8531167039050243,
+    "D": -1.7062334078100485
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.1597151299223587,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.1597151299223587,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "T",
+   "up": "6",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    94
+   ],
+   "default_split": 0.5558049525716057,
+   "common_shoe_split": 0.5558049525716066,
+   "difference": -8.881784197001252e-16,
+   "default_policy_in_common_shoe": 0.5558049525716066,
+   "default_policy_difference": 8.881784197001252e-16,
+   "other_actions": {
+    "S": 0.6765899383594529,
+    "H": -0.8529177225486646,
+    "D": -1.7058354450973292
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.12078498578784724,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.12078498578784636,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "T",
+   "up": "7",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    94
+   ],
+   "default_split": 0.5087357806495215,
+   "common_shoe_split": 0.5087357806495223,
+   "difference": -7.771561172376096e-16,
+   "default_policy_in_common_shoe": 0.5087357806495223,
+   "default_policy_difference": 7.771561172376096e-16,
+   "other_actions": {
+    "S": 0.7720111627005976,
+    "H": -0.8504450842577889,
+    "D": -1.7008901685155777
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.26327538205107603,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.26327538205107526,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "T",
+   "up": "8",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    94
+   ],
+   "default_split": 0.3888889947273197,
+   "common_shoe_split": 0.38888899472732,
+   "difference": -3.3306690738754696e-16,
+   "default_policy_in_common_shoe": 0.38888899472732,
+   "default_policy_difference": 3.3306690738754696e-16,
+   "other_actions": {
+    "S": 0.7904200536430787,
+    "H": -0.8501006279597381,
+    "D": -1.7002012559194761
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.40153105891575896,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.40153105891575863,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "T",
+   "up": "9",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    94
+   ],
+   "default_split": 0.22481673942280797,
+   "common_shoe_split": 0.22481673942280808,
+   "difference": -1.1102230246251565e-16,
+   "default_policy_in_common_shoe": 0.22481673942280808,
+   "default_policy_difference": 1.1102230246251565e-16,
+   "other_actions": {
+    "S": 0.7560746281861338,
+    "H": -0.8494380140100231,
+    "D": -1.6988760280200461
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.5312578887633258,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.5312578887633257,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "T",
+   "up": "T",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    93
+   ],
+   "default_split": 0.05209053497696064,
+   "common_shoe_split": 0.05210435206292271,
+   "difference": -1.3817085962070097e-05,
+   "default_policy_in_common_shoe": 0.052090534976960805,
+   "default_policy_difference": 1.6653345369377348e-16,
+   "other_actions": {
+    "S": 0.559145077531232,
+    "H": -0.8471415160777913,
+    "D": -1.6942830321555826
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.5070545425542714,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.5070407254683093,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "T",
+   "up": "A",
+   "shoe": [
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    94
+   ],
+   "default_split": 0.05460839335498974,
+   "common_shoe_split": 0.05460839335499003,
+   "difference": -2.914335439641036e-16,
+   "default_policy_in_common_shoe": 0.05460839335499003,
+   "default_policy_difference": 2.914335439641036e-16,
+   "other_actions": {
+    "S": 0.6003444917347304,
+    "H": -0.858455416568124,
+    "D": -1.716910833136248
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.5457360983797406,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.5457360983797404,
+   "decision_changed": false,
+   "hand_nodes": 936,
+   "first_hand_endings": 990,
+   "union_shoes": 42037,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "9",
+   "up": "2",
+   "shoe": [
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    96
+   ],
+   "default_split": 0.18340874453923442,
+   "common_shoe_split": 0.18340874453923484,
+   "difference": -4.163336342344337e-16,
+   "default_policy_in_common_shoe": 0.18340874453923484,
+   "default_policy_difference": 4.163336342344337e-16,
+   "other_actions": {
+    "S": 0.112768023869352,
+    "H": -0.6243820852282407,
+    "D": -1.2487641704564814
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.07064072066988242,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.07064072066988283,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "9",
+   "up": "3",
+   "shoe": [
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    96
+   ],
+   "default_split": 0.23441581259060693,
+   "common_shoe_split": 0.23441581259060695,
+   "difference": -2.7755575615628914e-17,
+   "default_policy_in_common_shoe": 0.23441581259060695,
+   "default_policy_difference": 2.7755575615628914e-17,
+   "other_actions": {
+    "S": 0.13475433715417617,
+    "H": -0.6237782738165157,
+    "D": -1.2475565476330315
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.09966147543643075,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.09966147543643078,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "9",
+   "up": "4",
+   "shoe": [
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    22,
+    96
+   ],
+   "default_split": 0.2979663837395596,
+   "common_shoe_split": 0.29796638373955914,
+   "difference": 4.440892098500626e-16,
+   "default_policy_in_common_shoe": 0.29796638373955914,
+   "default_policy_difference": -4.440892098500626e-16,
+   "other_actions": {
+    "S": 0.16440258113431316,
+    "H": -0.6151473745845117,
+    "D": -1.2302947491690235
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.13356380260524642,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.13356380260524597,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "9",
+   "up": "5",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    22,
+    96
+   ],
+   "default_split": 0.3662004070133534,
+   "common_shoe_split": 0.3662004070133536,
+   "difference": -2.220446049250313e-16,
+   "default_policy_in_common_shoe": 0.3662004070133536,
+   "default_policy_difference": 2.220446049250313e-16,
+   "other_actions": {
+    "S": 0.19552322396293992,
+    "H": -0.6117969591563238,
+    "D": -1.2235939183126476
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.17067718305041346,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.17067718305041368,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "9",
+   "up": "6",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    22,
+    96
+   ],
+   "default_split": 0.4211482130723591,
+   "common_shoe_split": 0.42114821307236006,
+   "difference": -9.43689570931383e-16,
+   "default_policy_in_common_shoe": 0.42114821307236006,
+   "default_policy_difference": 9.43689570931383e-16,
+   "other_actions": {
+    "S": 0.22016806490637572,
+    "H": -0.6100626456084937,
+    "D": -1.2201252912169873
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.2009801481659834,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.20098014816598433,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "9",
+   "up": "7",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    22,
+    96
+   ],
+   "default_split": 0.36900437098366085,
+   "common_shoe_split": 0.369004370983661,
+   "difference": -1.6653345369377348e-16,
+   "default_policy_in_common_shoe": 0.369004370983661,
+   "default_policy_difference": 1.6653345369377348e-16,
+   "other_actions": {
+    "S": 0.3995758710397279,
+    "H": -0.5871764598565556,
+    "D": -1.1743529197131113
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.03057150005606707,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.030571500056066903,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "9",
+   "up": "8",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    22,
+    96
+   ],
+   "default_split": 0.21161866858061337,
+   "common_shoe_split": 0.21161866858061346,
+   "difference": -8.326672684688674e-17,
+   "default_policy_in_common_shoe": 0.21161866858061346,
+   "default_policy_difference": 8.326672684688674e-17,
+   "other_actions": {
+    "S": 0.09926093541803722,
+    "H": -0.5871477617154499,
+    "D": -1.1742955234308998
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.11235773316257615,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.11235773316257623,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "9",
+   "up": "9",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    21,
+    96
+   ],
+   "default_split": -0.0951434724317803,
+   "common_shoe_split": -0.09514347243178042,
+   "difference": 1.249000902703301e-16,
+   "default_policy_in_common_shoe": -0.09514347243178042,
+   "default_policy_difference": -1.249000902703301e-16,
+   "other_actions": {
+    "S": -0.18523465814385529,
+    "H": -0.6130517031690571,
+    "D": -1.2261034063381142
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.09009118571207499,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.09009118571207486,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "9",
+   "up": "T",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    95
+   ],
+   "default_split": -0.2903982098884524,
+   "common_shoe_split": -0.29036075911080683,
+   "difference": -3.745077764555349e-05,
+   "default_policy_in_common_shoe": -0.2903982098884525,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.17107971338972439,
+    "H": -0.6439851700944814,
+    "D": -1.2879703401889628
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.119318496498728,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.11928104572108245,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "9",
+   "up": "A",
+   "shoe": [
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    96
+   ],
+   "default_split": -0.23857054205408054,
+   "common_shoe_split": -0.2385705420540805,
+   "difference": -5.551115123125783e-17,
+   "default_policy_in_common_shoe": -0.2385705420540805,
+   "default_policy_difference": 5.551115123125783e-17,
+   "other_actions": {
+    "S": -0.21950200341898662,
+    "H": -0.6384872297309983,
+    "D": -1.2769744594619965
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.019068538635093918,
+   "common_shoe_best": [
+    "S"
+   ],
+   "common_shoe_margin": 0.019068538635093862,
+   "decision_changed": false,
+   "hand_nodes": 1277,
+   "first_hand_endings": 1332,
+   "union_shoes": 62041,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "8",
+   "up": "2",
+   "shoe": [
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    96
+   ],
+   "default_split": 0.024467170675336197,
+   "common_shoe_split": 0.02446717067533689,
+   "difference": -6.938893903907228e-16,
+   "default_policy_in_common_shoe": 0.02446717067533689,
+   "default_policy_difference": 6.938893903907228e-16,
+   "other_actions": {
+    "S": -0.28371328943621726,
+    "H": -0.4706922637616336,
+    "D": -0.9413845275232672
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.3081804601115535,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.30818046011155414,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "8",
+   "up": "3",
+   "shoe": [
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    96
+   ],
+   "default_split": 0.09347970235459331,
+   "common_shoe_split": 0.09347977576940611,
+   "difference": -7.341481279843354e-08,
+   "default_policy_in_common_shoe": 0.09347970235459313,
+   "default_policy_difference": -1.8041124150158794e-16,
+   "other_actions": {
+    "S": -0.24287786232718803,
+    "H": -0.4636139177532728,
+    "D": -0.9272278355065456
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.33635756468178135,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.33635763809659414,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "8",
+   "up": "4",
+   "shoe": [
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    22,
+    24,
+    96
+   ],
+   "default_split": 0.15957006805481225,
+   "common_shoe_split": 0.15957006805481183,
+   "difference": 4.163336342344337e-16,
+   "default_policy_in_common_shoe": 0.15957006805481183,
+   "default_policy_difference": -4.163336342344337e-16,
+   "other_actions": {
+    "S": -0.2061681170761902,
+    "H": -0.4587899954785732,
+    "D": -0.9175799909571464
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.3657381851310024,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.36573818513100204,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "8",
+   "up": "5",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    22,
+    24,
+    96
+   ],
+   "default_split": 0.2370712194503368,
+   "common_shoe_split": 0.2370712194503369,
+   "difference": -1.1102230246251565e-16,
+   "default_policy_in_common_shoe": 0.2370712194503369,
+   "default_policy_difference": 1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.1640686763540733,
+    "H": -0.45082876906235,
+    "D": -0.9016575381247
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4011398958044101,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.40113989580441023,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "8",
+   "up": "6",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    22,
+    24,
+    96
+   ],
+   "default_split": 0.3048549211608233,
+   "common_shoe_split": 0.304854921160824,
+   "difference": -7.216449660063518e-16,
+   "default_policy_in_common_shoe": 0.304854921160824,
+   "default_policy_difference": 7.216449660063518e-16,
+   "other_actions": {
+    "S": -0.12486200005131712,
+    "H": -0.43753993044786665,
+    "D": -0.8750798608957333
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.42971692121214045,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.4297169212121411,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "8",
+   "up": "7",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    22,
+    24,
+    96
+   ],
+   "default_split": 0.21842246560847997,
+   "common_shoe_split": 0.2184224656084802,
+   "difference": -2.220446049250313e-16,
+   "default_policy_in_common_shoe": 0.2184224656084802,
+   "default_policy_difference": 2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.48018059471658336,
+    "H": -0.4084226455601245,
+    "D": -0.816845291120249
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.6268451111686044,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.6268451111686046,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "8",
+   "up": "8",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    21,
+    24,
+    96
+   ],
+   "default_split": -0.0848754764545034,
+   "common_shoe_split": -0.08487547645450344,
+   "difference": 4.163336342344337e-17,
+   "default_policy_in_common_shoe": -0.08487547645450344,
+   "default_policy_difference": -4.163336342344337e-17,
+   "other_actions": {
+    "S": -0.5175090679527921,
+    "H": -0.45340098311367877,
+    "D": -0.9068019662273575
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.3685255066591754,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.36852550665917533,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "8",
+   "up": "9",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    23,
+    96
+   ],
+   "default_split": -0.4050241528450736,
+   "common_shoe_split": -0.40502415284507376,
+   "difference": 1.6653345369377348e-16,
+   "default_policy_in_common_shoe": -0.40502415284507376,
+   "default_policy_difference": -1.6653345369377348e-16,
+   "other_actions": {
+    "S": -0.5388901871004586,
+    "H": -0.5057073971605259,
+    "D": -1.0114147943210519
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.10068324431545234,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.10068324431545217,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "8",
+   "up": "T",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    95
+   ],
+   "default_split": -0.48319909950255197,
+   "common_shoe_split": -0.4831518669625606,
+   "difference": -4.7232539991337585e-05,
+   "default_policy_in_common_shoe": -0.4831990995025521,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.536853299237752,
+    "H": -0.5353610383659223,
+    "D": -1.0707220767318446
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.05216193886337034,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.052209171403361676,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "8",
+   "up": "A",
+   "shoe": [
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    96
+   ],
+   "default_split": -0.5179312614634856,
+   "common_shoe_split": -0.5179312614634854,
+   "difference": -1.1102230246251565e-16,
+   "default_policy_in_common_shoe": -0.5179312614634854,
+   "default_policy_difference": 1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.5948267363698382,
+    "H": -0.5385609447795296,
+    "D": -1.0771218895590593
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.02062968331604409,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.0206296833160442,
+   "decision_changed": false,
+   "hand_nodes": 1726,
+   "first_hand_endings": 1781,
+   "union_shoes": 91357,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "7",
+   "up": "2",
+   "shoe": [
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.1433949800629913,
+   "common_shoe_split": -0.143376225752998,
+   "difference": -1.8754309993318508e-05,
+   "default_policy_in_common_shoe": -0.14339498006299028,
+   "default_policy_difference": 1.0269562977782698e-15,
+   "other_actions": {
+    "S": -0.2827214890756046,
+    "H": -0.37055685759282764,
+    "D": -0.7411137151856553
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.13932650901261331,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.13934526332260663,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "7",
+   "up": "3",
+   "shoe": [
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.059071135834927825,
+   "common_shoe_split": -0.05907111536154679,
+   "difference": -2.0473381032171112e-08,
+   "default_policy_in_common_shoe": -0.059071135834927756,
+   "default_policy_difference": 6.938893903907228e-17,
+   "other_actions": {
+    "S": -0.24151765150382937,
+    "H": -0.35629667698509426,
+    "D": -0.7125933539701885
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.18244651566890155,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.18244653614228257,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "7",
+   "up": "4",
+   "shoe": [
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    22,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.034141206773521955,
+   "common_shoe_split": 0.03414120677352169,
+   "difference": 2.636779683484747e-16,
+   "default_policy_in_common_shoe": 0.03414120677352169,
+   "default_policy_difference": -2.636779683484747e-16,
+   "other_actions": {
+    "S": -0.19831541394655805,
+    "H": -0.34157734394394434,
+    "D": -0.6831546878878887
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.23245662072008,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.23245662072007975,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "7",
+   "up": "5",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    22,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.11569103771198143,
+   "common_shoe_split": 0.11569103771198132,
+   "difference": 1.1102230246251565e-16,
+   "default_policy_in_common_shoe": 0.11569103771198132,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.16242530597319654,
+    "H": -0.32970696497221386,
+    "D": -0.6594139299444277
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.27811634368517796,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.27811634368517785,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "7",
+   "up": "6",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    22,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.19799846655844108,
+   "common_shoe_split": 0.19799846655844136,
+   "difference": -2.7755575615628914e-16,
+   "default_policy_in_common_shoe": 0.19799846655844136,
+   "default_policy_difference": 2.7755575615628914e-16,
+   "other_actions": {
+    "S": -0.12347488008919444,
+    "H": -0.3179968482884151,
+    "D": -0.6359936965768302
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.3214733466476355,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.3214733466476358,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "7",
+   "up": "7",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    21,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.08649296504879721,
+   "common_shoe_split": -0.08649296504879717,
+   "difference": -4.163336342344337e-17,
+   "default_policy_in_common_shoe": -0.08649296504879717,
+   "default_policy_difference": 4.163336342344337e-17,
+   "other_actions": {
+    "S": -0.47913160676699856,
+    "H": -0.33178381740041585,
+    "D": -0.6919211127374538
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.24529085235161863,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.24529085235161868,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "7",
+   "up": "8",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    23,
+    24,
+    96
+   ],
+   "default_split": -0.3892940940038205,
+   "common_shoe_split": -0.3892940940038206,
+   "difference": 1.1102230246251565e-16,
+   "default_policy_in_common_shoe": -0.3892940940038206,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.5157664458911719,
+    "H": -0.37770854041832463,
+    "D": -0.7809057472979463
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.011585553585495845,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.011585553585495956,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "7",
+   "up": "9",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    23,
+    96
+   ],
+   "default_split": -0.5548339108958774,
+   "common_shoe_split": -0.5548339108958775,
+   "difference": 1.1102230246251565e-16,
+   "default_policy_in_common_shoe": -0.5548339108958775,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.5455281938161818,
+    "H": -0.43791161441076004,
+    "D": -0.8940190101652206
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.10761657940542174,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.10761657940542174,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "7",
+   "up": "T",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    95
+   ],
+   "default_split": -0.627637147659171,
+   "common_shoe_split": -0.6275421978122537,
+   "difference": -9.494984691726938e-05,
+   "default_policy_in_common_shoe": -0.627637147659171,
+   "default_policy_difference": 0.0,
+   "other_actions": {
+    "S": -0.5355857991108213,
+    "H": -0.4740637698268073,
+    "D": -0.9536112613460933
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.06152202928401396,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.06152202928401396,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129524,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "7",
+   "up": "A",
+   "shoe": [
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.6946327737438032,
+   "common_shoe_split": -0.6946327737438034,
+   "difference": 2.220446049250313e-16,
+   "default_policy_in_common_shoe": -0.6946327737438034,
+   "default_policy_difference": -2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.5926726858991604,
+    "H": -0.477592446992953,
+    "D": -0.9764476233735665
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.11508023890620744,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.11508023890620744,
+   "decision_changed": false,
+   "hand_nodes": 2284,
+   "first_hand_endings": 2339,
+   "union_shoes": 129523,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "6",
+   "up": "2",
+   "shoe": [
+    24,
+    23,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.20000114323751408,
+   "common_shoe_split": -0.19995945471063978,
+   "difference": -4.168852687430613e-05,
+   "default_policy_in_common_shoe": -0.20000114323751297,
+   "default_policy_difference": 1.1102230246251565e-15,
+   "other_actions": {
+    "S": -0.28170246899456947,
+    "H": -0.2536135558404071,
+    "D": -0.5072271116808142
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.05361241260289304,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.053654101129767345,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "6",
+   "up": "3",
+   "shoe": [
+    24,
+    24,
+    23,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.1135607653458059,
+   "common_shoe_split": -0.11356071860177498,
+   "difference": -4.674403092375101e-08,
+   "default_policy_in_common_shoe": -0.11356076534580563,
+   "default_policy_difference": 2.7755575615628914e-16,
+   "other_actions": {
+    "S": -0.24049326937866267,
+    "H": -0.23221884690457872,
+    "D": -0.46443769380915745
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.11865808155877282,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.11865812830280374,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "6",
+   "up": "4",
+   "shoe": [
+    24,
+    24,
+    24,
+    23,
+    24,
+    22,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.01942451145538147,
+   "common_shoe_split": -0.01942451145538195,
+   "difference": 4.787836793695988e-16,
+   "default_policy_in_common_shoe": -0.01942451145538195,
+   "default_policy_difference": -4.787836793695988e-16,
+   "other_actions": {
+    "S": -0.19687917271924993,
+    "H": -0.21030177023103325,
+    "D": -0.4206035404620665
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.17745466126386847,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.17745466126386797,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "6",
+   "up": "5",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    23,
+    22,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.07660615961278981,
+   "common_shoe_split": 0.07660615961278942,
+   "difference": 3.885780586188048e-16,
+   "default_policy_in_common_shoe": 0.07660615961278942,
+   "default_policy_difference": -3.885780586188048e-16,
+   "other_actions": {
+    "S": -0.1545271530696719,
+    "H": -0.18867688219829523,
+    "D": -0.37735376439659046
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.23113331268246173,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.23113331268246134,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "6",
+   "up": "6",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    21,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.1499493578386157,
+   "common_shoe_split": 0.14994935783861502,
+   "difference": 6.938893903907228e-16,
+   "default_policy_in_common_shoe": 0.14994935783861502,
+   "default_policy_difference": -6.938893903907228e-16,
+   "other_actions": {
+    "S": -0.12182682129613137,
+    "H": -0.1752108880125416,
+    "D": -0.3504217760250832
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.27177617913474705,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.2717761791347464,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "6",
+   "up": "7",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    23,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.2488898468525184,
+   "common_shoe_split": -0.24888984685251866,
+   "difference": 2.7755575615628914e-16,
+   "default_policy_in_common_shoe": -0.24888984685251866,
+   "default_policy_difference": -2.7755575615628914e-16,
+   "other_actions": {
+    "S": -0.47773813965700085,
+    "H": -0.22056214723096218,
+    "D": -0.5201228393183972
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.028327699621556207,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.028327699621556485,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "6",
+   "up": "8",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    23,
+    24,
+    96
+   ],
+   "default_split": -0.3976338396463684,
+   "common_shoe_split": -0.39763383964636867,
+   "difference": 2.7755575615628914e-16,
+   "default_policy_in_common_shoe": -0.39763383964636867,
+   "default_policy_difference": -2.7755575615628914e-16,
+   "other_actions": {
+    "S": -0.5146363672009385,
+    "H": -0.2793009487156559,
+    "D": -0.6305368984839
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.11833289093071248,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.11833289093071275,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "6",
+   "up": "9",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    23,
+    96
+   ],
+   "default_split": -0.566643188938199,
+   "common_shoe_split": -0.5666431889381991,
+   "difference": 1.1102230246251565e-16,
+   "default_policy_in_common_shoe": -0.5666431889381991,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.5439045510182036,
+    "H": -0.347154650578846,
+    "D": -0.7499351249043951
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.19674990043935758,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.19674990043935758,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "6",
+   "up": "T",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    95
+   ],
+   "default_split": -0.6625045375644442,
+   "common_shoe_split": -0.6624958804115397,
+   "difference": -8.657152904434362e-06,
+   "default_policy_in_common_shoe": -0.6625045375644443,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.5427827958657633,
+    "H": -0.38195254265418804,
+    "D": -0.7982880173575736
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.16083025321157524,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.16083025321157524,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182323,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "6",
+   "up": "A",
+   "shoe": [
+    23,
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.6791796010519933,
+   "common_shoe_split": -0.6791796010519933,
+   "difference": 0.0,
+   "default_policy_in_common_shoe": -0.6791796010519933,
+   "default_policy_difference": 0.0,
+   "other_actions": {
+    "S": -0.5944660089982137,
+    "H": -0.3872852343386922,
+    "D": -0.8366698718704453
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.20718077465952145,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.20718077465952145,
+   "decision_changed": false,
+   "hand_nodes": 2996,
+   "first_hand_endings": 3051,
+   "union_shoes": 182257,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "5",
+   "up": "2",
+   "shoe": [
+    24,
+    23,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.18288221413227282,
+   "common_shoe_split": -0.18288058945737767,
+   "difference": -1.6246748951453949e-06,
+   "default_policy_in_common_shoe": -0.18288221413227088,
+   "default_policy_difference": 1.942890293094024e-15,
+   "other_actions": {
+    "S": -0.2807113953554837,
+    "H": 0.1876777602609636,
+    "D": 0.371112437752057
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.18343467749109338,
+   "common_shoe_best": [
+    "D"
+   ],
+   "common_shoe_margin": 0.18343467749109338,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "5",
+   "up": "3",
+   "shoe": [
+    24,
+    24,
+    23,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.102635632169205,
+   "common_shoe_split": -0.1026355487978837,
+   "difference": -8.337132130498137e-08,
+   "default_policy_in_common_shoe": -0.10263563216920471,
+   "default_policy_difference": 2.914335439641036e-16,
+   "other_actions": {
+    "S": -0.23951478576127413,
+    "H": 0.2125950984028957,
+    "D": 0.423860855737043
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.21126575733414732,
+   "common_shoe_best": [
+    "D"
+   ],
+   "common_shoe_margin": 0.21126575733414732,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "5",
+   "up": "4",
+   "shoe": [
+    24,
+    24,
+    24,
+    23,
+    22,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.010964756683598682,
+   "common_shoe_split": -0.010964756683599062,
+   "difference": 3.7990444123892075e-16,
+   "default_policy_in_common_shoe": -0.010964756683599062,
+   "default_policy_difference": -3.7990444123892075e-16,
+   "other_actions": {
+    "S": -0.1959312875800938,
+    "H": 0.23969347798314566,
+    "D": 0.47938695596629133
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.23969347798314566,
+   "common_shoe_best": [
+    "D"
+   ],
+   "common_shoe_margin": 0.23969347798314566,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "5",
+   "up": "5",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    21,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.08439867973740252,
+   "common_shoe_split": 0.08439867973740128,
+   "difference": 1.2351231148954867e-15,
+   "default_policy_in_common_shoe": 0.08439867973740128,
+   "default_policy_difference": -1.2351231148954867e-15,
+   "other_actions": {
+    "S": -0.15310335457528318,
+    "H": 0.2698288477643552,
+    "D": 0.5396576955287103
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.2698288477643552,
+   "common_shoe_best": [
+    "D"
+   ],
+   "common_shoe_margin": 0.2698288477643552,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "5",
+   "up": "6",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    22,
+    23,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.1692897312384097,
+   "common_shoe_split": 0.1692897329486258,
+   "difference": -1.710216079864324e-09,
+   "default_policy_in_common_shoe": 0.16928973123840924,
+   "default_policy_difference": -4.718447854656915e-16,
+   "other_actions": {
+    "S": -0.1138996173434671,
+    "H": 0.29377342886478297,
+    "D": 0.5875468577295659
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.29377342886478297,
+   "common_shoe_best": [
+    "D"
+   ],
+   "common_shoe_margin": 0.29377342886478297,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "5",
+   "up": "7",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    23,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.19875598330913244,
+   "common_shoe_split": -0.19875598330913266,
+   "difference": 2.220446049250313e-16,
+   "default_policy_in_common_shoe": -0.19875598330913266,
+   "default_policy_difference": -2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.4762168615944409,
+    "H": 0.26039416239921964,
+    "D": 0.4047463134293474
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.14435215103012777,
+   "common_shoe_best": [
+    "D"
+   ],
+   "common_shoe_margin": 0.14435215103012777,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "5",
+   "up": "8",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    23,
+    24,
+    96
+   ],
+   "default_split": -0.35351762305117257,
+   "common_shoe_split": -0.35351762305117274,
+   "difference": 1.6653345369377348e-16,
+   "default_policy_in_common_shoe": -0.35351762305117274,
+   "default_policy_difference": -1.6653345369377348e-16,
+   "other_actions": {
+    "S": -0.5133249685236303,
+    "H": 0.19953708158974026,
+    "D": 0.29303336263434154
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.09349628104460128,
+   "common_shoe_best": [
+    "D"
+   ],
+   "common_shoe_margin": 0.09349628104460128,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "5",
+   "up": "9",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    23,
+    96
+   ],
+   "default_split": -0.5276707769597971,
+   "common_shoe_split": -0.5276707769596145,
+   "difference": -1.8263168755083825e-13,
+   "default_policy_in_common_shoe": -0.5276707769597974,
+   "default_policy_difference": -2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.5426611956278194,
+    "H": 0.11665336207905978,
+    "D": 0.1491883438244777
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.032534981745417926,
+   "common_shoe_best": [
+    "D"
+   ],
+   "common_shoe_margin": 0.032534981745417926,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "5",
+   "up": "T",
+   "shoe": [
+    24,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    95
+   ],
+   "default_split": -0.6237720734006112,
+   "common_shoe_split": -0.623772073346138,
+   "difference": -5.447320372553577e-11,
+   "default_policy_in_common_shoe": -0.6237720734006116,
+   "default_policy_difference": -3.3306690738754696e-16,
+   "other_actions": {
+    "S": -0.5410331123203088,
+    "H": 0.02715381144892251,
+    "D": -0.0040705517042028405
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.03122436315312535,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.03122436315312535,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251606,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "5",
+   "up": "A",
+   "shoe": [
+    23,
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.6419994913568718,
+   "common_shoe_split": -0.6419994913568721,
+   "difference": 2.220446049250313e-16,
+   "default_policy_in_common_shoe": -0.6419994913568721,
+   "default_policy_difference": -2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.5957324994104167,
+    "H": 0.03445846059953367,
+    "D": -0.02558843500633412
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.06004689560586779,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.06004689560586779,
+   "decision_changed": false,
+   "hand_nodes": 3878,
+   "first_hand_endings": 3933,
+   "union_shoes": 251362,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "4",
+   "up": "2",
+   "shoe": [
+    24,
+    23,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.15949425160135475,
+   "common_shoe_split": -0.15949369509579361,
+   "difference": -5.565055611334024e-07,
+   "default_policy_in_common_shoe": -0.15949425160135444,
+   "default_policy_difference": 3.0531133177191805e-16,
+   "other_actions": {
+    "S": -0.28578502538318684,
+    "H": -0.02223795204101734,
+    "D": -0.20198724980064892
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.1372562995603374,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.13725574305477628,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "4",
+   "up": "3",
+   "shoe": [
+    24,
+    24,
+    23,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.07550833131986402,
+   "common_shoe_split": -0.07550751813158299,
+   "difference": -8.131882810319402e-07,
+   "default_policy_in_common_shoe": -0.07550833131986372,
+   "default_policy_difference": 3.0531133177191805e-16,
+   "other_actions": {
+    "S": -0.24033154326775108,
+    "H": 0.009335390524314799,
+    "D": -0.12836652304478324
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.08484372184417882,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.08484290865589779,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "4",
+   "up": "4",
+   "shoe": [
+    24,
+    24,
+    24,
+    21,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.014030304743740006,
+   "common_shoe_split": 0.014030304743738842,
+   "difference": 1.1639994523804376e-15,
+   "default_policy_in_common_shoe": 0.014030304743738842,
+   "default_policy_difference": -1.1639994523804376e-15,
+   "other_actions": {
+    "S": -0.19663255589733955,
+    "H": 0.046322162420067835,
+    "D": -0.05093105437690214
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.03229185767632783,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.03229185767632899,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "4",
+   "up": "5",
+   "shoe": [
+    24,
+    24,
+    24,
+    22,
+    23,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.10938457353727317,
+   "common_shoe_split": 0.10938457353727309,
+   "difference": 8.326672684688674e-17,
+   "default_policy_in_common_shoe": 0.10938457353727309,
+   "default_policy_difference": -8.326672684688674e-17,
+   "other_actions": {
+    "S": -0.15379546406700972,
+    "H": 0.08281520820304847,
+    "D": 0.026924073975448132
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.0265693653342247,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.026569365334224618,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "4",
+   "up": "6",
+   "shoe": [
+    24,
+    24,
+    24,
+    22,
+    24,
+    23,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.19297042522462918,
+   "common_shoe_split": 0.19297043331480243,
+   "difference": -8.09017325353878e-09,
+   "default_policy_in_common_shoe": 0.192970425224629,
+   "default_policy_difference": -1.6653345369377348e-16,
+   "other_actions": {
+    "S": -0.11408466277386911,
+    "H": 0.11336466720783286,
+    "D": 0.09292856205474528
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.07960575801679631,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.07960576610696957,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "4",
+   "up": "7",
+   "shoe": [
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    23,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.13314488167460944,
+   "common_shoe_split": -0.13314488167460972,
+   "difference": 2.7755575615628914e-16,
+   "default_policy_in_common_shoe": -0.13314488167460972,
+   "default_policy_difference": -2.7755575615628914e-16,
+   "other_actions": {
+    "S": -0.4732829168347751,
+    "H": 0.08661621393023089,
+    "D": -0.1751000491679774
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.21976109560484033,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.2197610956048406,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "4",
+   "up": "8",
+   "shoe": [
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    23,
+    24,
+    96
+   ],
+   "default_split": -0.288374907607212,
+   "common_shoe_split": -0.2883749076072122,
+   "difference": 1.6653345369377348e-16,
+   "default_policy_in_common_shoe": -0.2883749076072122,
+   "default_policy_difference": -1.6653345369377348e-16,
+   "other_actions": {
+    "S": -0.513430518323001,
+    "H": -0.05909028185425355,
+    "D": -0.4510355201808882
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.22928462575295847,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.22928462575295863,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "4",
+   "up": "9",
+   "shoe": [
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    23,
+    96
+   ],
+   "default_split": -0.46665835816371765,
+   "common_shoe_split": -0.46665835816277457,
+   "difference": -9.430789482678392e-13,
+   "default_policy_in_common_shoe": -0.46665835816371776,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.542865410324527,
+    "H": -0.2098481003344656,
+    "D": -0.7156943966159819
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.25681025782925204,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.25681025782830896,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "4",
+   "up": "T",
+   "shoe": [
+    24,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    95
+   ],
+   "default_split": -0.5673542590019715,
+   "common_shoe_split": -0.5673417671839889,
+   "difference": -1.2491817982573927e-05,
+   "default_policy_in_common_shoe": -0.5673542590019716,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.5412659343842944,
+    "H": -0.24799363059050275,
+    "D": -0.7451119552737845
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.29327230379379166,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.29327230379379166,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343583,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "4",
+   "up": "A",
+   "shoe": [
+    23,
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.5845266918906652,
+   "common_shoe_split": -0.5845266918906653,
+   "difference": 1.1102230246251565e-16,
+   "default_policy_in_common_shoe": -0.5845266918906653,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.5954849069530316,
+    "H": -0.26388531672505366,
+    "D": -0.8293567218500781
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.32064137516561153,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.32064137516561164,
+   "decision_changed": false,
+   "hand_nodes": 4982,
+   "first_hand_endings": 5037,
+   "union_shoes": 343041,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "3",
+   "up": "2",
+   "shoe": [
+    24,
+    23,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.13105359013168918,
+   "common_shoe_split": -0.13105306352185842,
+   "difference": -5.266098307699085e-07,
+   "default_policy_in_common_shoe": -0.1310535901316893,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.28601906827749335,
+    "H": -0.13926622418246726,
+    "D": -0.5518797381288534
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.008212634050778073,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.008213160660608843,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "3",
+   "up": "3",
+   "shoe": [
+    24,
+    24,
+    21,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.054334845677947184,
+   "common_shoe_split": -0.05433484567794823,
+   "difference": 1.0477729794899915e-15,
+   "default_policy_in_common_shoe": -0.05433484567794823,
+   "default_policy_difference": -1.0477729794899915e-15,
+   "other_actions": {
+    "S": -0.2454598220672266,
+    "H": -0.10589215146782789,
+    "D": -0.4714140529953632
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.05155730578988071,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.05155730578987966,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "3",
+   "up": "4",
+   "shoe": [
+    24,
+    24,
+    22,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.037151901943877054,
+   "common_shoe_split": 0.03715190302263386,
+   "difference": -1.0787568061054742e-09,
+   "default_policy_in_common_shoe": 0.037151901943876096,
+   "default_policy_difference": -9.575673587391975e-16,
+   "other_actions": {
+    "S": -0.1975435596708544,
+    "H": -0.0656918603005179,
+    "D": -0.3766107656039657
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.10284376224439495,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.10284376332315176,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "3",
+   "up": "5",
+   "shoe": [
+    24,
+    24,
+    22,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.13029003394901692,
+   "common_shoe_split": 0.13029003394901695,
+   "difference": -2.7755575615628914e-17,
+   "default_policy_in_common_shoe": 0.13029003394901695,
+   "default_policy_difference": 2.7755575615628914e-17,
+   "other_actions": {
+    "S": -0.15460052630230703,
+    "H": -0.02677457938322048,
+    "D": -0.290920688792648
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.1570646133322374,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.15706461333223742,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "3",
+   "up": "6",
+   "shoe": [
+    24,
+    24,
+    22,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.21321285714100435,
+   "common_shoe_split": 0.2132130642082194,
+   "difference": -2.0706721504115677e-07,
+   "default_policy_in_common_shoe": 0.21321285714100405,
+   "default_policy_difference": -3.0531133177191805e-16,
+   "other_actions": {
+    "S": -0.11481597547411572,
+    "H": 0.009878338377157236,
+    "D": -0.21206280130171956
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.20333451876384712,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.20333472583106216,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "3",
+   "up": "7",
+   "shoe": [
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.06605691615343622,
+   "common_shoe_split": -0.06605691615343658,
+   "difference": 3.608224830031759e-16,
+   "default_policy_in_common_shoe": -0.06605691615343658,
+   "default_policy_difference": -3.608224830031759e-16,
+   "other_actions": {
+    "S": -0.4739625165763489,
+    "H": -0.15379743618602315,
+    "D": -0.8902436342649662
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.08774052003258694,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.08774052003258657,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "3",
+   "up": "8",
+   "shoe": [
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    96
+   ],
+   "default_split": -0.22973681872817409,
+   "common_shoe_split": -0.22973681872817428,
+   "difference": 1.942890293094024e-16,
+   "default_policy_in_common_shoe": -0.22973681872817428,
+   "default_policy_difference": -1.942890293094024e-16,
+   "other_actions": {
+    "S": -0.510567267164978,
+    "H": -0.2191820525788585,
+    "D": -1.001140050016152
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.010554766149315581,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.010554766149315775,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "3",
+   "up": "9",
+   "shoe": [
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    96
+   ],
+   "default_split": -0.4128059518831649,
+   "common_shoe_split": -0.4128059518831489,
+   "difference": -1.5987211554602254e-14,
+   "default_policy_in_common_shoe": -0.412805951883165,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "other_actions": {
+    "S": -0.5430084941267233,
+    "H": -0.29526431247189855,
+    "D": -1.0673675576949242
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.11754163941126633,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.11754163941125034,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "3",
+   "up": "T",
+   "shoe": [
+    24,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    95
+   ],
+   "default_split": -0.5174833401799491,
+   "common_shoe_split": -0.5174141198079367,
+   "difference": -6.922037201240183e-05,
+   "default_policy_in_common_shoe": -0.5174833401799493,
+   "default_policy_difference": -2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.5414022948658329,
+    "H": -0.33869272837543174,
+    "D": -1.0639966662446092
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.17879061180451739,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.17872139143250498,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 460740,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "3",
+   "up": "A",
+   "shoe": [
+    23,
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.5358284375392813,
+   "common_shoe_split": -0.5358284375392813,
+   "difference": 0.0,
+   "default_policy_in_common_shoe": -0.5358284375392813,
+   "default_policy_difference": 0.0,
+   "other_actions": {
+    "S": -0.5962137038363771,
+    "H": -0.34432721182455117,
+    "D": -1.180151805324949
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.19150122571473016,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.19150122571473016,
+   "decision_changed": false,
+   "hand_nodes": 6329,
+   "first_hand_endings": 6384,
+   "union_shoes": 459736,
+   "dealer_nodes": 332
+  },
+  {
+   "pair": "2",
+   "up": "2",
+   "shoe": [
+    24,
+    21,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.08291139586297637,
+   "common_shoe_split": -0.08288076761196157,
+   "difference": -3.062825101479705e-05,
+   "default_policy_in_common_shoe": -0.08291139586297597,
+   "default_policy_difference": 4.0245584642661925e-16,
+   "other_actions": {
+    "S": -0.2861615533414285,
+    "H": -0.11254491521528452,
+    "D": -0.572323106682857
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.029633519352308152,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.02966414760332295,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 364
+  },
+  {
+   "pair": "2",
+   "up": "3",
+   "shoe": [
+    24,
+    22,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.016884327767208687,
+   "common_shoe_split": -0.01688432741570114,
+   "difference": -3.515075452931171e-10,
+   "default_policy_in_common_shoe": -0.0168843277672099,
+   "default_policy_difference": -1.214306433183765e-15,
+   "other_actions": {
+    "S": -0.24568445457146393,
+    "H": -0.08012597436293604,
+    "D": -0.49136890914292763
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.06324164659572735,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.0632416469472349,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 273
+  },
+  {
+   "pair": "2",
+   "up": "4",
+   "shoe": [
+    24,
+    22,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.05682758996396577,
+   "common_shoe_split": 0.05682758996396504,
+   "difference": 7.355227538141662e-16,
+   "default_policy_in_common_shoe": 0.05682758996396504,
+   "default_policy_difference": -7.355227538141662e-16,
+   "other_actions": {
+    "S": -0.20266423208090975,
+    "H": -0.04439240581790655,
+    "D": -0.40532846416181945
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.10121999578187232,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.10121999578187159,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 198
+  },
+  {
+   "pair": "2",
+   "up": "5",
+   "shoe": [
+    24,
+    22,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.15079402037048176,
+   "common_shoe_split": 0.1507964689634326,
+   "difference": -2.44859295084332e-06,
+   "default_policy_in_common_shoe": 0.15079402037048192,
+   "default_policy_difference": 1.6653345369377348e-16,
+   "other_actions": {
+    "S": -0.15545220336226634,
+    "H": -0.003781298230143962,
+    "D": -0.3109044067245327
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.15457531860062573,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.15457776719357658,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 147
+  },
+  {
+   "pair": "2",
+   "up": "6",
+   "shoe": [
+    24,
+    22,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": 0.23406100049991616,
+   "common_shoe_split": 0.23406100049991646,
+   "difference": -3.0531133177191805e-16,
+   "default_policy_in_common_shoe": 0.23406100049991646,
+   "default_policy_difference": 3.0531133177191805e-16,
+   "other_actions": {
+    "S": -0.115610890201182,
+    "H": 0.030230455305201832,
+    "D": -0.23122178040236363
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.20383054519471433,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.20383054519471464,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 103
+  },
+  {
+   "pair": "2",
+   "up": "7",
+   "shoe": [
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.005187310720517978,
+   "common_shoe_split": -0.005187310720518458,
+   "difference": 4.796510411075872e-16,
+   "default_policy_in_common_shoe": -0.005187310720518469,
+   "default_policy_difference": -4.909267437014364e-16,
+   "other_actions": {
+    "S": -0.47462144198836137,
+    "H": -0.08882808421733997,
+    "D": -0.9492428839767229
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.08364077349682199,
+   "common_shoe_best": [
+    "P"
+   ],
+   "common_shoe_margin": 0.0836407734968215,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 75
+  },
+  {
+   "pair": "2",
+   "up": "8",
+   "shoe": [
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    24,
+    96
+   ],
+   "default_split": -0.17426990858317634,
+   "common_shoe_split": -0.17426990858317654,
+   "difference": 1.942890293094024e-16,
+   "default_policy_in_common_shoe": -0.17426990858317654,
+   "default_policy_difference": -1.942890293094024e-16,
+   "other_actions": {
+    "S": -0.5112471849569684,
+    "H": -0.15679027686823757,
+    "D": -1.022494369913937
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.01747963171493877,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.017479631714938965,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 53
+  },
+  {
+   "pair": "2",
+   "up": "9",
+   "shoe": [
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    23,
+    96
+   ],
+   "default_split": -0.3642580967864359,
+   "common_shoe_split": -0.3642580967862899,
+   "difference": -1.4599432773820809e-13,
+   "default_policy_in_common_shoe": -0.36425809678643595,
+   "default_policy_difference": -5.551115123125783e-17,
+   "other_actions": {
+    "S": -0.5401373569563108,
+    "H": -0.23787274291992538,
+    "D": -1.0802747139126216
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.1263853538665105,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.1263853538663645,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 38
+  },
+  {
+   "pair": "2",
+   "up": "T",
+   "shoe": [
+    24,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    95
+   ],
+   "default_split": -0.4709822912483795,
+   "common_shoe_split": -0.4708963271950376,
+   "difference": -8.59640533418804e-05,
+   "default_policy_in_common_shoe": -0.4709822912483797,
+   "default_policy_difference": -2.220446049250313e-16,
+   "other_actions": {
+    "S": -0.541588864693734,
+    "H": -0.2870988775483361,
+    "D": -1.0831777293874683
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.1838834137000434,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.18379744964670153,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 614501,
+   "dealer_nodes": 24
+  },
+  {
+   "pair": "2",
+   "up": "A",
+   "shoe": [
+    23,
+    22,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    96
+   ],
+   "default_split": -0.49016121620721886,
+   "common_shoe_split": -0.49016121620721886,
+   "difference": 0.0,
+   "default_policy_in_common_shoe": -0.49016121620721886,
+   "default_policy_difference": 0.0,
+   "other_actions": {
+    "S": -0.5968847803847509,
+    "H": -0.2926712169592679,
+    "D": -1.1937695607695016
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.19748999924795096,
+   "common_shoe_best": [
+    "H"
+   ],
+   "common_shoe_margin": 0.19748999924795096,
+   "decision_changed": false,
+   "hand_nodes": 7995,
+   "first_hand_endings": 8050,
+   "union_shoes": 612824,
+   "dealer_nodes": 332
+  }
+ ]
+}
