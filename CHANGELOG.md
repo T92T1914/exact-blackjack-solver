@@ -43,6 +43,10 @@ reports is `bj.__version__`.
   six card hit, stand and double conditions (#24). Later split references
   follow the same pattern in `tests/resplit_physical_reference.py` (#42) and
   `tests/ace_resplit_physical_reference.py` (#43).
+* `tests/rational_reference.py`: an exact `Fraction` reference that works from
+  card counts, so it reaches the full six deck shoe. It recomputes the 45
+  published cells and every bounded example request, and
+  `docs/rational-cross-check.md` records the largest differences (#72).
 * `bj-advise` state options: `--unseen` and `--unseen-counts` for an explicit
   remaining shoe, `--split-hand` and `--hand-count` for a hand inside a split
   round (#25, #32), `--max-hands` (#33), `--no-double` and `--no-split` (#34),
