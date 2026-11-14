@@ -111,6 +111,13 @@ keyed adapter and asymmetric mapping regression were committed before the
 single corrected run. The frozen protocol and reference arithmetic did not
 change. Every completed corrected row records both rank orders and counts.
 
+The retained comparison above uses small shoes, because this reference accepts
+at most twenty unseen cards. The [split error study](split-error-study.md)
+evaluates the same model on the full six deck shoe and measured the production
+gap in all 100 pair and upcard cells, with two hands and no resplit. It covers
+the default table, the table with the dealer hitting soft 17 and the table with
+no double after split, each on its own.
+
 The report auditor independently checks these identities and recomputes gaps,
 root rankings and margins from saved values. It does not invoke either solver.
 The maximum reference work count was 3,260 states. The largest observed
