@@ -571,8 +571,16 @@ separate from this command. Current results are available in the linked CI run.
 * It sees only what a player sees. The dealer's hole card is never an input.
   A solver allowed to read it would be trivial and useless. Every hard problem
   here exists because it is restricted to legitimate information.
-* Two of the split rules were conservative defaults in the original table
-  (resplit aces, hit split aces), and the solver's defaults follow them. The EV
+* Split values in the ordinary interface are approximations. For two hands
+  with no resplit on the six deck table, I compared the default with the two
+  hand common shoe value in all 100 pair and upcard cells. The default is never
+  higher by more than rounding, the largest gap is 0.000538738 units for 2,2
+  against 4, and no best action changes. The [split error study](docs/split-error-study.md) keeps the
+  table and shows why the default cannot be higher in that model. It measures
+  nothing about resplitting, which the default table allows up to four hands,
+  about other rules or about depleted shoes. Two of the split rules were
+  conservative defaults in the original table (resplit aces, hit split aces),
+  and the solver's defaults follow them. The EV
   of a table that allows them can be requested through the original interface,
   subject to its independent hand and shared resplit budget approximations.
   The separately selected bounded ace family has its own one card child and

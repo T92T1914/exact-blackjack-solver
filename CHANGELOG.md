@@ -83,6 +83,11 @@ reports is `bj.__version__`.
 * Translation help: literal code and identifiers on the project page carry
   `translate="no"` (#61), and the README and page link a translation reading
   guide (#62).
+* `tools/split_error_study.py`: the default split value against the two hand
+  common shoe value for every pair and upcard on the six deck table, with two
+  hands and no resplit. The saved cells are in
+  `docs/split-error-study-results.json`, and `docs/split-error-study.md`
+  explains the table and its limits (#71).
 
 ### Changed
 * GitHub Actions moved to the Node 24 releases: `actions/checkout@v5`,
