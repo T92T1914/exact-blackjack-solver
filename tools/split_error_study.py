@@ -1,7 +1,8 @@
 """Measure the default split value against the two hand common shoe value.
 
-The study covers every pair against every upcard on the six deck table with two
-hands and no resplit. For each cell it records the default independent split
+The study covers every pair against every upcard with two hands and no resplit,
+on the six deck table and on two variants of it: the dealer hitting soft 17 and
+no double after split. For each cell it records the default independent split
 value from `bj.ev`, the two hand common shoe value and their difference.
 
 `bj.joint_split` is the bounded reference for the common shoe model. It accepts
@@ -20,6 +21,8 @@ reference refuses.
 
     python tools/split_error_study.py --output docs/split-error-study-results.json
     python tools/split_error_study.py --check
+    python tools/split_error_study.py --table h17 --check
+    python tools/split_error_study.py --table no-das --check
 """
 from __future__ import annotations
 
@@ -47,10 +50,14 @@ from bj.core import DOUBLE, HIT, STAND, SPLIT, Rules  # noqa: E402
 RESULTS = ROOT / 'docs/split-error-study-results.json'
 DOCUMENT = ROOT / 'docs/split-error-study.md'
 SOURCE_FILES = ('tools/split_error_study.py', 'bj/ev.py', 'bj/dealer.py', 'bj/core.py')
-TABLE_BEGIN = '<!-- split-error-table:begin -->'
-TABLE_END = '<!-- split-error-table:end -->'
 #: Six decks, S17, DAS, peek, one card to split aces, two hands and no resplit.
 TABLE = Rules(max_hands=2)
+#: The same table with the dealer hitting soft 17.
+H17 = Rules(max_hands=2, s17=False)
+#: The same table with no double after split.
+NO_DAS = Rules(max_hands=2, das=False)
+#: Study tables by option name. Each has its own saved results and document table.
+TABLES = {'default': TABLE, 'h17': H17, 'no-das': NO_DAS}
 #: Differences this small print as 0, and actions this close share a rank.
 #: Rounding alone stays near 1e-15 here, so a smaller real gain can hide below it.
 TOLERANCE = 1e-12
@@ -83,6 +90,25 @@ class StudyValue:
     first_hand_endings: int
     union_shoes: int
     dealer_nodes: int
+
+
+def results_path(table='default'):
+    """The saved results of one study table."""
+    if table == 'default':
+        return RESULTS
+    return ROOT / f'docs/split-error-study-{table}-results.json'
+
+
+def table_markers(table='default'):
+    """The comment lines that fence one table's rendering in the document."""
+    suffix = '' if table == 'default' else f'-{table}'
+    return (f'<!-- split-error-table{suffix}:begin -->',
+            f'<!-- split-error-table{suffix}:end -->')
+
+
+def table_name(rules):
+    """The option name of a study table, or None for any other rules."""
+    return next((name for name, known in TABLES.items() if known == rules), None)
 
 
 def _key(counts):
@@ -515,12 +541,12 @@ def _sources():
             for name in SOURCE_FILES}
 
 
-def run_study(pairs=PAIRS, upcards=RANKS[1:] + RANKS[:1], progress=None):
+def run_study(pairs=PAIRS, upcards=RANKS[1:] + RANKS[:1], progress=None, rules=TABLE):
     started = time.perf_counter()
     cells = []
     for pair in pairs:
         for up in upcards:
-            cells.append(study_cell(pair, up))
+            cells.append(study_cell(pair, up, rules))
             if progress:
                 progress(cells[-1])
         ev.clear_caches()
@@ -529,7 +555,7 @@ def run_study(pairs=PAIRS, upcards=RANKS[1:] + RANKS[:1], progress=None):
         schema_version=1,
         study='split_error_two_hand_no_resplit',
         common_shoe_model=SPLIT_MODEL,
-        rules=asdict(TABLE),
+        rules=asdict(rules),
         tolerance=TOLERANCE,
         evaluated_revision=revision,
         evaluated_sources_modified=dirty,
@@ -563,9 +589,10 @@ def render_table(results):
     return '\n'.join(lines)
 
 
-def document_table(text):
-    start = text.index(TABLE_BEGIN) + len(TABLE_BEGIN)
-    return text[start:text.index(TABLE_END)].strip()
+def document_table(text, table='default'):
+    begin, end = table_markers(table)
+    start = text.index(begin) + len(begin)
+    return text[start:text.index(end)].strip()
 
 
 def compare(saved, fresh):
@@ -596,14 +623,19 @@ def compare(saved, fresh):
 
 def check(results_path=RESULTS, document_path=DOCUMENT, progress=None):
     saved = json.loads(Path(results_path).read_text(encoding='utf-8'))
+    rules = Rules(**saved['rules'])
+    table = table_name(rules)
+    if table is None:
+        return ['the saved rules are not one of the study tables']
     problems = []
     if summarize(saved['cells']) != saved['summary']:
         problems.append('the saved summary does not follow from the saved cells')
-    if document_table(Path(document_path).read_text(encoding='utf-8')) != render_table(saved):
+    document = Path(document_path).read_text(encoding='utf-8')
+    if document_table(document, table) != render_table(saved):
         problems.append('the document table does not match the saved cells')
     fresh = run_study(pairs=tuple(dict.fromkeys(c['pair'] for c in saved['cells'])),
                       upcards=tuple(dict.fromkeys(c['up'] for c in saved['cells'])),
-                      progress=progress)
+                      progress=progress, rules=rules)
     problems.extend(compare(saved, fresh))
     return problems
 
@@ -614,7 +646,10 @@ def main(argv=None):
     action.add_argument('--output', type=Path, help='write a new results file here')
     action.add_argument('--check', action='store_true',
                         help='recompute every saved cell and compare it with the saved study')
-    parser.add_argument('--results', type=Path, default=RESULTS)
+    parser.add_argument('--table', choices=sorted(TABLES), default='default',
+                        help='default is six decks, S17 and DAS; h17 and no-das change one rule')
+    parser.add_argument('--results', type=Path,
+                        help="saved results to check, by default the table's own file")
     args = parser.parse_args(argv)
 
     def report(cell):
@@ -624,11 +659,15 @@ def main(argv=None):
     if args.output:
         if args.output.exists():
             parser.error(f'{args.output} exists. Choose a new path.')
-        results = run_study(progress=report)
+        results = run_study(progress=report, rules=TABLES[args.table])
         args.output.write_text(json.dumps(results, indent=1) + '\n', encoding='utf-8')
         print(f"worst {results['summary']['worst']}")
         return 0
-    problems = check(args.results, progress=report)
+    path = args.results or results_path(args.table)
+    saved_rules = Rules(**json.loads(path.read_text(encoding='utf-8'))['rules'])
+    if table_name(saved_rules) != args.table:
+        parser.error(f'{path} does not hold the {args.table} table')
+    problems = check(path, progress=report)
     for problem in problems:
         print(problem)
     print('check passed' if not problems else f'check failed with {len(problems)} problems')

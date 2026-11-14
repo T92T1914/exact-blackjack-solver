@@ -87,7 +87,9 @@ reports is `bj.__version__`.
   common shoe value for every pair and upcard on the six deck table, with two
   hands and no resplit. The saved cells are in
   `docs/split-error-study-results.json`, and `docs/split-error-study.md`
-  explains the table and its limits (#71).
+  explains the table and its limits (#71). The script takes `--table h17` and
+  `--table no-das` for the dealer hitting soft 17 and for no double after
+  split, each with its own saved results file.
 
 ### Changed
 * GitHub Actions moved to the Node 24 releases: `actions/checkout@v5`,
