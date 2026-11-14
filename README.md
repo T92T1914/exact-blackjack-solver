@@ -393,6 +393,9 @@ the independent hand model. It does not bound shared shoe depletion or the
 information carried between hands. The separate [bounded joint reference](docs/joint-split.md)
 models exactly two hands without resplitting and leaves the production default
 unchanged. Its enumeration uses floating point, not symbolic exact arithmetic.
+The [split error study](docs/split-error-study.md) evaluates that same model at
+full size and measured the default's gap to it in every pair and upcard cell of
+three six deck tables, with two hands and no resplit.
 
 The supported common shoe calculation families above expose joint computation
 through named requests and saved model identities. Their declared resplit,

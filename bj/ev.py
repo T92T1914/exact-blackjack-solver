@@ -135,6 +135,11 @@ APPROXIMATIONS
     their 0.01 tolerance and the convention qualification for 9,9 vs 7.
     bj.joint_split provides a separate bounded two hand reference. It does not
     replace this production approximation or establish a full shoe bound.
+    docs/split-error-study.md measured this approximation against the two hand
+    common shoe value at full size, in all 100 pair and upcard cells of the six
+    deck table with two hands and no resplit. It covers that table, the table
+    with the dealer hitting soft 17 and the table with no double after split,
+    each on its own. It says nothing about resplitting or other rules.
 
 2.  THE RESPLIT BUDGET IS A SHARED POOL; THE RESPLIT DECISION INSIDE IT IS
     GREEDY.  rules.max_hands caps the number of hands in play across the whole
