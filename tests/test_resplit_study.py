@@ -242,26 +242,39 @@ def test_saved_study_matches_its_document_and_the_readme():
     assert summary['decision_changes'] == []
     # Where the default is above every value computed here, split is still the
     # best action under that value, by far more than the excess.
+    above = [cell for cell in results['cells'] if cell['difference'] > study.TOLERANCE]
+    for cell in above:
+        assert cell['default_best'] == cell['lower_bound_best'] == ['P']
+        assert cell['lower_bound_margin'] > 100 * cell['difference']
+    # Where the default resplits its own play gives the bound. Elsewhere that
+    # play is its two hand play, and the two hand value is at least as large.
     for cell in results['cells']:
-        if cell['difference'] > study.TOLERANCE:
-            assert cell['default_best'] == cell['lower_bound_best'] == ['P']
-            assert cell['lower_bound_margin'] > 100 * cell['difference']
+        if cell['default_hands'] > 2.0:
+            assert cell['lower_bound_source'] == 'default play'
+        else:
+            assert abs(cell['default_policy_difference']) <= study.TOLERANCE
+            assert (cell['two_hand_common_shoe_split']
+                    >= cell['default_play_in_common_shoe'] - study.TOLERANCE)
     # The prose states these numbers, so they must follow from the saved cells.
     text = ' '.join(document.split())
     readme = ' '.join((study.ROOT / 'README.md').read_text(encoding='utf-8').split())
     worst, gain = summary['worst'], summary['largest_own_play_gain']
     excess, closest = summary['largest_default_excess'], summary['closest_split_shortfall']
     for source in (text, readme):
-        for cell in (worst, gain, excess, closest):
+        for cell in (worst, gain, excess):
             assert f"{cell['pair']},{cell['pair']} against {cell['up']}" in source
         assert f"{-worst['difference']:.9f}" in source
         assert f"{gain['difference']:.9f}" in source
         assert f"{excess['difference']:.9f}" in source
-    assert f"{closest['shortfall']:.4f}" in text
+        assert f"{closest['shortfall']:.4f} units" in source
+    assert f"{closest['pair']},{closest['pair']} against {closest['up']}" in text
+    assert f"{min(cell['lower_bound_margin'] for cell in above):.4f}" in text
     assert f"{summary['own_play_above_default']} of the 100 cells" in text
-    assert f"{summary['default_above_lower_bound']} cells" in text
+    assert f"In {summary['own_play_below_default']} cells it earns less" in text
+    assert f"other {summary['default_above_lower_bound']} cells" in text
     assert f"{summary['within_tolerance']} of the 100 cells" in text
-    assert f"{summary['bound_sources']['default play']} cells" in text
+    assert f"{100 - summary['default_above_lower_bound']} of the 100 cells" in text
+    assert f"the {summary['resplitting_cells']} cells where the default resplits" in text
     assert f"{round(results['elapsed_seconds'])} seconds" in text
 
 

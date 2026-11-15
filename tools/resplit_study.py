@@ -377,8 +377,7 @@ def summarize(cells):
         largest_own_play_shortfall=-min(c['default_policy_difference'] for c in cells),
         largest_rebuild_difference=max(abs(c['default_rebuilt'] - c['default_split'])
                                        for c in cells),
-        bound_sources={name: sum(c['lower_bound_source'] == name for c in cells)
-                       for name in ('default play', 'three hand play', 'two hand')},
+        resplitting_cells=sum(c['default_hands'] > 2.0 for c in cells),
         decision_changes=[f"{c['pair']},{c['pair']} vs {c['up']}" for c in cells
                           if c['decision_changed']],
         closest_split_shortfall=dict(pair=closest['pair'], up=closest['up'],
