@@ -6,15 +6,17 @@ shared pool. This script asks what that same play earns when every hand is
 dealt from one shared shoe, in every pair and upcard cell of the six deck table.
 
 The best play from one shared shoe with up to four hands is not computed here.
-Its state is every card all earlier hands took, and at six decks that is far
-past what one machine can enumerate. Three values below it are computed
-instead, and the largest one is a lower bound on it.
+Its state is the ending of every earlier hand, and one 2,2 hand alone can end
+in 8,050 ways, so I expect it to be far past one machine at six decks and did
+not attempt it. Three values below it are computed instead, and the largest
+one is a lower bound on it.
 
 1. The default's own choices played from one shared shoe. Every hand still
    decides from its own cards and the shoe the default gave it, and resplits
    when the default would, so this is a play a player could follow.
-2. The same for the default's choices on a table of three hands. A player here
-   may decline the last resplit, so that play is legal too.
+2. The same for the default's choices on a table of three hands. Those choices
+   use a pool of one extra hand and never take a fourth, which a player here
+   may decline, so that play is legal too.
 3. The two hand shared shoe value from `docs/split-error-study-results.json`.
    A player here may decline every resplit, so that value is a legal play too.
 
@@ -327,7 +329,7 @@ def study_cell(pair, up, two_hand_cell, rules=TABLE):
     default = ev.ev_split(pair, up, shoe, rules)
     model = DefaultResplit(pair, up, shoe, rules)
     own_play = model.shared_shoe_value()
-    # The three hand default's play is legal here too: it declines the last resplit.
+    # The three hand default's play is legal here too. It never takes a fourth hand.
     three = DefaultResplit(pair, up, shoe, THREE_HAND_TABLE).shared_shoe_value()
     two = two_hand_cell['common_shoe_split']
     bounds = {'default play': own_play, 'three hand play': three, 'two hand': two}

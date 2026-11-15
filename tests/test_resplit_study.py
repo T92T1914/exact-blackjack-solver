@@ -25,7 +25,7 @@ from tools import resplit_study as study
 
 SLOW = pytest.mark.skipif(
     not os.environ.get('BJ_SLOW'),
-    reason='heavy recomputation; set BJ_SLOW=1 to include it',
+    reason='heavy recomputation, set BJ_SLOW=1 to include it',
 )
 
 #: Small shoes in production order A, 2 to 9, T. None of them can run out in
@@ -48,6 +48,11 @@ BOUNDED = [
     ('8', '6', (1, 0, 1, 0, 1, 1, 1, 1, 1, 5)),
     ('9', '6', (1, 0, 0, 0, 3, 0, 0, 1, 3, 5)),
     ('7', '6', (2, 0, 0, 0, 0, 3, 2, 0, 0, 5)),
+    # The peek with resplitting: a ten up, an ace up, and a pair of the rank
+    # the peek under an ace rules out.
+    ('8', 'T', (0, 0, 1, 0, 0, 1, 2, 4, 0, 5)),
+    ('9', 'A', (0, 1, 1, 0, 0, 0, 2, 0, 3, 5)),
+    ('T', 'A', (1, 0, 0, 0, 2, 1, 0, 1, 0, 7)),
 ]
 
 
@@ -164,6 +169,18 @@ def test_small_shoes_reach_more_than_two_hands():
     study.clear_caches()
 
 
+def test_four_hands_reach_further_than_three_on_small_shoes():
+    # So the enumeration with four hands takes the second resplit, not only the first.
+    more = 0
+    for pair, up, shoe in SMALL + BOUNDED:
+        three = study.DefaultResplit(pair, up, shoe, Rules(max_hands=3)).shared_shoe_hands()
+        four = study.DefaultResplit(pair, up, shoe, Rules()).shared_shoe_hands()
+        assert four >= three - 1e-12
+        more += four > three + 0.01
+        study.clear_caches()
+    assert more >= len(SMALL + BOUNDED) - 2
+
+
 @pytest.mark.parametrize('pair, up, shoe', BOUNDED)
 def test_the_play_never_beats_the_bounded_optimum(pair, up, shoe):
     # bj.joint_resplit allows three hands and chooses every action on the round.
@@ -249,6 +266,8 @@ def test_saved_study_matches_its_document_and_the_readme():
     # Where the default resplits its own play gives the bound. Elsewhere that
     # play is its two hand play, and the two hand value is at least as large.
     for cell in results['cells']:
+        assert cell['three_hand_play_in_common_shoe'] <= max(
+            cell['default_play_in_common_shoe'], cell['two_hand_common_shoe_split'])
         if cell['default_hands'] > 2.0:
             assert cell['lower_bound_source'] == 'default play'
         else:

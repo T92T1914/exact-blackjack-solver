@@ -399,7 +399,7 @@ three six deck tables, with two hands and no resplit. The
 [resplit study](docs/resplit-study.md) covers the default table with up to four
 hands. The best play from one shared shoe is out of reach there, so it compares
 the default with the best of three plays from one shared shoe that it values
-exactly.
+to rounding.
 
 The supported common shoe calculation families above expose joint computation
 through named requests and saved model identities. Their declared resplit,
@@ -595,8 +595,11 @@ separate from this command. Current results are available in the linked CI run.
   tables and shows why the default cannot be higher in that model. With
   resplitting to four hands on the six deck table, the
   [resplit study](docs/resplit-study.md) compares the default with a lower
-  bound, the best of three plays from one shared shoe that it values exactly,
-  because the best play is out of reach at six decks. The default is below
+  bound, the best of three plays from one shared shoe that it values to
+  rounding, because the best play is out of reach at six decks. The bound is
+  not the best play, so the real gap can be larger in every cell, and where
+  the default resplits it holds none of the gain the two hand study found for
+  using the shared shoe. The default is below
   that bound by up to 0.000094950 units, for 7,7 against T, and above it in
   five cells by at most 0.000009505 units, for 6,6 against 2. In those five
   the default's own resplitting earns less from one shoe than the default

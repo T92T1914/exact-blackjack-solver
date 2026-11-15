@@ -39,22 +39,25 @@ never sees the hole card.
 
 The best shared shoe play chooses each action with every card seen so far and
 every earlier hand's total in mind. With two hands that already needed up to
-614,501 dealer shoes for one cell in the two hand study. With four hands the
-state holds the cards and totals of three earlier hands, which is far past what
-one machine can enumerate at six decks. So I valued three plays a player at
-this table can follow, each exactly to rounding.
+614,501 dealer shoes for one cell in the two hand study, where a 2,2 hand can
+end in 8,050 ways. With four hands the state holds the endings of three earlier
+hands, so I expect it to be far past one machine at six decks. I did not
+attempt it. Instead I valued three plays a player at this table can follow,
+each exact to rounding.
 
 1. The default's own play. Every hand decides from its own cards and the shoe
    the default gave it, and resplits when the default would.
-2. The default's play for a table of three hands. It declines the last
-   resplit, which a player here may do.
+2. The default's play for a table of three hands. It makes every resplit choice
+   with a pool of one extra hand and never takes a fourth, which a player here
+   may decline.
 3. The two hand shared shoe value from the [two hand study](split-error-study.md).
    It never resplits and uses every card it has seen.
 
 The best play is worth at least the largest of the three. In each of the 42
 cells where the default resplits, the largest is its own play. In the other 58
 the default never resplits, so its own play is its two hand play, and the two
-hand value is at least as large. The three hand play is never the largest.
+hand value is at least as large. The three hand play is never larger than both
+of the others.
 
 ## The table
 
@@ -149,12 +152,15 @@ claim.
 Five checks in `tests/test_resplit_study.py` hold this together.
 
 1. A deal by deal enumeration plays the default's choices card by card from one
-   shoe and settles every hand against the final shoe. On 13 small shoes, with
+   shoe and settles every hand against the final shoe. On 16 small shoes, with
    three and four hands, and with S17 and DAS and again with H17 and no DAS, it
    agrees with the shortcut within 1e-12. The largest difference on this run
-   was 2.2e-16. No deal on those shoes can run out of cards, and the
+   was 4.4e-16. The shoes include a ten and an ace up with resplitting, and T,T
+   against an ace, where the pair is the rank the peek rules out. In 14 of the
+   16 four hands reach further than three on average, so the second resplit is
+   tested too. No deal on those shoes can run out of cards, and the
    enumeration fails if one does.
-2. On 7 of those shoes, each with a resplit the default takes, the play never
+2. On 10 of those shoes, each with a resplit the default takes, the play never
    beats the bounded three hand optimum in `bj/joint_resplit.py` by more than
    1e-12, with DAS on and off. On this run it was never above by more than
    1.1e-16, and it equals the optimum on some shoes.
