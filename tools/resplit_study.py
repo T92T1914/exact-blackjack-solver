@@ -7,26 +7,28 @@ dealt from one shared shoe, in every pair and upcard cell of the six deck table.
 
 The best play from one shared shoe with up to four hands is not computed here.
 Its state is every card all earlier hands took, and at six decks that is far
-past what one machine can enumerate. Two values below it are computed exactly
-instead, and the larger one is a lower bound on it.
+past what one machine can enumerate. Three values below it are computed
+instead, and the largest one is a lower bound on it.
 
 1. The default's own choices played from one shared shoe. Every hand still
    decides from its own cards and the shoe the default gave it, and resplits
    when the default would, so this is a play a player could follow.
-2. The two hand shared shoe value from `docs/split-error-study-results.json`.
-   A player at this table may decline every resplit, so that value is a legal
-   play here too.
+2. The same for the default's choices on a table of three hands. A player here
+   may decline the last resplit, so that play is legal too.
+3. The two hand shared shoe value from `docs/split-error-study-results.json`.
+   A player here may decline every resplit, so that value is a legal play too.
 
-How the first one is computed. Deal the first card to every split hand before
-any hand plays on. That reorders the cards each hand receives but changes no
-hand's cards, no resplit and no settlement, and every complete deal keeps its
-probability, because that depends only on which cards left the shoe. After the
-reordering a hand that plays on meets, on average, the shoe as it stood after
-its own first card, because a hand that decides from its own cards cannot steer
-what stays behind. So the value only needs the first cards. A first card that
-is not a pair card is the same as an unconstrained card minus a pair card, and
-an unconstrained card can be dropped by the same averaging. What is left needs
-single hands played in shoes that differ only by some number of pair cards.
+How the first two are computed. Suppose every split hand took its first card
+before any hand played on. Every complete deal, meaning the cards each hand and
+the dealer end with, can happen in that order and in table order, with the same
+probability, because a deal's probability depends only on which cards left the
+shoe. So both orders have the same value. In the reordered deal a hand that
+plays on meets, on average, the shoe as it stood right after its own first
+card, because a hand that decides from its own cards cannot steer what stays
+behind. So the value needs only the first cards. The chance of a first card
+that is not a pair card is the chance of any card less the chance of a pair
+card, and any card drops out by the same averaging. What is left is single
+hands played in shoes that differ only in how many pair cards are gone.
 
     python tools/resplit_study.py --output docs/resplit-study-results.json
     python tools/resplit_study.py --check
@@ -63,6 +65,8 @@ SOURCE_FILES = ('tools/resplit_study.py', 'tools/split_error_study.py', 'bj/ev.p
 TABLE = Rules()
 #: The two hand study's table, which differs only in the hand limit.
 TWO_HAND_TABLE = two_hand.TABLE
+#: The default's play with one extra hand, which a player here can follow.
+THREE_HAND_TABLE = Rules(max_hands=3)
 TOLERANCE = two_hand.TOLERANCE
 RANKS = two_hand.RANKS
 PAIRS = two_hand.PAIRS
@@ -323,8 +327,12 @@ def study_cell(pair, up, two_hand_cell, rules=TABLE):
     default = ev.ev_split(pair, up, shoe, rules)
     model = DefaultResplit(pair, up, shoe, rules)
     own_play = model.shared_shoe_value()
+    # The three hand default's play is legal here too: it declines the last resplit.
+    three = DefaultResplit(pair, up, shoe, THREE_HAND_TABLE).shared_shoe_value()
     two = two_hand_cell['common_shoe_split']
-    bound = max(own_play, two)
+    bounds = {'default play': own_play, 'three hand play': three, 'two hand': two}
+    source = max(bounds, key=bounds.get)
+    bound = bounds[source]
     _, others, _ = ev.best_action((pair, pair), up, shoe, rules, can_split=False)
     default_best, default_margin = _ranking({**others, SPLIT: default})
     bound_best, bound_margin = _ranking({**others, SPLIT: bound})
@@ -333,9 +341,10 @@ def study_cell(pair, up, two_hand_cell, rules=TABLE):
         default_split=default,
         default_rebuilt=model.default_value(),
         default_play_in_common_shoe=own_play,
+        three_hand_play_in_common_shoe=three,
         two_hand_common_shoe_split=two,
         common_shoe_lower_bound=bound,
-        lower_bound_source='default play' if own_play >= two else 'two hand',
+        lower_bound_source=source,
         difference=default - bound,
         default_policy_difference=own_play - default,
         default_hands=model.default_hands(),
@@ -349,7 +358,8 @@ def study_cell(pair, up, two_hand_cell, rules=TABLE):
 
 
 def summarize(cells):
-    worst = max(cells, key=lambda cell: abs(cell['difference']))
+    worst = min(cells, key=lambda cell: cell['difference'])
+    excess = max(cells, key=lambda cell: cell['difference'])
     gain = max(cells, key=lambda cell: cell['default_policy_difference'])
     trailing = [cell for cell in cells if SPLIT not in cell['lower_bound_best']]
     closest = min(trailing, key=lambda cell: cell['split_shortfall'])
@@ -358,14 +368,17 @@ def summarize(cells):
         worst=dict(pair=worst['pair'], up=worst['up'], difference=worst['difference']),
         within_tolerance=sum(abs(c['difference']) <= TOLERANCE for c in cells),
         default_above_lower_bound=sum(c['difference'] > TOLERANCE for c in cells),
-        largest_default_excess=max(c['difference'] for c in cells),
+        largest_default_excess=dict(pair=excess['pair'], up=excess['up'],
+                                    difference=excess['difference']),
         largest_own_play_gain=dict(pair=gain['pair'], up=gain['up'],
                                    difference=gain['default_policy_difference']),
         own_play_above_default=sum(c['default_policy_difference'] > TOLERANCE for c in cells),
+        own_play_below_default=sum(c['default_policy_difference'] < -TOLERANCE for c in cells),
         largest_own_play_shortfall=-min(c['default_policy_difference'] for c in cells),
         largest_rebuild_difference=max(abs(c['default_rebuilt'] - c['default_split'])
                                        for c in cells),
-        bound_from_default_play=sum(c['lower_bound_source'] == 'default play' for c in cells),
+        bound_sources={name: sum(c['lower_bound_source'] == name for c in cells)
+                       for name in ('default play', 'three hand play', 'two hand')},
         decision_changes=[f"{c['pair']},{c['pair']} vs {c['up']}" for c in cells
                           if c['decision_changed']],
         closest_split_shortfall=dict(pair=closest['pair'], up=closest['up'],

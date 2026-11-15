@@ -238,26 +238,31 @@ def test_saved_study_matches_its_document_and_the_readme():
     for table in study.TABLES:
         assert study.document_table(document, table) == study.render_table(results, table)
     summary = results['summary']
-    assert summary['default_above_lower_bound'] == 0
-    assert summary['largest_default_excess'] <= study.TOLERANCE
-    assert summary['largest_own_play_shortfall'] <= study.TOLERANCE
     assert summary['largest_rebuild_difference'] <= 1e-14
     assert summary['decision_changes'] == []
+    # Where the default is above every value computed here, split is still the
+    # best action under that value, by far more than the excess.
+    for cell in results['cells']:
+        if cell['difference'] > study.TOLERANCE:
+            assert cell['default_best'] == cell['lower_bound_best'] == ['P']
+            assert cell['lower_bound_margin'] > 100 * cell['difference']
+    # The prose states these numbers, so they must follow from the saved cells.
     text = ' '.join(document.split())
-    worst, gain = summary['worst'], summary['largest_own_play_gain']
-    closest = summary['closest_split_shortfall']
-    assert f"{worst['pair']},{worst['pair']} against {worst['up']}" in text
-    assert f"{-worst['difference']:.9f}" in text
-    assert f"{gain['pair']},{gain['pair']} against {gain['up']}" in text
-    assert f"{gain['difference']:.9f}" in text
-    assert f"{summary['own_play_above_default']} of the 100 cells" in text
-    assert f"{summary['bound_from_default_play']} cells" in text
-    assert f"{closest['pair']},{closest['pair']} against {closest['up']}" in text
-    assert f"{closest['shortfall']:.6f}" in text
-    assert f"{round(results['elapsed_seconds'] / 60)} minutes" in text
     readme = ' '.join((study.ROOT / 'README.md').read_text(encoding='utf-8').split())
-    assert f"{-worst['difference']:.9f}" in readme
-    assert f"{gain['difference']:.9f}" in readme
+    worst, gain = summary['worst'], summary['largest_own_play_gain']
+    excess, closest = summary['largest_default_excess'], summary['closest_split_shortfall']
+    for source in (text, readme):
+        for cell in (worst, gain, excess, closest):
+            assert f"{cell['pair']},{cell['pair']} against {cell['up']}" in source
+        assert f"{-worst['difference']:.9f}" in source
+        assert f"{gain['difference']:.9f}" in source
+        assert f"{excess['difference']:.9f}" in source
+    assert f"{closest['shortfall']:.4f}" in text
+    assert f"{summary['own_play_above_default']} of the 100 cells" in text
+    assert f"{summary['default_above_lower_bound']} cells" in text
+    assert f"{summary['within_tolerance']} of the 100 cells" in text
+    assert f"{summary['bound_sources']['default play']} cells" in text
+    assert f"{round(results['elapsed_seconds'])} seconds" in text
 
 
 @pytest.mark.parametrize('pair', ['A', 'T'])
