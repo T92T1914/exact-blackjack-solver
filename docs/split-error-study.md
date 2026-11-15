@@ -58,6 +58,73 @@ rounding. The other four are 2,2, 3,3, 4,4 and 5,5 against 9, with gaps from
 1.6e-14 to 9.4e-13. That is far more than the rounding the next section
 measures in the same cells, so I read them as real gains too small to matter.
 
+## Two rule variants
+
+The same study ran twice more, each time with one rule of the table changed and
+everything else as above. One run has the dealer hit soft 17. The other allows
+no double after split. Each has its own saved results file, and each is
+recomputed by its own check mode.
+
+```sh
+python tools/split_error_study.py --table h17 --check
+python tools/split_error_study.py --table no-das --check
+```
+
+Entries mean the same as in the first table.
+
+### Dealer hits soft 17
+
+[Saved results](split-error-study-h17-results.json). The default is never above
+the common shoe value by more than 1.2e-15. The largest gap is 0.0000949498
+units for 7,7 against T, smaller than the 0.000538738 of the first table. In 73 of the 100 cells the two values are within 1e-12, and no cell
+changes its best action. Playing the default's choices through the common shoe
+gives the default value to 1.9e-15 in every cell.
+
+<!-- split-error-table-h17:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | −8.38e−5 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
+| 9,9 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −3.75e−5 | 0 |
+| 8,8 | 0 | −7.34e−8 | 0 | 0 | 0 | 0 | 0 | 0 | −4.72e−5 | 0 |
+| 7,7 | −1.88e−5 | −2.05e−8 | 0 | 0 | 0 | 0 | 0 | 0 | −9.49e−5 | 0 |
+| 6,6 | −4.17e−5 | −4.67e−8 | 0 | 0 | 0 | 0 | 0 | 0 | −8.66e−6 | 0 |
+| 5,5 | −1.62e−6 | −8.34e−8 | 0 | 0 | −1.71e−9 | 0 | 0 | 0 | −5.45e−11 | 0 |
+| 4,4 | −5.57e−7 | −8.13e−7 | 0 | 0 | −8.09e−9 | 0 | 0 | 0 | −1.25e−5 | 0 |
+| 3,3 | −5.27e−7 | 0 | −1.08e−9 | 0 | −2.07e−7 | 0 | 0 | 0 | −6.92e−5 | 0 |
+| 2,2 | −3.06e−5 | −3.52e−10 | 0 | −2.45e−6 | 0 | 0 | 0 | 0 | −8.60e−5 | 0 |
+<!-- split-error-table-h17:end -->
+
+Of the 73 cells shown as 0, 68 differ by at most 1.6e-15. T,T against 2 differs
+by 1.7e-15, and 2,2 to 5,5 against 9 differ by 1.6e-14 to 9.4e-13.
+
+### No double after split
+
+[Saved results](split-error-study-no-das-results.json). The default is never
+above the common shoe value by more than 1.4e-15. The largest gap is 0.000541544
+units for 2,2 against 4, close to the 0.000538738 of the first table. In 84 of
+the 100 cells the two values are within 1e-12, and no cell changes its best
+action. Playing the default's choices through the common shoe gives the default
+value to 1.6e-15 in every cell.
+
+<!-- split-error-table-no-das:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
+| 9,9 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −4.16e−5 | 0 |
+| 8,8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −4.84e−5 | 0 |
+| 7,7 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −9.50e−5 | −2.88e−6 |
+| 6,6 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.53e−5 | −2.65e−8 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −8.17e−11 | −3.88e−6 |
+| 4,4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.26e−5 | −6.39e−6 |
+| 3,3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −6.98e−5 | −1.46e−6 |
+| 2,2 | 0 | 0 | −5.42e−4 | 0 | 0 | 0 | 0 | 0 | −8.98e−5 | −1.13e−5 |
+<!-- split-error-table-no-das:end -->
+
+Of the 84 cells shown as 0, 80 differ by at most 1.6e-15. The other four are
+2,2 to 5,5 against 9, with gaps from 1.6e-14 to 9.4e-13.
+
 ## Why the default is never higher
 
 The default's own choices are one way to play the common shoe round. Each hand
@@ -103,7 +170,8 @@ the dealer's card multisets forward once for all of them together. The hole is
 the first dealer card and is never the rank the peek ruled out.
 
 The full study ran in 13 minutes in one process on a shared desktop
-machine. That is a record of one run, not a speed claim.
+machine. The H17 and no DAS runs took 14 and 13 minutes the same way. Those are
+records of single runs, not a speed claim.
 
 ## How it is checked
 
@@ -130,11 +198,11 @@ python tools/split_error_study.py --output new-split-error-study.json
 
 ## What this does not show
 
-This is one table, one deal order and two hands. The default table allows up
+This is three tables, one deal order and two hands. The default table allows up
 to four hands, and the derived chart and the whole game estimate use that
 limit. Resplitting adds the shared slot approximation described in `bj/ev.py`,
-and this study measures none of it. Other deck counts, H17, no DAS and
-depleted shoes are not in the table. A table that deals both split cards
+and this study measures none of it. Other deck counts, other rule changes, H17 and no DAS together, and
+depleted shoes are not in the study. A table that deals both split cards
 before the first decision is a different model.
 
 The values are binary64, not rational arithmetic. The lower bound argument is
