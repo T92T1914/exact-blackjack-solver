@@ -533,6 +533,11 @@ itself:
   marginal hand table are held to 0.0001, the tables print four decimals, and
   the composition dependent whole game estimate is pinned at −0.4029%, 3e-06 from the
   published −0.4026%.
+* Binary64 vs. exact fractions. A separate test reference recomputes those 45
+  cells and every action of the bounded example requests with Python
+  fractions. The largest difference from the floating point values is
+  2.05e-16 units of the original wager
+  ([rational cross check](docs/rational-cross-check.md)).
 * Two decision paths agree. A compiled fast path action function is checked
   against the solver's `basic_action` across every hand shape and dealer upcard.
 * The transcription equals the derivation. The chart typed into
