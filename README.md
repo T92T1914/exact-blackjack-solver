@@ -395,7 +395,11 @@ models exactly two hands without resplitting and leaves the production default
 unchanged. Its enumeration uses floating point, not symbolic exact arithmetic.
 The [split error study](docs/split-error-study.md) evaluates that same model at
 full size and measured the default's gap to it in every pair and upcard cell of
-three six deck tables, with two hands and no resplit.
+three six deck tables, with two hands and no resplit. The
+[resplit study](docs/resplit-study.md) covers the default table with up to four
+hands. The best play from one shared shoe is out of reach there, so it compares
+the default with the best of three plays from one shared shoe that it values
+exactly.
 
 The supported common shoe calculation families above expose joint computation
 through named requests and saved model identities. Their declared resplit,
@@ -588,12 +592,21 @@ separate from this command. Current results are available in the linked CI run.
   and the result has the same shape: never higher by more than rounding, no
   best action changes, and a largest gap of 0.000541544 units without double
   after split. The [split error study](docs/split-error-study.md) keeps the
-  tables and shows why the default cannot be higher in that model. It measures
-  nothing about resplitting, which the default table allows up to four hands,
-  about other deck counts or rule changes, about the two changes together or
-  about depleted shoes. Two of the split rules were
-  conservative defaults in the original table (resplit aces, hit split aces),
-  and the solver's defaults follow them. The EV
+  tables and shows why the default cannot be higher in that model. With
+  resplitting to four hands on the six deck table, the
+  [resplit study](docs/resplit-study.md) compares the default with a lower
+  bound, the best of three plays from one shared shoe that it values exactly,
+  because the best play is out of reach at six decks. The default is below
+  that bound by up to 0.000094950 units, for 7,7 against T, and above it in
+  five cells by at most 0.000009505 units, for 6,6 against 2. In those five
+  the default's own resplitting earns less from one shoe than the default
+  states. In 37 cells it earns more, by up to 0.000086885 units for 8,8
+  against 7. No best action changes under the bound, and a better shared shoe
+  play would have to gain at least 0.0106 units in some cell to change one.
+  Neither study measures other deck counts, a rule change together with
+  resplitting, the two changes together or depleted shoes. Two of the split
+  rules were conservative defaults in the original table (resplit aces, hit
+  split aces), and the solver's defaults follow them. The EV
   of a table that allows them can be requested through the original interface,
   subject to its independent hand and shared resplit budget approximations.
   The separately selected bounded ace family has its own one card child and

@@ -274,6 +274,8 @@ def test_saved_study_matches_its_document_and_the_readme():
     assert f"other {summary['default_above_lower_bound']} cells" in text
     assert f"{summary['within_tolerance']} of the 100 cells" in text
     assert f"{100 - summary['default_above_lower_bound']} of the 100 cells" in text
+    rounding = max(c['difference'] for c in results['cells'] if c not in above)
+    assert f"rounding, which reaches {rounding:.1e} here" in text
     assert f"the {summary['resplitting_cells']} cells where the default resplits" in text
     assert f"{round(results['elapsed_seconds'])} seconds" in text
 

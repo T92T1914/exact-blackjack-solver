@@ -362,7 +362,7 @@ def summarize(cells):
     excess = max(cells, key=lambda cell: cell['difference'])
     gain = max(cells, key=lambda cell: cell['default_policy_difference'])
     trailing = [cell for cell in cells if SPLIT not in cell['lower_bound_best']]
-    closest = min(trailing, key=lambda cell: cell['split_shortfall'])
+    closest = min(trailing, key=lambda cell: cell['split_shortfall'], default=None)
     return dict(
         cells=len(cells),
         worst=dict(pair=worst['pair'], up=worst['up'], difference=worst['difference']),
@@ -380,8 +380,9 @@ def summarize(cells):
         resplitting_cells=sum(c['default_hands'] > 2.0 for c in cells),
         decision_changes=[f"{c['pair']},{c['pair']} vs {c['up']}" for c in cells
                           if c['decision_changed']],
-        closest_split_shortfall=dict(pair=closest['pair'], up=closest['up'],
-                                     shortfall=closest['split_shortfall']),
+        # None when split is the best action in every cell, as for A,A alone.
+        closest_split_shortfall=None if closest is None else dict(
+            pair=closest['pair'], up=closest['up'], shortfall=closest['split_shortfall']),
     )
 
 
