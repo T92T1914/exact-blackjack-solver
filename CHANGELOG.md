@@ -99,7 +99,7 @@ reports is `bj.__version__`.
   upcard on the six deck table. The bound is the best of three plays from one
   shared shoe that the script values to rounding. The saved cells are in
   `docs/resplit-study-results.json`, and `docs/resplit-study.md` explains the
-  bound, the two tables and their limits.
+  bound, the two tables and their limits (#75).
 
 ### Changed
 * GitHub Actions moved to the Node 24 releases: `actions/checkout@v5`,
