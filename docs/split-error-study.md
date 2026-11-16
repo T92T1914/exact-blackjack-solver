@@ -60,14 +60,15 @@ measures in the same cells, so I read them as real gains too small to matter.
 
 ## Two rule variants
 
-The same study ran twice more, each time with one rule of the table changed and
-everything else as above. One run has the dealer hit soft 17. The other allows
-no double after split. Each has its own saved results file, and each is
-recomputed by its own check mode.
+The same study ran three more times, with the rules of the table changed and
+everything else as above. One run has the dealer hit soft 17. One allows no
+double after split. The third makes both changes together. Each has its own
+saved results file, and each is recomputed by its own check mode.
 
 ```sh
 python tools/split_error_study.py --table h17 --check
 python tools/split_error_study.py --table no-das --check
+python tools/split_error_study.py --table h17-no-das --check
 ```
 
 Entries mean the same as in the first table.
@@ -125,6 +126,35 @@ value to 1.6e-15 in every cell.
 Of the 84 cells shown as 0, 80 differ by at most 1.6e-15. The other four are
 2,2 to 5,5 against 9, with gaps from 1.6e-14 to 9.4e-13.
 
+### Both changes
+
+[Saved results](split-error-study-h17-no-das-results.json). This run has the
+dealer hit soft 17 and allows no double after split, the two changes together.
+The default is never above the common shoe value by more than 1.2e-15. The
+largest gap is 0.0000949549 units for 7,7 against T, the same cell as in the
+H17 table and nearly the same size. In 84 of the 100 cells the two values are
+within 1e-12, and no cell changes its best action. Playing the default's
+choices through the common shoe gives the default value to 1.7e-15 in every
+cell.
+
+<!-- split-error-table-h17-no-das:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | −8.38e−5 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
+| 9,9 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −4.16e−5 | 0 |
+| 8,8 | 0 | −7.34e−8 | 0 | 0 | 0 | 0 | 0 | 0 | −4.84e−5 | 0 |
+| 7,7 | 0 | −6.73e−8 | 0 | 0 | 0 | 0 | 0 | 0 | −9.50e−5 | 0 |
+| 6,6 | 0 | −1.67e−7 | 0 | 0 | 0 | 0 | 0 | 0 | −1.53e−5 | 0 |
+| 5,5 | 0 | −1.49e−7 | 0 | 0 | 0 | 0 | 0 | 0 | −8.17e−11 | 0 |
+| 4,4 | 0 | −9.61e−7 | 0 | 0 | 0 | 0 | 0 | 0 | −1.26e−5 | 0 |
+| 3,3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −6.98e−5 | 0 |
+| 2,2 | 0 | −3.52e−10 | 0 | 0 | 0 | 0 | 0 | 0 | −8.98e−5 | 0 |
+<!-- split-error-table-h17-no-das:end -->
+
+Of the 84 cells shown as 0, 78 differ by at most 1.6e-15. T,T and 5,5 against 2
+differ by 1.7e-15, and 2,2 to 5,5 against 9 differ by 1.6e-14 to 9.4e-13.
+
 ## Why the default is never higher
 
 The default's own choices are one way to play the common shoe round. Each hand
@@ -170,8 +200,8 @@ the dealer's card multisets forward once for all of them together. The hole is
 the first dealer card and is never the rank the peek ruled out.
 
 The full study ran in 13 minutes in one process on a shared desktop
-machine. The H17 and no DAS runs took 14 and 13 minutes the same way. Those are
-records of single runs, not a speed claim.
+machine. The H17 and no DAS runs took 14 and 13 minutes the same way, and the run with
+both changes took 13. Those are records of single runs, not a speed claim.
 
 ## How it is checked
 
@@ -198,13 +228,13 @@ python tools/split_error_study.py --output new-split-error-study.json
 
 ## What this does not show
 
-This is three tables, one deal order and two hands. The default table allows up
+This is four tables, one deal order and two hands. The default table allows up
 to four hands, and the derived chart and the whole game estimate use that
 limit. Resplitting adds the shared slot approximation described in `bj/ev.py`,
 and this study measures none of it. The [resplit study](resplit-study.md)
 compares the default with a lower bound on the shared shoe value when the
-table allows four hands. Other deck counts, other rule changes, H17 and no DAS together, and
-depleted shoes are not in the study. A table that deals both split cards
+table allows four hands. Other deck counts, other rule changes and depleted shoes are not in the
+study. A table that deals both split cards
 before the first decision is a different model.
 
 The values are binary64, not rational arithmetic. The lower bound argument is

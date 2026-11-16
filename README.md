@@ -588,10 +588,11 @@ separate from this command. Current results are available in the linked CI run.
   hand common shoe value in all 100 pair and upcard cells. The default is never
   higher by more than rounding, the largest gap is 0.000538738 units for 2,2
   against 4, and no best action changes. I ran the same comparison with the
-  dealer hitting soft 17 and with no double after split, one change at a time,
-  and the result has the same shape: never higher by more than rounding, no
-  best action changes, and a largest gap of 0.000541544 units without double
-  after split. The [split error study](docs/split-error-study.md) keeps the
+  dealer hitting soft 17 and with no double after split, one change at a time
+  and then both together, and the result has the same shape: never higher by
+  more than rounding, no best action changes, and a largest gap of 0.000541544
+  units without double after split. With both changes together the largest gap
+  is 0.0000949549 units for 7,7 against T. The [split error study](docs/split-error-study.md) keeps the
   tables and shows why the default cannot be higher in that model. With
   resplitting to four hands on the six deck table, the
   [resplit study](docs/resplit-study.md) compares the default with a lower
@@ -607,7 +608,7 @@ separate from this command. Current results are available in the linked CI run.
   against 7. No best action changes under the bound, and a better shared shoe
   play would have to gain at least 0.0106 units in some cell to change one.
   Neither study measures other deck counts, a rule change together with
-  resplitting, the two changes together or depleted shoes. Two of the split
+  resplitting or depleted shoes. Two of the split
   rules were conservative defaults in the original table (resplit aces, hit
   split aces), and the solver's defaults follow them. The EV
   of a table that allows them can be requested through the original interface,

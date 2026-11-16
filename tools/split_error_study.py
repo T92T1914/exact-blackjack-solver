@@ -649,7 +649,8 @@ def main(argv=None):
     action.add_argument('--check', action='store_true',
                         help='recompute every saved cell and compare it with the saved study')
     parser.add_argument('--table', choices=sorted(TABLES), default='default',
-                        help='default is six decks, S17 and DAS; h17 and no-das change one rule, h17-no-das both')
+                        help='default is six decks, S17 and DAS; h17 and no-das change one rule '
+                             'and h17-no-das both')
     parser.add_argument('--results', type=Path,
                         help="saved results to check, by default the table's own file")
     args = parser.parse_args(argv)
