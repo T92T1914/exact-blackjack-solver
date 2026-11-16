@@ -199,7 +199,7 @@ python tools/resplit_study.py --table no-das --check
 In 95 of the 100 cells the default is not above the bound by more than
 rounding, which reaches 1.1e-16 here. In the other 5 cells it is above by at
 most 0.000008657 units, for 6,6 against 2, and split stays the best action by
-at least 0.0099 units. The largest gap the other way is 0.000094950 units, for
+at least 0.0098 units. The largest gap the other way is 0.000094950 units, for
 7,7 against T. No cell changes its best action under the bound. Where split is
 not the best action, the closest call is 3,3 against 8, where split trails by
 0.0106 units. The default and the bound agree within 1e-12 in 44 cells, and the
