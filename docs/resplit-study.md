@@ -228,17 +228,19 @@ python tools/resplit_study.py --output new-resplit-study.json
 
 ## The dealer hitting soft 17, and no double after split
 
-I ran the same comparison on two more tables, changing one rule at a time. One
-has the dealer hit soft 17, the other allows no double after split. Each table
-reads its own two hand results as the third play in the bound, values its own
-information play as the fourth, and has its own saved file:
-[H17](resplit-study-h17-results.json) and [no
-DAS](resplit-study-no-das-results.json). The shoe, the four hand limit and the
-method are the same.
+I ran the same comparison on three more tables. Two change one rule at a time.
+One has the dealer hit soft 17, the other allows no double after split. The
+third changes both. Each table reads its own two hand results as the third play
+in the bound, values its own information play as the fourth, and has its own
+saved file: [H17](resplit-study-h17-results.json), [no
+DAS](resplit-study-no-das-results.json) and [both
+together](resplit-study-h17-no-das-results.json). The shoe, the four hand limit
+and the method are the same.
 
 ```sh
 python tools/resplit_study.py --table h17 --check
 python tools/resplit_study.py --table no-das --check
+python tools/resplit_study.py --table h17-no-das --check
 ```
 
 ### H17
@@ -348,6 +350,57 @@ bound, where the default table shows no gap for it, and 8,8 against an ace is
 above the bound by 0.0000048 units. Against a dealer 7, 8, 9 or T a soft 17
 cannot come up, and the H17 cells there equal the default table's exactly.
 
+### H17 and no double after split
+
+In 94 of the 100 cells the default is not above the bound by more than
+rounding, which reaches 1.1e-16 here. In the other 6 cells it is above by at
+most 0.000009248 units, for 6,6 against 3, and split stays the best action by
+at least 0.0130 units. The largest gap the other way is 0.000094955 units, for
+7,7 against T. No cell changes its best action under the bound. Where split is
+not the best action, the closest call is 6,6 against 2, where split trails by
+0.0129 units. The default and the bound agree within 1e-12 in 53 cells, and the
+default resplits in 35. The own play earns more than the default says in 29
+cells, by up to 0.000078700 units for 8,8 against 7, and less in 6 cells. The
+information play adds more than 1e-12 in 4 of the 35 cells and is the largest
+of the four plays in 4 cells. Its largest gain is 0.000008016 units for 8,8
+against T. The run took 268 seconds.
+
+<!-- resplit-table-h17-no-das-bound:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | −8.38e−5 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
+| 9,9 | −4.30e−6 | −1.42e−5 | −1.72e−5 | −2.18e−5 | −2.56e−5 | 0 | −9.66e−6 | −9.11e−6 | −4.16e−5 | 0 |
+| 8,8 | −2.64e−5 | −2.86e−5 | −3.79e−5 | −4.19e−5 | −4.46e−5 | −7.87e−5 | −4.37e−5 | −1.83e−5 | −1.50e−5 | 4.74e−6 |
+| 7,7 | −3.68e−6 | −5.40e−6 | −8.74e−6 | −1.99e−5 | −2.41e−5 | −1.62e−5 | 0 | 0 | −9.50e−5 | 0 |
+| 6,6 | 0 | 9.25e−6 | 5.37e−8 | −4.34e−6 | −1.41e−5 | 0 | 0 | 0 | −1.53e−5 | 0 |
+| 5,5 | 0 | −1.49e−7 | 0 | 0 | 0 | 0 | 0 | 0 | −8.17e−11 | 0 |
+| 4,4 | 0 | −9.61e−7 | 0 | 0 | 0 | 0 | 0 | 0 | −1.26e−5 | 0 |
+| 3,3 | 0 | 0 | 4.54e−6 | 6.31e−7 | −2.45e−6 | 2.32e−6 | 0 | 0 | −6.98e−5 | 0 |
+| 2,2 | 0 | −3.52e−10 | −1.01e−6 | −2.97e−6 | −6.27e−6 | −3.84e−6 | 0 | 0 | −8.98e−5 | 0 |
+<!-- resplit-table-h17-no-das-bound:end -->
+
+<!-- resplit-table-h17-no-das-own-play:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 9,9 | 4.30e−6 | 1.42e−5 | 1.72e−5 | 2.18e−5 | 2.56e−5 | 0 | 9.66e−6 | 9.11e−6 | 0 | 0 |
+| 8,8 | 2.64e−5 | 2.86e−5 | 3.79e−5 | 4.19e−5 | 4.46e−5 | 7.87e−5 | 4.37e−5 | 1.83e−5 | 6.94e−6 | −4.74e−6 |
+| 7,7 | 3.68e−6 | 5.33e−6 | 8.74e−6 | 1.99e−5 | 2.41e−5 | 1.62e−5 | 0 | 0 | 0 | 0 |
+| 6,6 | 0 | −9.28e−6 | −5.37e−8 | 4.34e−6 | 1.41e−5 | 0 | 0 | 0 | 0 | 0 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 4,4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 3,3 | 0 | 0 | −4.54e−6 | −6.31e−7 | 2.45e−6 | −2.32e−6 | 0 | 0 | 0 | 0 |
+| 2,2 | 0 | 0 | 1.01e−6 | 2.97e−6 | 6.27e−6 | 3.84e−6 | 0 | 0 | 0 | 0 |
+<!-- resplit-table-h17-no-das-own-play:end -->
+
+The 2,2 against 4 cell, which holds the largest gap in the default and no DAS
+tables, is 0.000001008 units below the bound under both changes, and the
+information play adds nothing there. The 8,8 against T gain of 0.000008016
+units is the one the no DAS table shows as well. T,T against 4 is 0.0000838
+units below the bound, as it is under H17 alone.
+
 ## What this does not show
 
 The bound is not the best shared shoe play. The real gap can be larger in every
@@ -362,8 +415,7 @@ much over these values for a best action to change. On the six deck default
 table the largest gain the two hand study found for using the shared shoe was
 0.000538738 units.
 
-These are three tables. The dealer hitting soft 17 together with no double after
-split, other deck counts, resplitting aces, hitting split aces and depleted
-shoes are not in them.
+These are four tables. Other deck counts, resplitting aces, hitting split aces
+and depleted shoes are not in them.
 The values are binary64, not rational arithmetic. The shortcut also needs a
 shoe that cannot run out, which a six deck shoe cannot.

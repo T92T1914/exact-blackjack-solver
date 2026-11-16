@@ -303,7 +303,8 @@ def test_hand_counts_follow_the_pool():
 
 def test_study_refuses_other_tables():
     cell = study.two_hand_cells()[('8', '7')]
-    for rules in (Rules(hit_split_aces=True), Rules(decks=2), Rules(s17=False, das=False)):
+    for rules in (Rules(hit_split_aces=True), Rules(decks=2),
+                  Rules(s17=False, das=False, decks=2)):
         assert study.table_name(rules) is None
         with pytest.raises(ValueError, match='variants only'):
             study.study_cell('8', '7', cell, rules)
@@ -433,13 +434,14 @@ def test_saved_study_matches_its_document_and_the_readme():
 
 def _section(document, name):
     """The document text of one variant: from its heading to the next heading."""
-    heading = {'h17': '### H17\n', 'no-das': '### No double after split\n'}[name]
+    heading = {'h17': '### H17\n', 'no-das': '### No double after split\n',
+               'h17-no-das': '### H17 and no double after split\n'}[name]
     start = document.index(heading) + len(heading)
     end = document.find('\n#', start)
     return ' '.join(document[start:end].split())
 
 
-@pytest.mark.parametrize('name', ['h17', 'no-das'])
+@pytest.mark.parametrize('name', ['h17', 'no-das', 'h17-no-das'])
 def test_saved_variant_studies_match_their_document(name):
     path = study.results_path(name)
     results = json.loads(path.read_text(encoding='utf-8'))
@@ -504,6 +506,11 @@ def test_the_readme_states_the_variant_extremes():
     most_below = max(-s['worst']['difference'] for s in summaries)
     assert f'{most_above:.9f} units' in readme
     assert f'{most_below:.9f} units' in readme
+    both = json.loads(study.results_path('h17-no-das').read_text(encoding='utf-8'))['summary']
+    words = {6: 'six'}
+    assert (f"above the bound in {words[both['default_above_lower_bound']]} cells by at most "
+            f"{both['largest_default_excess']['difference']:.9f} units and below it by at most "
+            f"{-both['worst']['difference']:.9f} units") in readme
 
 
 def test_h17_equals_the_default_where_no_soft_17_arises():
@@ -517,7 +524,7 @@ def test_h17_equals_the_default_where_no_soft_17_arises():
             assert cell['difference'] == other['difference']
 
 
-@pytest.mark.parametrize('name', ['default', 'h17', 'no-das'])
+@pytest.mark.parametrize('name', ['default', 'h17', 'no-das', 'h17-no-das'])
 @pytest.mark.parametrize('pair', ['A', 'T'])
 def test_cheap_saved_cells_recompute(pair, name):
     path = study.results_path(name)
@@ -530,7 +537,7 @@ def test_cheap_saved_cells_recompute(pair, name):
 
 @SLOW
 @pytest.mark.slow
-@pytest.mark.parametrize('name', ['default', 'h17', 'no-das'])
+@pytest.mark.parametrize('name', ['default', 'h17', 'no-das', 'h17-no-das'])
 def test_check_mode_recomputes_every_saved_cell(name):
     result = subprocess.run([sys.executable, str(study.ROOT / 'tools/resplit_study.py'),
                              '--check', '--table', name], capture_output=True, text=True,

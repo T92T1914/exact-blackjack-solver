@@ -611,16 +611,18 @@ separate from this command. Current results are available in the linked CI run.
   closest call is 3,3 against 8, where split valued at the bound trails the
   best action by 0.0106 units.
   I ran the resplit comparison with the dealer hitting soft 17 and with no
-  double after split too, one change at a time. The result has the same shape:
-  the default is above the bound in four cells under H17 and five without
-  double after split, by at most 0.000009928 units, below it by at most
-  0.000500758 units, and no best action changes. I also ran the two hand
-  comparison with one, two, four and eight decks. It is never higher by more
-  than rounding there either, and no best action changes. The largest gap is
-  0.004040552 units for 3,3 against 2 with one deck, and it shrinks as decks
+  double after split too, one change at a time and then both together. The
+  result has the same shape: the default is above the bound in four cells under
+  H17 and five without double after split, by at most 0.000009928 units, below
+  it by at most 0.000500758 units, and no best action changes. With both
+  changes it is above the bound in six cells by at most 0.000009248 units and
+  below it by at most 0.000094955 units, and no best action changes. I also
+  ran the two hand comparison with one, two, four and eight decks. It is never higher
+  by more than rounding there either, and no best action changes. The largest
+  gap is 0.004040552 units for 3,3 against 2 with one deck, and it shrinks as decks
   are added, to 0.000360496 units for 2,2 against 4 with eight. Neither study
-  measures resplitting at any deck count but six, resplitting with both rule
-  changes together, deck counts other than 1, 2, 4, 6 and 8, or depleted shoes.
+  measures resplitting at any deck count but six, deck counts other than 1, 2,
+  4, 6 and 8, or depleted shoes.
   Two of the split
   rules were conservative defaults in the original table (resplit aces, hit
   split aces), and the solver's defaults follow them. The EV

@@ -103,10 +103,10 @@ reports is `bj.__version__`.
   play, lets the second hand use the first hand's cards in rounds where
   neither of the first two hands resplits (#79). The saved cells are in
   `docs/resplit-study-results.json`, and `docs/resplit-study.md` explains the
-  bound, the two tables and their limits (#75). The script takes `--table h17`
-  and `--table no-das` for the dealer hitting soft 17 and for no double after
-  split, each reading its own two hand results and writing its own saved
-  results file.
+  bound, the two tables and their limits (#75). The script takes `--table h17`,
+  `--table no-das` and `--table h17-no-das` for the dealer hitting soft 17, for
+  no double after split and for both, each reading its own two hand results and
+  writing its own saved results file.
 
 ### Changed
 * GitHub Actions moved to the Node 24 releases: `actions/checkout@v5`,
