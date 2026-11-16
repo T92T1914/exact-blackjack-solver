@@ -72,8 +72,13 @@ def _total(cards):
     return _state(cards)[0]
 
 
-def physical_value(model):
-    """Deal the default's play card by card from one shoe and settle every hand together."""
+def physical_value(model, information=False):
+    """Deal the default's play card by card from one shoe and settle every hand together.
+
+    With `information` the second of the first two hands plays the information
+    play in a round where neither of the two resplits: every choice is the best
+    one on the value of the whole round, found here by trying each.
+    """
     up, rules, pair = model.up, model.rules, model.pair
     excluded = {'A': 9, 'T': 0}.get(up, -1)
 
@@ -109,6 +114,9 @@ def physical_value(model):
             if not waiting:
                 return settle(shoe, completed)
             depth, rest = waiting[0], waiting[1:]
+            # Only the second hand waits, and every slot is left, so the first
+            # hand did not resplit.
+            informed = information and waiting == (0,) and slots == model.pool
             value = 0.0
             for rank, chance in enumerate(draws(shoe)):
                 if chance <= 0.0:
@@ -117,13 +125,29 @@ def physical_value(model):
                     value += chance * deal(take(shoe, rank), (depth + 1, depth + 1) + rest,
                                            slots - 1, None, completed)
                 else:
-                    value += chance * deal(take(shoe, rank), rest, slots, (depth, (rank,)),
-                                           completed)
+                    value += chance * deal(take(shoe, rank), rest, slots,
+                                           (depth, (rank,), informed), completed)
             return value
-        depth, drawn = hand
+        depth, drawn, informed = hand
         total, soft = _state((pair,) + drawn)
         if total > 21 or (total == 21 and len(drawn) > 1):
             return deal(shoe, waiting, slots, None, tuple(sorted(completed + ((total, 1),))))
+        if informed:
+            stand = deal(shoe, waiting, slots, None, tuple(sorted(completed + ((total, 1),))))
+            if total == 21 or (pair == 0 and not rules.hit_split_aces):
+                return stand
+            hit = double = 0.0
+            for rank, chance in enumerate(draws(shoe)):
+                if chance <= 0.0:
+                    continue
+                hit += chance * deal(take(shoe, rank), waiting, slots,
+                                     (depth, drawn + (rank,), True), completed)
+                ending = ((_total((pair,) + drawn + (rank,)), 2),)
+                double += chance * deal(take(shoe, rank), waiting, slots, None,
+                                        tuple(sorted(completed + ending)))
+            if len(drawn) == 1 and rules.das:
+                return max(stand, hit, double)
+            return max(stand, hit)
         if len(drawn) == 1:
             choice = model.action(depth, drawn[0])
         else:
@@ -145,7 +169,7 @@ def physical_value(model):
                                        tuple(sorted(completed + ending)))
             else:
                 value += chance * deal(take(shoe, rank), waiting, slots,
-                                       (depth, drawn + (rank,)), completed)
+                                       (depth, drawn + (rank,), False), completed)
         return value
 
     return deal(model.shoe, (0, 0), model.pool, None, ())
@@ -159,6 +183,35 @@ def test_shortcut_matches_a_deal_by_deal_enumeration(pair, up, shoe, max_hands):
         expected = physical_value(model)
         assert model.shared_shoe_value() == pytest.approx(expected, abs=1e-12, rel=0)
         study.clear_caches()
+
+
+@pytest.mark.parametrize('max_hands', [3, 4])
+@pytest.mark.parametrize('pair, up, shoe', SMALL + BOUNDED)
+def test_information_play_matches_a_deal_by_deal_enumeration(pair, up, shoe, max_hands):
+    for rules in (Rules(max_hands=max_hands), Rules(max_hands=max_hands, das=False, s17=False)):
+        model = study.DefaultResplit(pair, up, shoe, rules)
+        gain = study.information_gain(pair, up, shoe, rules)
+        if gain is None:
+            # Then the default never resplits and the play is a two hand play.
+            assert not model.resplits(0, model.pool)
+            continue
+        assert gain >= 0.0
+        expected = physical_value(model, information=True)
+        assert model.shared_shoe_value() + gain == pytest.approx(expected, abs=1e-12, rel=0)
+        study.clear_caches()
+
+
+def test_information_play_gains_on_small_shoes():
+    # Otherwise the enumeration above would only test a gain of 0, and the
+    # bounded optimum below would never meet a real gain.
+    def gains(shoes, rules):
+        found = [study.information_gain(pair, up, shoe, rules) for pair, up, shoe in shoes]
+        return sum(gain is not None and gain > 1e-5 for gain in found)
+
+    assert gains(SMALL + BOUNDED, Rules()) == 4
+    assert gains(SMALL + BOUNDED, Rules(das=False, s17=False)) == 3
+    assert gains(BOUNDED, Rules(max_hands=3)) == 1
+    study.clear_caches()
 
 
 def _at_least(value: float) -> str:
@@ -198,6 +251,9 @@ def test_the_play_never_beats_the_bounded_optimum(pair, up, shoe):
                                       max_seconds=120).value
         own = study.DefaultResplit(pair, up, shoe, rules).shared_shoe_value()
         assert own <= optimum + 1e-12, (pair, up, das)
+        gain = study.information_gain(pair, up, shoe, rules)
+        if gain is not None:
+            assert own <= own + gain <= optimum + 1e-12, (pair, up, das)
         study.clear_caches()
 
 
