@@ -325,7 +325,7 @@ python tools/split_error_study.py --output new-split-error-study.json
 
 ## What this does not show
 
-This is nine tables, one deal order and two hands. The default table allows up
+This is eight tables, one deal order and two hands. The default table allows up
 to four hands, and the derived chart and the whole game estimate use that
 limit. Resplitting adds the shared slot approximation described in `bj/ev.py`,
 and this study measures none of it. The [resplit study](resplit-study.md)
