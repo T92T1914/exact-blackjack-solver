@@ -9,6 +9,7 @@ checked by rebuilding the default's own value from them on the full shoe.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import asdict
 from functools import lru_cache
 import os
@@ -160,6 +161,11 @@ def test_shortcut_matches_a_deal_by_deal_enumeration(pair, up, shoe, max_hands):
         study.clear_caches()
 
 
+def _at_least(value: float) -> str:
+    # The prose says split stays best by "at least" this margin, so round down.
+    return f'{math.floor(value * 1e4) / 1e4:.4f}'
+
+
 def test_small_shoes_reach_more_than_two_hands():
     # Otherwise the enumeration above would not test resplitting at all. The
     # 9,9 shoe against an ace never resplits and covers the peek under an ace.
@@ -308,7 +314,7 @@ def test_saved_study_matches_its_document_and_the_readme():
         assert f"{excess['difference']:.9f}" in source
         assert f"{closest['shortfall']:.4f} units" in source
     assert f"{closest['pair']},{closest['pair']} against {closest['up']}" in text
-    assert f"{min(cell['lower_bound_margin'] for cell in above):.4f}" in text
+    assert _at_least(min(cell['lower_bound_margin'] for cell in above)) in text
     assert f"{summary['own_play_above_default']} of the 100 cells" in text
     assert f"In {summary['own_play_below_default']} cells it earns less" in text
     assert f"other {summary['default_above_lower_bound']} cells" in text
@@ -366,7 +372,7 @@ def test_saved_variant_studies_match_their_document(name):
     assert f"{gain['difference']:.9f} units" in text
     assert f"{excess['difference']:.9f} units" in text
     assert f"{closest['shortfall']:.4f} units" in text
-    assert f"{min(cell['lower_bound_margin'] for cell in above):.4f} units" in text
+    assert f"{_at_least(min(cell['lower_bound_margin'] for cell in above))} units" in text
     assert f"{summary['own_play_above_default']} cells" in text
     assert f"less in {summary['own_play_below_default']} cells" in text
     assert f"In the other {summary['default_above_lower_bound']} cells" in text
