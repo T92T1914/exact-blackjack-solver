@@ -183,7 +183,8 @@ def test_saved_variant_matches_its_document(table):
 
 def test_variant_names_and_paths_are_distinct():
     assert study.table_name(study.TABLE) == 'default'
-    assert study.table_name(Rules(max_hands=2, decks=8)) is None
+    assert study.table_name(Rules(max_hands=2, decks=3)) is None
+    assert study.table_name(Rules(max_hands=2, decks=8)) == 'decks-8'
     assert study.results_path() == study.RESULTS
     paths = {study.results_path(name) for name in study.TABLES}
     assert len(paths) == len(study.TABLES)
@@ -199,6 +200,65 @@ def test_cheap_variant_cells_recompute(table):
     assert study.compare({'cells': cells}, fresh) == []
 
 
+DECK_TABLES = ['decks-1', 'decks-2', 'decks-4', 'decks-8']
+
+
+@pytest.mark.parametrize('table', DECK_TABLES)
+def test_saved_deck_count_matches_its_document(table):
+    decks = int(table.split('-')[1])
+    results = json.loads(study.results_path(table).read_text(encoding='utf-8'))
+    assert len(results['cells']) == 100
+    assert results['rules'] == asdict(Rules(max_hands=2, decks=decks))
+    assert study.table_name(Rules(**results['rules'])) == table
+    assert results['summary'] == study.summarize(results['cells'])
+    assert results['evaluated_sources_modified'] is False
+    document = study.DOCUMENT.read_text(encoding='utf-8')
+    assert study.document_table(document, table) == study.render_table(results)
+    summary = results['summary']
+    assert summary['default_above_common_shoe'] == 0
+    assert summary['largest_default_excess'] <= study.TOLERANCE
+    assert summary['largest_default_policy_difference'] <= study.TOLERANCE
+    assert summary['decision_changes'] == []
+    heading = {1: 'One deck', 2: 'Two decks', 4: 'Four decks', 8: 'Eight decks'}[decks]
+    text = ' '.join(document.split())
+    section = text[text.index(f'### {heading} '):]
+    section = section[:section.index('Of the ')]
+    worst = summary['worst']
+    assert (f"{-worst['difference']:.9f} units for {worst['pair']},{worst['pair']} "
+            f"against {worst['up']}") in section
+    assert ("never above the common shoe value by more than "
+            f"{summary['largest_default_excess']:.1e}") in section
+    assert f"to {summary['largest_default_policy_difference']:.1e} in every cell" in section
+    assert f"In {summary['within_tolerance']} of the 100 cells" in section
+    assert f"The run took {round(results['elapsed_seconds'])} seconds" in section
+    rounding = sum(abs(c['difference']) <= 1.6e-15 for c in results['cells'])
+    after = text[text.index(section) + len(section):]
+    assert (f"Of the {summary['within_tolerance']} cells shown as 0, {rounding} differ by at "
+            "most 1.6e-15") in after
+
+
+def test_the_readme_states_the_deck_count_extremes():
+    readme = ' '.join((study.ROOT / 'README.md').read_text(encoding='utf-8').split())
+    worst = {}
+    for table in DECK_TABLES:
+        summary = json.loads(study.results_path(table).read_text(encoding='utf-8'))['summary']
+        worst[table] = summary['worst']
+    assert worst['decks-1'] == min(worst.values(), key=lambda cell: cell['difference'])
+    for table in ('decks-1', 'decks-8'):
+        cell = worst[table]
+        assert (f"{-cell['difference']:.9f} units for {cell['pair']},{cell['pair']} "
+                f"against {cell['up']}") in readme
+
+
+@pytest.mark.parametrize('table', DECK_TABLES)
+def test_cheap_deck_count_cells_recompute(table):
+    results = json.loads(study.results_path(table).read_text(encoding='utf-8'))
+    cells = [cell for cell in results['cells'] if cell['pair'] == 'A']
+    fresh = study.run_study(pairs=('A',), upcards=tuple(cell['up'] for cell in cells),
+                            rules=study.TABLES[table])
+    assert study.compare({'cells': cells}, fresh) == []
+
+
 def test_check_refuses_results_for_another_table(capsys):
     with pytest.raises(SystemExit):
         study.main(['--table', 'h17', '--results', str(study.RESULTS), '--check'])
@@ -207,7 +267,7 @@ def test_check_refuses_results_for_another_table(capsys):
 
 @SLOW
 @pytest.mark.slow
-@pytest.mark.parametrize('table', ['h17', 'no-das', 'h17-no-das'])
+@pytest.mark.parametrize('table', ['h17', 'no-das', 'h17-no-das', *DECK_TABLES])
 def test_check_mode_recomputes_every_saved_variant_cell(table):
     result = subprocess.run([sys.executable, str(study.ROOT / 'tools/split_error_study.py'),
                              '--table', table, '--check'], capture_output=True, text=True,

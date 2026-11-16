@@ -155,6 +155,103 @@ cell.
 Of the 84 cells shown as 0, 78 differ by at most 1.6e-15. T,T and 5,5 against 2
 differ by 1.7e-15, and 2,2 to 5,5 against 9 differ by 1.6e-14 to 9.4e-13.
 
+## Other deck counts
+
+The same study ran with one, two, four and eight decks, the default rules and the hand limit of two otherwise unchanged. The six deck table is the one above. Each run has its own saved results file and its own check mode.
+
+```sh
+python tools/split_error_study.py --table decks-1 --check
+python tools/split_error_study.py --table decks-2 --check
+python tools/split_error_study.py --table decks-4 --check
+python tools/split_error_study.py --table decks-8 --check
+```
+
+Entries mean the same as in the first table. The shoe is a fresh shoe of that many decks minus the pair and the upcard.
+
+### One deck
+
+[Saved results](split-error-study-decks-1-results.json). The default is never above the common shoe value by more than 1.3e-15. The largest gap is 0.004040552 units for 3,3 against 2. In 18 of the 100 cells the two values are within 1e-12, and no cell changes its best action. Playing the default's choices through the common shoe gives the default value to 2.3e-15 in every cell. The run took 250 seconds.
+
+<!-- split-error-table-decks-1:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | −2.14e−6 | −4.66e−4 | −2.66e−6 | −2.75e−4 | −1.83e−6 | −4.38e−5 | −1.15e−5 | −6.34e−5 | −1.17e−4 | 0 |
+| 9,9 | −1.47e−3 | −9.62e−4 | 0 | 0 | 0 | −7.56e−7 | −3.61e−5 | −1.23e−4 | −3.26e−4 | −8.15e−4 |
+| 8,8 | −8.28e−4 | −6.51e−6 | −6.36e−5 | −7.21e−4 | −8.66e−4 | −1.77e−6 | −9.63e−6 | −9.80e−5 | −4.76e−4 | −1.18e−4 |
+| 7,7 | −9.41e−4 | −1.47e−5 | 0 | 0 | 0 | −4.76e−4 | −1.04e−5 | −1.26e−5 | −1.17e−3 | −7.31e−4 |
+| 6,6 | −3.83e−4 | −2.79e−6 | −1.35e−4 | 0 | −5.65e−4 | −6.80e−4 | −1.69e−5 | −1.63e−4 | −8.89e−4 | −1.34e−3 |
+| 5,5 | −8.14e−4 | −9.16e−5 | −3.61e−4 | −1.43e−7 | −7.79e−8 | −1.27e−3 | −3.40e−4 | −3.52e−4 | −8.88e−4 | −5.43e−4 |
+| 4,4 | −9.16e−4 | −1.94e−4 | −4.83e−5 | −1.27e−5 | −1.09e−5 | −1.35e−3 | −4.62e−4 | −3.56e−4 | −2.55e−4 | −9.32e−4 |
+| 3,3 | −4.04e−3 | −2.27e−3 | −2.83e−4 | −1.52e−5 | −1.33e−5 | −1.58e−3 | −7.09e−4 | −5.24e−4 | −6.55e−4 | −6.97e−4 |
+| 2,2 | −9.42e−4 | −7.69e−4 | −2.23e−3 | −1.39e−4 | −2.49e−3 | −1.46e−3 | −4.34e−4 | −9.53e−4 | −6.97e−4 | −7.25e−4 |
+<!-- split-error-table-decks-1:end -->
+
+Of the 18 cells shown as 0, 18 differ by at most 1.6e-15.
+
+### Two decks
+
+[Saved results](split-error-study-decks-2-results.json). The default is never above the common shoe value by more than 1.3e-15. The largest gap is 0.001357668 units for 3,3 against 2. In 28 of the 100 cells the two values are within 1e-12, and no cell changes its best action. Playing the default's choices through the common shoe gives the default value to 1.7e-15 in every cell. The run took 656 seconds.
+
+<!-- split-error-table-decks-2:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | −1.13e−4 | 0 | 0 | −8.36e−5 | −7.52e−5 | −1.51e−8 | 0 | −1.91e−7 | −4.96e−5 | 0 |
+| 9,9 | −3.01e−4 | −1.15e−4 | 0 | 0 | 0 | −4.15e−12 | −1.86e−8 | −4.44e−6 | −1.31e−4 | −2.14e−4 |
+| 8,8 | 0 | −2.32e−4 | 0 | −2.73e−5 | −1.90e−4 | −1.40e−10 | 0 | −1.20e−5 | −1.49e−4 | −5.22e−4 |
+| 7,7 | −2.39e−4 | −2.78e−4 | 0 | 0 | 0 | −1.93e−6 | −1.84e−11 | −9.61e−8 | −3.69e−4 | −2.31e−4 |
+| 6,6 | −7.66e−5 | −2.38e−4 | 0 | −1.26e−5 | −6.64e−5 | −6.95e−6 | −8.70e−9 | −2.24e−7 | −6.55e−5 | −3.95e−5 |
+| 5,5 | −3.21e−5 | −4.16e−4 | 0 | −9.25e−5 | 0 | −5.46e−5 | −1.97e−5 | −1.98e−4 | −1.79e−5 | −4.85e−5 |
+| 4,4 | −1.63e−4 | −4.91e−4 | 0 | −4.24e−5 | −9.73e−5 | −9.80e−5 | −2.43e−5 | −1.77e−4 | −3.53e−5 | −1.67e−4 |
+| 3,3 | −1.36e−3 | −2.31e−4 | −1.07e−5 | −7.83e−5 | 0 | −6.89e−5 | −3.24e−5 | −7.16e−5 | −1.73e−4 | −3.47e−4 |
+| 2,2 | −1.97e−4 | −1.33e−4 | −1.08e−3 | −2.73e−5 | −2.03e−4 | −6.90e−5 | −1.52e−5 | −7.22e−5 | −2.28e−4 | −6.26e−4 |
+<!-- split-error-table-decks-2:end -->
+
+Of the 28 cells shown as 0, 27 differ by at most 1.6e-15.
+
+### Four decks
+
+[Saved results](split-error-study-decks-4-results.json). The default is never above the common shoe value by more than 3.1e-15. The largest gap is 0.000656128 units for 2,2 against 4. In 49 of the 100 cells the two values are within 1e-12, and no cell changes its best action. Playing the default's choices through the common shoe gives the default value to 3.1e-15 in every cell. The run took 762 seconds.
+
+<!-- split-error-table-decks-4:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | −7.83e−5 | 0 | 0 | 0 | −1.44e−5 | 0 | 0 | 0 | −2.28e−5 | 0 |
+| 9,9 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −5.91e−5 | −9.27e−9 |
+| 8,8 | 0 | −5.19e−7 | 0 | 0 | −5.93e−6 | 0 | 0 | 0 | −7.42e−5 | −3.35e−6 |
+| 7,7 | −2.46e−4 | −7.25e−7 | 0 | 0 | 0 | 0 | 0 | 0 | −1.54e−4 | −8.70e−5 |
+| 6,6 | −2.42e−4 | −1.34e−6 | 0 | 0 | 0 | 0 | 0 | 0 | −1.44e−5 | −2.16e−4 |
+| 5,5 | −1.40e−4 | −1.75e−6 | 0 | 0 | −2.69e−5 | −1.62e−9 | −7.01e−10 | −1.39e−6 | 0 | −2.23e−4 |
+| 4,4 | −8.26e−5 | −3.15e−6 | 0 | 0 | −1.27e−5 | −1.29e−8 | −1.81e−9 | −1.69e−6 | −1.66e−5 | −1.06e−4 |
+| 3,3 | −8.02e−5 | −4.60e−9 | −6.31e−6 | 0 | −3.71e−5 | −1.25e−8 | −1.06e−8 | −5.29e−7 | −9.49e−5 | −4.41e−5 |
+| 2,2 | −1.40e−4 | −1.59e−8 | −6.56e−4 | −6.54e−7 | −3.87e−6 | −1.01e−8 | −2.17e−9 | −4.50e−7 | −1.21e−4 | −2.27e−5 |
+<!-- split-error-table-decks-4:end -->
+
+Of the 49 cells shown as 0, 45 differ by at most 1.6e-15.
+
+### Eight decks
+
+[Saved results](split-error-study-decks-8-results.json). The default is never above the common shoe value by more than 2.6e-15. The largest gap is 0.000360496 units for 2,2 against 4. In 77 of the 100 cells the two values are within 1e-12, and no cell changes its best action. Playing the default's choices through the common shoe gives the default value to 2.6e-15 in every cell. The run took 764 seconds.
+
+<!-- split-error-table-decks-8:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −9.37e−6 | 0 |
+| 9,9 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −2.73e−5 | 0 |
+| 8,8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −3.37e−5 | 0 |
+| 7,7 | −8.38e−5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −6.64e−5 | −3.73e−7 |
+| 6,6 | −5.96e−6 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −5.87e−6 | −3.65e−9 |
+| 5,5 | −8.91e−10 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −7.90e−9 | −6.77e−7 |
+| 4,4 | −5.43e−10 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.05e−5 | −1.27e−6 |
+| 3,3 | −3.59e−10 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −5.65e−5 | −7.86e−6 |
+| 2,2 | −1.77e−7 | 0 | −3.60e−4 | −1.82e−5 | 0 | 0 | 0 | 0 | −6.78e−5 | −2.93e−6 |
+<!-- split-error-table-decks-8:end -->
+
+Of the 77 cells shown as 0, 74 differ by at most 1.6e-15.
+
 ## Why the default is never higher
 
 The default's own choices are one way to play the common shoe round. Each hand
@@ -228,13 +325,13 @@ python tools/split_error_study.py --output new-split-error-study.json
 
 ## What this does not show
 
-This is four tables, one deal order and two hands. The default table allows up
+This is eight tables, one deal order and two hands. The default table allows up
 to four hands, and the derived chart and the whole game estimate use that
 limit. Resplitting adds the shared slot approximation described in `bj/ev.py`,
 and this study measures none of it. The [resplit study](resplit-study.md)
 compares the default with a lower bound on the shared shoe value when the
-table allows four hands. Other deck counts, other rule changes and depleted shoes are not in the
-study. A table that deals both split cards
+table allows four hands. Other rule changes, resplit aces, hit split aces, deck counts other than 1, 2, 4,
+6 and 8, and depleted shoes are not in the study. A table that deals both split cards
 before the first decision is a different model.
 
 The values are binary64, not rational arithmetic. The lower bound argument is

@@ -611,8 +611,13 @@ separate from this command. Current results are available in the linked CI run.
   double after split too, one change at a time. The result has the same
   shape: the default is above the bound in five cells in each, by at most
   0.000009928 units, and below it by at most 0.000094955 units, and no best
-  action changes. Neither study measures other deck counts, resplitting with
-  both rule changes together or depleted shoes. Two of the split
+  action changes. I also ran the two hand comparison with one, two, four and
+  eight decks. It is never higher by more than rounding there either, and no
+  best action changes. The largest gap is 0.004040552 units for 3,3 against 2
+  with one deck, and it shrinks as decks are added, to 0.000360496 units for
+  2,2 against 4 with eight. Neither study measures resplitting at any deck
+  count but six, resplitting with both rule changes together, deck counts
+  other than 1, 2, 4, 6 and 8, or depleted shoes. Two of the split
   rules were conservative defaults in the original table (resplit aces, hit
   split aces), and the solver's defaults follow them. The EV
   of a table that allows them can be requested through the original interface,
