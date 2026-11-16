@@ -34,6 +34,8 @@ hands played in shoes that differ only in how many pair cards are gone.
 
     python tools/resplit_study.py --output docs/resplit-study-results.json
     python tools/resplit_study.py --check
+    python tools/resplit_study.py --table h17 --check
+    python tools/resplit_study.py --table no-das --check
 """
 from __future__ import annotations
 
@@ -45,7 +47,7 @@ import platform
 import subprocess
 import sys
 import time
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from functools import lru_cache
 from pathlib import Path
 
@@ -65,10 +67,9 @@ SOURCE_FILES = ('tools/resplit_study.py', 'tools/split_error_study.py', 'bj/ev.p
 #: The default table: six decks, S17, DAS, peek, up to four hands, one card to
 #: each split ace and no resplitting aces.
 TABLE = Rules()
-#: The two hand study's table, which differs only in the hand limit.
-TWO_HAND_TABLE = two_hand.TABLE
-#: The default's play with one extra hand, which a player here can follow.
-THREE_HAND_TABLE = Rules(max_hands=3)
+#: Study tables by option name: the default and each of two one rule changes.
+RULE_TABLES = {'default': TABLE, 'h17': replace(TABLE, s17=False),
+               'no-das': replace(TABLE, das=False)}
 TOLERANCE = two_hand.TOLERANCE
 RANKS = two_hand.RANKS
 PAIRS = two_hand.PAIRS
@@ -78,6 +79,23 @@ ACE = RANK_INDEX['A']
 OPTIONS = (STAND, HIT, DOUBLE)
 #: Document tables by name: the gap to the lower bound, and the default's own play.
 TABLES = ('bound', 'own-play')
+
+
+def table_name(rules):
+    """The option name of a study table, or None for any other rules."""
+    return next((name for name, known in RULE_TABLES.items() if known == rules), None)
+
+
+def results_path(name='default'):
+    """The saved results of one study table."""
+    if name == 'default':
+        return RESULTS
+    return ROOT / f'docs/resplit-study-{name}-results.json'
+
+
+def two_hand_table(rules):
+    """The two hand study's table for these rules: the same, with two hands."""
+    return replace(rules, max_hands=2)
 
 
 def _minus(shoe, rank, count=1):
@@ -311,17 +329,18 @@ def _ranking(values):
     return best, ordered[0] - ordered[1]
 
 
-def two_hand_cells(path=TWO_HAND_RESULTS):
+def two_hand_cells(path=TWO_HAND_RESULTS, rules=TABLE):
     saved = json.loads(Path(path).read_text(encoding='utf-8'))
-    if saved['rules'] != asdict(TWO_HAND_TABLE):
-        raise ValueError(f'{path} does not hold the two hand default table')
+    if saved['rules'] != asdict(two_hand_table(rules)):
+        raise ValueError(f'{path} does not hold the two hand table for these rules')
     return {(cell['pair'], cell['up']): cell for cell in saved['cells']}
 
 
 def study_cell(pair, up, two_hand_cell, rules=TABLE):
     """One cell of the study on a fresh shoe minus the pair and the upcard."""
-    if rules != TABLE:
-        raise ValueError('the study covers the default table only')
+    if table_name(rules) is None:
+        raise ValueError('the study covers the default table and its H17 and no DAS '
+                         'variants only')
     shoe = ev.initial_shoe_for((pair, pair), up, rules)
     if (two_hand_cell['pair'], two_hand_cell['up'], two_hand_cell['shoe']) != (
             pair, up, list(shoe)):
@@ -330,7 +349,7 @@ def study_cell(pair, up, two_hand_cell, rules=TABLE):
     model = DefaultResplit(pair, up, shoe, rules)
     own_play = model.shared_shoe_value()
     # The three hand default's play is legal here too. It never takes a fourth hand.
-    three = DefaultResplit(pair, up, shoe, THREE_HAND_TABLE).shared_shoe_value()
+    three = DefaultResplit(pair, up, shoe, replace(rules, max_hands=3)).shared_shoe_value()
     two = two_hand_cell['common_shoe_split']
     bounds = {'default play': own_play, 'three hand play': three, 'two hand': two}
     source = max(bounds, key=bounds.get)
@@ -388,12 +407,13 @@ def summarize(cells):
     )
 
 
-def _revision():
+def _revision(two_hand_path=TWO_HAND_RESULTS):
     try:
         head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True,
                               text=True, check=True).stdout.strip()
         dirty = subprocess.run(['git', 'status', '--porcelain', '--', *SOURCE_FILES,
-                                TWO_HAND_RESULTS.relative_to(ROOT).as_posix()], cwd=ROOT,
+                                Path(two_hand_path).resolve().relative_to(ROOT).as_posix()],
+                               cwd=ROOT,
                                capture_output=True, text=True, check=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return None, None
@@ -404,21 +424,23 @@ def _sha256(path):
     return hashlib.sha256(Path(path).read_bytes().replace(b'\r\n', b'\n')).hexdigest()
 
 
-def run_study(pairs=PAIRS, upcards=UPCARDS, progress=None, two_hand_path=TWO_HAND_RESULTS):
+def run_study(pairs=PAIRS, upcards=UPCARDS, progress=None, two_hand_path=None, rules=TABLE):
     started = time.perf_counter()
-    reference = two_hand_cells(two_hand_path)
+    if two_hand_path is None:
+        two_hand_path = two_hand.results_path(table_name(rules) or 'default')
+    reference = two_hand_cells(two_hand_path, rules)
     cells = []
     for pair in pairs:
         for up in upcards:
-            cells.append(study_cell(pair, up, reference[(pair, up)]))
+            cells.append(study_cell(pair, up, reference[(pair, up)], rules))
             if progress:
                 progress(cells[-1])
         clear_caches()
-    revision, dirty = _revision()
+    revision, dirty = _revision(two_hand_path)
     return dict(
         schema_version=1,
         study='split_error_resplit_four_hands',
-        rules=asdict(TABLE),
+        rules=asdict(rules),
         tolerance=TOLERANCE,
         two_hand_results=Path(two_hand_path).resolve().relative_to(ROOT).as_posix(),
         two_hand_results_sha256_lf=_sha256(two_hand_path),
@@ -433,9 +455,10 @@ def run_study(pairs=PAIRS, upcards=UPCARDS, progress=None, two_hand_path=TWO_HAN
     )
 
 
-def table_markers(table='bound'):
+def table_markers(table='bound', name='default'):
     """The comment lines that fence one table's rendering in the document."""
-    return (f'<!-- resplit-table-{table}:begin -->', f'<!-- resplit-table-{table}:end -->')
+    key = table if name == 'default' else f'{name}-{table}'
+    return (f'<!-- resplit-table-{key}:begin -->', f'<!-- resplit-table-{key}:end -->')
 
 
 def render_table(results, table='bound'):
@@ -450,8 +473,8 @@ def render_table(results, table='bound'):
     return '\n'.join(lines)
 
 
-def document_table(text, table='bound'):
-    begin, end = table_markers(table)
+def document_table(text, table='bound', name='default'):
+    begin, end = table_markers(table, name)
     start = text.index(begin) + len(begin)
     return text[start:text.index(end)].strip()
 
@@ -484,20 +507,23 @@ def compare(saved, fresh):
 
 def check(results_path=RESULTS, document_path=DOCUMENT, progress=None):
     saved = json.loads(Path(results_path).read_text(encoding='utf-8'))
-    if saved['rules'] != asdict(TABLE):
-        return ['the saved rules are not the default table']
+    rules = Rules(**saved['rules'])
+    name = table_name(rules)
+    if name is None:
+        return ['the saved rules are not a table this study covers']
+    two_hand_path = two_hand.results_path(name)
     problems = []
-    if _sha256(TWO_HAND_RESULTS) != saved['two_hand_results_sha256_lf']:
+    if _sha256(two_hand_path) != saved['two_hand_results_sha256_lf']:
         problems.append('the two hand results changed since this study was saved')
     if summarize(saved['cells']) != saved['summary']:
         problems.append('the saved summary does not follow from the saved cells')
     document = Path(document_path).read_text(encoding='utf-8')
     for table in TABLES:
-        if document_table(document, table) != render_table(saved, table):
+        if document_table(document, table, name) != render_table(saved, table):
             problems.append(f'the document table {table} does not match the saved cells')
     fresh = run_study(pairs=tuple(dict.fromkeys(c['pair'] for c in saved['cells'])),
                       upcards=tuple(dict.fromkeys(c['up'] for c in saved['cells'])),
-                      progress=progress)
+                      progress=progress, two_hand_path=two_hand_path, rules=rules)
     problems.extend(compare(saved, fresh))
     return problems
 
@@ -508,8 +534,10 @@ def main(argv=None):
     action.add_argument('--output', type=Path, help='write a new results file here')
     action.add_argument('--check', action='store_true',
                         help='recompute every saved cell and compare it with the saved study')
-    parser.add_argument('--results', type=Path, default=RESULTS,
-                        help='saved results to check, by default the saved study')
+    parser.add_argument('--table', choices=sorted(RULE_TABLES), default='default',
+                        help='default is the default table; h17 and no-das change one rule')
+    parser.add_argument('--results', type=Path,
+                        help="saved results to check, by default the table's own file")
     args = parser.parse_args(argv)
 
     def report(cell):
@@ -520,11 +548,15 @@ def main(argv=None):
     if args.output:
         if args.output.exists():
             parser.error(f'{args.output} exists. Choose a new path.')
-        results = run_study(progress=report)
+        results = run_study(progress=report, rules=RULE_TABLES[args.table])
         args.output.write_text(json.dumps(results, indent=1) + '\n', encoding='utf-8')
         print(f"worst {results['summary']['worst']}")
         return 0
-    problems = check(args.results, progress=report)
+    path = args.results or results_path(args.table)
+    saved_rules = Rules(**json.loads(path.read_text(encoding='utf-8'))['rules'])
+    if table_name(saved_rules) != args.table:
+        parser.error(f'{path} does not hold the {args.table} table')
+    problems = check(path, progress=report)
     for problem in problems:
         print(problem)
     print('check passed' if not problems else f'check failed with {len(problems)} problems')

@@ -607,13 +607,17 @@ separate from this command. Current results are available in the linked CI run.
   states. In 37 cells it earns more, by up to 0.000086885 units for 8,8
   against 7. No best action changes under the bound, and a better shared shoe
   play would have to gain at least 0.0106 units in some cell to change one.
-  I also ran the two hand comparison with one, two, four and eight decks. It
-  is never higher by more than rounding there either, and no best action
-  changes. The largest gap is 0.004040552 units for 3,3 against 2 with one
-  deck, and it shrinks as decks are added, to 0.000360496 units for 2,2 against
-  4 with eight. The resplit study ran on six decks only. Other deck counts,
-  resplitting at any deck count but six, a rule change together with
-  resplitting and depleted shoes are not measured. Two of the split
+  I ran the resplit comparison with the dealer hitting soft 17 and with no
+  double after split too, one change at a time. The result has the same
+  shape: the default is above the bound in five cells in each, by at most
+  0.000009928 units, and below it by at most 0.000094955 units, and no best
+  action changes. I also ran the two hand comparison with one, two, four and
+  eight decks. It is never higher by more than rounding there either, and no
+  best action changes. The largest gap is 0.004040552 units for 3,3 against 2
+  with one deck, and it shrinks as decks are added, to 0.000360496 units for
+  2,2 against 4 with eight. Neither study measures resplitting at any deck
+  count but six, resplitting with both rule changes together, deck counts
+  other than 1, 2, 4, 6 and 8, or depleted shoes. Two of the split
   rules were conservative defaults in the original table (resplit aces, hit
   split aces), and the solver's defaults follow them. The EV
   of a table that allows them can be requested through the original interface,
