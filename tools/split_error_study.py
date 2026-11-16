@@ -59,7 +59,9 @@ NO_DAS = Rules(max_hands=2, das=False)
 #: The same table with both changes, the dealer hitting soft 17 and no double after split.
 H17_NO_DAS = Rules(max_hands=2, s17=False, das=False)
 #: Study tables by option name. Each has its own saved results and document table.
-TABLES = {'default': TABLE, 'h17': H17, 'no-das': NO_DAS, 'h17-no-das': H17_NO_DAS}
+#: The default table with one, two, four or eight decks. The rules are otherwise unchanged.
+DECKS = {f'decks-{n}': Rules(max_hands=2, decks=n) for n in (1, 2, 4, 8)}
+TABLES = {'default': TABLE, 'h17': H17, 'no-das': NO_DAS, 'h17-no-das': H17_NO_DAS, **DECKS}
 #: Differences this small print as 0, and actions this close share a rank.
 #: Rounding alone stays near 1e-15 here, so a smaller real gain can hide below it.
 TOLERANCE = 1e-12
@@ -661,7 +663,7 @@ def main(argv=None):
                         help='recompute every saved cell and compare it with the saved study')
     parser.add_argument('--table', choices=sorted(TABLES), default='default',
                         help='default is six decks, S17 and DAS; h17 and no-das change one rule '
-                             'and h17-no-das both')
+                             'and h17-no-das both; decks-N changes the deck count')
     parser.add_argument('--results', type=Path,
                         help="saved results to check, by default the table's own file")
     args = parser.parse_args(argv)

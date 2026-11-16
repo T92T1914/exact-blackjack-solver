@@ -93,7 +93,9 @@ reports is `bj.__version__`.
   `docs/split-error-study-results.json`, and `docs/split-error-study.md`
   explains the table and its limits (#71). The script takes `--table h17`,
   `--table no-das` and `--table h17-no-das` for the dealer hitting soft 17, for
-  no double after split and for both, each with its own saved results file.
+  no double after split and for both, and `--table decks-1`, `decks-2`,
+  `decks-4` and `decks-8` for other deck counts, each with its own saved
+  results file.
 * `tools/resplit_study.py`: the default split value with resplitting to four
   hands against a lower bound on the shared shoe value, for every pair and
   upcard on the six deck table. The bound is the best of three plays from one
