@@ -328,11 +328,35 @@ def test_output_never_replaces_an_existing_file(tmp_path, capsys):
     assert 'Choose a new path' in capsys.readouterr().err
 
 
+def _check_information_play(cell):
+    """A resplitting cell: the information play adds its gain to the default's play."""
+    gain = cell['information_gain']
+    assert gain >= 0.0
+    assert cell['information_play_in_common_shoe'] == cell['default_play_in_common_shoe'] + gain
+    above = cell['information_play_in_common_shoe'] > cell['default_play_in_common_shoe']
+    expected = 'information play' if above else 'default play'
+    assert cell['lower_bound_source'] == expected
+
+
+def _check_summary_extremes(results):
+    """Each extreme in the summary names the cell that holds it in its own field."""
+    summary, cells = results['summary'], results['cells']
+    for key, field in (('largest_own_play_gain', 'default_policy_difference'),
+                       ('largest_information_gain', 'information_gain'),
+                       ('largest_default_excess', 'difference')):
+        held = [cell for cell in cells if cell[field] is not None]
+        best = max(held, key=lambda cell: cell[field])
+        assert summary[key] == dict(pair=best['pair'], up=best['up'], difference=best[field])
+    gains = [c['information_gain'] for c in cells if c['information_gain'] is not None]
+    assert summary['information_play_cells'] == summary['resplitting_cells'] == len(gains)
+
+
 def test_saved_study_matches_its_document_and_the_readme():
     results = saved()
     assert len(results['cells']) == 100
     assert results['rules'] == asdict(study.TABLE)
     assert results['summary'] == study.summarize(results['cells'])
+    _check_summary_extremes(results)
     assert results['two_hand_results_sha256_lf'] == study._sha256(study.TWO_HAND_RESULTS)
     document = study.DOCUMENT.read_text(encoding='utf-8')
     for table in study.TABLES:
@@ -346,14 +370,16 @@ def test_saved_study_matches_its_document_and_the_readme():
     for cell in above:
         assert cell['default_best'] == cell['lower_bound_best'] == ['P']
         assert cell['lower_bound_margin'] > 100 * cell['difference']
-    # Where the default resplits its own play gives the bound. Elsewhere that
-    # play is its two hand play, and the two hand value is at least as large.
+    # Where the default resplits its own play or the information play gives
+    # the bound. Elsewhere that play is its two hand play, and the two hand
+    # value is at least as large.
     for cell in results['cells']:
         assert cell['three_hand_play_in_common_shoe'] <= max(
             cell['default_play_in_common_shoe'], cell['two_hand_common_shoe_split'])
         if cell['default_hands'] > 2.0:
-            assert cell['lower_bound_source'] == 'default play'
+            _check_information_play(cell)
         else:
+            assert cell['information_gain'] is None
             assert abs(cell['default_policy_difference']) <= study.TOLERANCE
             assert (cell['two_hand_common_shoe_split']
                     >= cell['default_play_in_common_shoe'] - study.TOLERANCE)
@@ -398,6 +424,7 @@ def test_saved_variant_studies_match_their_document(name):
     assert len(results['cells']) == 100
     assert results['rules'] == asdict(rules)
     assert results['summary'] == study.summarize(results['cells'])
+    _check_summary_extremes(results)
     two_hand_path = study.two_hand.results_path(name)
     assert results['two_hand_results_sha256_lf'] == study._sha256(two_hand_path)
     assert results['evaluated_sources_modified'] is False
@@ -415,8 +442,9 @@ def test_saved_variant_studies_match_their_document(name):
         assert cell['three_hand_play_in_common_shoe'] <= max(
             cell['default_play_in_common_shoe'], cell['two_hand_common_shoe_split'])
         if cell['default_hands'] > 2.0:
-            assert cell['lower_bound_source'] == 'default play'
+            _check_information_play(cell)
         else:
+            assert cell['information_gain'] is None
             assert abs(cell['default_policy_difference']) <= study.TOLERANCE
     # The prose states these numbers, so they must follow from the saved cells.
     text = _section(document, name)

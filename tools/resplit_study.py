@@ -426,7 +426,7 @@ def summarize(cells):
     trailing = [cell for cell in cells if SPLIT not in cell['lower_bound_best']]
     closest = min(trailing, key=lambda cell: cell['split_shortfall'], default=None)
     informed = [cell for cell in cells if cell['information_gain'] is not None]
-    gain = max(informed, key=lambda cell: cell['information_gain'], default=None)
+    best_gain = max(informed, key=lambda cell: cell['information_gain'], default=None)
     return dict(
         cells=len(cells),
         worst=dict(pair=worst['pair'], up=worst['up'], difference=worst['difference']),
@@ -451,8 +451,9 @@ def summarize(cells):
         information_play_gains=sum(c['information_gain'] > TOLERANCE for c in informed),
         information_play_largest=sum(c['lower_bound_source'] == 'information play'
                                      for c in cells),
-        largest_information_gain=None if gain is None else dict(
-            pair=gain['pair'], up=gain['up'], difference=gain['information_gain']),
+        largest_information_gain=None if best_gain is None else dict(
+            pair=best_gain['pair'], up=best_gain['up'],
+            difference=best_gain['information_gain']),
     )
 
 
