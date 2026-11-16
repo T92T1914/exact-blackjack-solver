@@ -98,8 +98,10 @@ reports is `bj.__version__`.
   results file.
 * `tools/resplit_study.py`: the default split value with resplitting to four
   hands against a lower bound on the shared shoe value, for every pair and
-  upcard on the six deck table. The bound is the best of three plays from one
-  shared shoe that the script values to rounding. The saved cells are in
+  upcard on the six deck table. The bound is the best of four plays from one
+  shared shoe that the script values to rounding. The fourth, the information
+  play, lets the second hand use the first hand's cards in rounds where
+  neither of the first two hands resplits. The saved cells are in
   `docs/resplit-study-results.json`, and `docs/resplit-study.md` explains the
   bound, the two tables and their limits (#75). The script takes `--table h17`
   and `--table no-das` for the dealer hitting soft 17 and for no double after

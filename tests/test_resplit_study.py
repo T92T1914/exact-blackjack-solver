@@ -351,6 +351,17 @@ def _check_summary_extremes(results):
     assert summary['information_play_cells'] == summary['resplitting_cells'] == len(gains)
 
 
+def _check_information_prose(summary, text):
+    """The information play's counts and largest gain as the prose states them."""
+    best = summary['largest_information_gain']
+    assert (f"{best['difference']:.9f} units for "
+            f"{best['pair']},{best['pair']} against {best['up']}") in text
+    assert (f"more than 1e-12 in {summary['information_play_gains']} of the "
+            f"{summary['information_play_cells']} cells") in text
+    largest = summary['information_play_largest']
+    assert f"largest of the four plays in {largest} cells" in ' '.join(text.split())
+
+
 def test_saved_study_matches_its_document_and_the_readme():
     results = saved()
     assert len(results['cells']) == 100
@@ -400,6 +411,9 @@ def test_saved_study_matches_its_document_and_the_readme():
     assert f"{summary['own_play_above_default']} of the 100 cells" in text
     assert f"In {summary['own_play_below_default']} cells it earns less" in text
     assert f"other {summary['default_above_lower_bound']} cells" in text
+    _check_information_prose(summary, text)
+    best = summary['largest_information_gain']
+    assert f"{best['difference']:.9f} of" in readme
     assert f"{summary['within_tolerance']} of the 100 cells" in text
     assert f"{100 - summary['default_above_lower_bound']} of the 100 cells" in text
     rounding = max(c['difference'] for c in results['cells'] if c not in above)
@@ -466,13 +480,17 @@ def test_saved_variant_studies_match_their_document(name):
     rounding = max(c['difference'] for c in results['cells'] if c not in above)
     assert f"rounding, which reaches {rounding:.1e} here" in text
     assert f"{round(results['elapsed_seconds'])} seconds" in text
+    _check_information_prose(summary, text)
 
 
 def test_the_readme_states_the_variant_extremes():
     readme = ' '.join((study.ROOT / 'README.md').read_text(encoding='utf-8').split())
     summaries = [json.loads(study.results_path(name).read_text(encoding='utf-8'))['summary']
                  for name in ('h17', 'no-das')]
-    assert all(summary['default_above_lower_bound'] == 5 for summary in summaries)
+    words = {4: 'four', 5: 'five'}
+    h17, no_das = (words[summary['default_above_lower_bound']] for summary in summaries)
+    assert (f'above the bound in {h17} cells under H17 and {no_das} without double '
+            f'after split') in readme
     most_above = max(s['largest_default_excess']['difference'] for s in summaries)
     most_below = max(-s['worst']['difference'] for s in summaries)
     assert f'{most_above:.9f} units' in readme
