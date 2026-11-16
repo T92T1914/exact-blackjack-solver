@@ -201,7 +201,9 @@ python tools/split_error_study.py --output new-split-error-study.json
 This is three tables, one deal order and two hands. The default table allows up
 to four hands, and the derived chart and the whole game estimate use that
 limit. Resplitting adds the shared slot approximation described in `bj/ev.py`,
-and this study measures none of it. Other deck counts, other rule changes, H17 and no DAS together, and
+and this study measures none of it. The [resplit study](resplit-study.md)
+compares the default with a lower bound on the shared shoe value when the
+table allows four hands. Other deck counts, other rule changes, H17 and no DAS together, and
 depleted shoes are not in the study. A table that deals both split cards
 before the first decision is a different model.
 
