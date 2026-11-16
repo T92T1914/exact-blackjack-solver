@@ -101,7 +101,7 @@ reports is `bj.__version__`.
   upcard on the six deck table. The bound is the best of four plays from one
   shared shoe that the script values to rounding. The fourth, the information
   play, lets the second hand use the first hand's cards in rounds where
-  neither of the first two hands resplits. The saved cells are in
+  neither of the first two hands resplits (#79). The saved cells are in
   `docs/resplit-study-results.json`, and `docs/resplit-study.md` explains the
   bound, the two tables and their limits (#75). The script takes `--table h17`
   and `--table no-das` for the dealer hitting soft 17 and for no double after

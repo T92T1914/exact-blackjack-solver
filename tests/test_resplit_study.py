@@ -201,6 +201,15 @@ def test_information_play_matches_a_deal_by_deal_enumeration(pair, up, shoe, max
         study.clear_caches()
 
 
+def test_check_mode_reports_an_information_play_that_disappears():
+    # A saved gain against a fresh None is a problem to report, not a crash.
+    cell = dict(pair='8', up='7', information_gain=1e-5, information_play_in_common_shoe=0.1)
+    fresh = dict(cell, information_gain=None, information_play_in_common_shoe=None)
+    problems = study.compare({'cells': [cell]}, {'cells': [fresh]})
+    assert len(problems) == 2 and all('became None' in problem for problem in problems)
+    assert study.compare({'cells': [fresh]}, {'cells': [cell]})
+
+
 def test_information_play_gains_on_small_shoes():
     # Otherwise the enumeration above would only test a gain of 0, and the
     # bounded optimum below would never meet a real gain.

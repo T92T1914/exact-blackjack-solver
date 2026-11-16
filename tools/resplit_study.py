@@ -539,7 +539,7 @@ def compare(saved, fresh):
             problems.append(f"{cell['pair']} vs {cell['up']}: not recomputed")
             continue
         for name, value in cell.items():
-            if isinstance(value, float):
+            if isinstance(value, float) and isinstance(other[name], float):
                 if not abs(value - other[name]) <= TOLERANCE:
                     problems.append(f"{cell['pair']} vs {cell['up']}: {name} "
                                     f"{value!r} became {other[name]!r}")

@@ -183,8 +183,7 @@ is what the information play adds to the default's own play. It is never
 negative, because the second hand's best choice includes the default's.
 
 The full study ran in 410 seconds in one process on a shared desktop
-machine, most of it in the two hand evaluator. That is a record of one run, not
-a speed claim.
+machine. That is a record of one run, not a speed claim.
 
 ## How it is checked
 
@@ -359,8 +358,9 @@ hand's cards, and the first hand never weighs what its choices do to the
 second.
 Where split is not the best action, the closest call is 3,3 against 8, where
 split trails by 0.0106 units. A better shared shoe play would have to gain that
-much over these values for a best action to change. The largest gain the two
-hand study found for using the shared shoe was 0.000538738 units.
+much over these values for a best action to change. On the six deck default
+table the largest gain the two hand study found for using the shared shoe was
+0.000538738 units.
 
 These are three tables. The dealer hitting soft 17 together with no double after
 split, other deck counts, resplitting aces, hitting split aces and depleted
