@@ -148,7 +148,7 @@ def test_output_never_replaces_an_existing_file(tmp_path, capsys):
     assert 'Choose a new path' in capsys.readouterr().err
 
 
-@pytest.mark.parametrize('table', ['h17', 'no-das'])
+@pytest.mark.parametrize('table', ['h17', 'no-das', 'h17-no-das'])
 def test_saved_variant_matches_its_document(table):
     results = json.loads(study.results_path(table).read_text(encoding='utf-8'))
     assert len(results['cells']) == 100
@@ -164,7 +164,8 @@ def test_saved_variant_matches_its_document(table):
     assert summary['decision_changes'] == []
     # The prose states these numbers, so they must follow from the saved cells.
     text = ' '.join(document.split())
-    heading = {'h17': 'Dealer hits soft 17', 'no-das': 'No double after split'}[table]
+    heading = {'h17': 'Dealer hits soft 17', 'no-das': 'No double after split',
+               'h17-no-das': 'Both changes'}[table]
     section = text[text.index(f'### {heading}'):]
     rounding = sum(abs(c['difference']) <= 1.6e-15 for c in results['cells'])
     section = section[:section.index(f"Of the {summary['within_tolerance']} cells")]
@@ -189,7 +190,7 @@ def test_variant_names_and_paths_are_distinct():
     assert len({study.table_markers(name) for name in study.TABLES}) == len(study.TABLES)
 
 
-@pytest.mark.parametrize('table', ['h17', 'no-das'])
+@pytest.mark.parametrize('table', ['h17', 'no-das', 'h17-no-das'])
 def test_cheap_variant_cells_recompute(table):
     results = json.loads(study.results_path(table).read_text(encoding='utf-8'))
     cells = [cell for cell in results['cells'] if cell['pair'] == 'A']
@@ -206,7 +207,7 @@ def test_check_refuses_results_for_another_table(capsys):
 
 @SLOW
 @pytest.mark.slow
-@pytest.mark.parametrize('table', ['h17', 'no-das'])
+@pytest.mark.parametrize('table', ['h17', 'no-das', 'h17-no-das'])
 def test_check_mode_recomputes_every_saved_variant_cell(table):
     result = subprocess.run([sys.executable, str(study.ROOT / 'tools/split_error_study.py'),
                              '--table', table, '--check'], capture_output=True, text=True,
