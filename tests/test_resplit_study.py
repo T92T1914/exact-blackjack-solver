@@ -197,10 +197,12 @@ def test_the_play_never_beats_the_bounded_optimum(pair, up, shoe):
 
 @pytest.mark.parametrize('pair, up', [('8', '7'), ('8', 'T'), ('2', '4'), ('7', '7'),
                                       ('A', '6'), ('9', '9')])
-def test_the_choices_rebuild_the_default_value(pair, up):
-    shoe = ev.initial_shoe_for((pair, pair), up, study.TABLE)
-    model = study.DefaultResplit(pair, up, shoe)
-    assert model.default_value() == pytest.approx(ev.ev_split(pair, up, shoe, study.TABLE),
+@pytest.mark.parametrize('name', sorted(study.RULE_TABLES))
+def test_the_choices_rebuild_the_default_value(pair, up, name):
+    rules = study.RULE_TABLES[name]
+    shoe = ev.initial_shoe_for((pair, pair), up, rules)
+    model = study.DefaultResplit(pair, up, shoe, rules)
+    assert model.default_value() == pytest.approx(ev.ev_split(pair, up, shoe, rules),
                                                   abs=1e-14, rel=0)
     study.clear_caches()
 
@@ -230,10 +232,29 @@ def test_hand_counts_follow_the_pool():
 
 def test_study_refuses_other_tables():
     cell = study.two_hand_cells()[('8', '7')]
-    with pytest.raises(ValueError, match='default table only'):
-        study.study_cell('8', '7', cell, Rules(s17=False))
+    for rules in (Rules(hit_split_aces=True), Rules(decks=2), Rules(s17=False, das=False)):
+        assert study.table_name(rules) is None
+        with pytest.raises(ValueError, match='variants only'):
+            study.study_cell('8', '7', cell, rules)
     with pytest.raises(ValueError, match='does not hold'):
         study.study_cell('8', 'T', cell)
+
+
+def test_the_variants_read_their_own_two_hand_results():
+    assert study.table_name(study.TABLE) == 'default'
+    for name, rules in study.RULE_TABLES.items():
+        assert study.table_name(rules) == name
+        assert study.two_hand.TABLES[name] == study.two_hand_table(rules)
+        cells = study.two_hand_cells(study.two_hand.results_path(name), rules)
+        assert len(cells) == 100
+    with pytest.raises(ValueError, match='does not hold'):
+        study.two_hand_cells(study.two_hand.results_path('h17'), study.TABLE)
+
+
+def test_a_results_file_must_hold_the_table_it_is_checked_as(capsys):
+    with pytest.raises(SystemExit):
+        study.main(['--check', '--table', 'h17', '--results', str(study.RESULTS)])
+    assert 'does not hold the h17 table' in capsys.readouterr().err
 
 
 def test_output_never_replaces_an_existing_file(tmp_path, capsys):
@@ -299,18 +320,104 @@ def test_saved_study_matches_its_document_and_the_readme():
     assert f"{round(results['elapsed_seconds'])} seconds" in text
 
 
+def _section(document, name):
+    """The document text of one variant: from its heading to the next heading."""
+    heading = {'h17': '### H17\n', 'no-das': '### No double after split\n'}[name]
+    start = document.index(heading) + len(heading)
+    end = document.find('\n#', start)
+    return ' '.join(document[start:end].split())
+
+
+@pytest.mark.parametrize('name', ['h17', 'no-das'])
+def test_saved_variant_studies_match_their_document(name):
+    path = study.results_path(name)
+    results = json.loads(path.read_text(encoding='utf-8'))
+    rules = study.RULE_TABLES[name]
+    assert len(results['cells']) == 100
+    assert results['rules'] == asdict(rules)
+    assert results['summary'] == study.summarize(results['cells'])
+    two_hand_path = study.two_hand.results_path(name)
+    assert results['two_hand_results_sha256_lf'] == study._sha256(two_hand_path)
+    assert results['evaluated_sources_modified'] is False
+    document = study.DOCUMENT.read_text(encoding='utf-8')
+    for table in study.TABLES:
+        assert study.document_table(document, table, name) == study.render_table(results, table)
+    summary = results['summary']
+    assert summary['largest_rebuild_difference'] <= 1e-14
+    assert summary['decision_changes'] == []
+    above = [cell for cell in results['cells'] if cell['difference'] > study.TOLERANCE]
+    for cell in above:
+        assert cell['default_best'] == cell['lower_bound_best'] == ['P']
+        assert cell['lower_bound_margin'] > 100 * cell['difference']
+    for cell in results['cells']:
+        assert cell['three_hand_play_in_common_shoe'] <= max(
+            cell['default_play_in_common_shoe'], cell['two_hand_common_shoe_split'])
+        if cell['default_hands'] > 2.0:
+            assert cell['lower_bound_source'] == 'default play'
+        else:
+            assert abs(cell['default_policy_difference']) <= study.TOLERANCE
+    # The prose states these numbers, so they must follow from the saved cells.
+    text = _section(document, name)
+    worst, gain = summary['worst'], summary['largest_own_play_gain']
+    excess, closest = summary['largest_default_excess'], summary['closest_split_shortfall']
+    for cell in (worst, gain, excess, closest):
+        assert f"{cell['pair']},{cell['pair']} against {cell['up']}" in text
+    assert f"{-worst['difference']:.9f} units" in text
+    assert f"{gain['difference']:.9f} units" in text
+    assert f"{excess['difference']:.9f} units" in text
+    assert f"{closest['shortfall']:.4f} units" in text
+    assert f"{min(cell['lower_bound_margin'] for cell in above):.4f} units" in text
+    assert f"{summary['own_play_above_default']} cells" in text
+    assert f"less in {summary['own_play_below_default']} cells" in text
+    assert f"In the other {summary['default_above_lower_bound']} cells" in text
+    assert f"within 1e-12 in {summary['within_tolerance']} cells" in text
+    assert f"resplits in {summary['resplitting_cells']}" in text
+    assert f"In {100 - summary['default_above_lower_bound']} of the 100 cells" in text
+    rounding = max(c['difference'] for c in results['cells'] if c not in above)
+    assert f"rounding, which reaches {rounding:.1e} here" in text
+    assert f"{round(results['elapsed_seconds'])} seconds" in text
+
+
+def test_the_readme_states_the_variant_extremes():
+    readme = ' '.join((study.ROOT / 'README.md').read_text(encoding='utf-8').split())
+    summaries = [json.loads(study.results_path(name).read_text(encoding='utf-8'))['summary']
+                 for name in ('h17', 'no-das')]
+    assert all(summary['default_above_lower_bound'] == 5 for summary in summaries)
+    most_above = max(s['largest_default_excess']['difference'] for s in summaries)
+    most_below = max(-s['worst']['difference'] for s in summaries)
+    assert f'{most_above:.9f} units' in readme
+    assert f'{most_below:.9f} units' in readme
+
+
+def test_h17_equals_the_default_where_no_soft_17_arises():
+    # A dealer 7, 8, 9 or T cannot reach a soft 17, so H17 changes nothing there.
+    default = {(c['pair'], c['up']): c for c in saved()['cells']}
+    h17 = json.loads(study.results_path('h17').read_text(encoding='utf-8'))
+    for cell in h17['cells']:
+        if cell['up'] in '789T':
+            other = default[(cell['pair'], cell['up'])]
+            assert cell['default_split'] == other['default_split']
+            assert cell['difference'] == other['difference']
+
+
+@pytest.mark.parametrize('name', ['default', 'h17', 'no-das'])
 @pytest.mark.parametrize('pair', ['A', 'T'])
-def test_cheap_saved_cells_recompute(pair):
-    cells = [cell for cell in saved()['cells'] if cell['pair'] == pair]
-    fresh = study.run_study(pairs=(pair,), upcards=tuple(cell['up'] for cell in cells))
+def test_cheap_saved_cells_recompute(pair, name):
+    path = study.results_path(name)
+    results = json.loads(path.read_text(encoding='utf-8'))
+    cells = [cell for cell in results['cells'] if cell['pair'] == pair]
+    fresh = study.run_study(pairs=(pair,), upcards=tuple(cell['up'] for cell in cells),
+                            rules=study.RULE_TABLES[name])
     assert study.compare({'cells': cells}, fresh) == []
 
 
 @SLOW
 @pytest.mark.slow
-def test_check_mode_recomputes_every_saved_cell():
+@pytest.mark.parametrize('name', ['default', 'h17', 'no-das'])
+def test_check_mode_recomputes_every_saved_cell(name):
     result = subprocess.run([sys.executable, str(study.ROOT / 'tools/resplit_study.py'),
-                             '--check'], capture_output=True, text=True, cwd=study.ROOT)
+                             '--check', '--table', name], capture_output=True, text=True,
+                            cwd=study.ROOT)
     assert result.returncode == 0, result.stdout[-4000:] + result.stderr[-4000:]
     assert 'check passed' in result.stdout
 

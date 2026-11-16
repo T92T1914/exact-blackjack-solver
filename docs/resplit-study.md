@@ -180,6 +180,117 @@ python tools/resplit_study.py --check
 python tools/resplit_study.py --output new-resplit-study.json
 ```
 
+## The dealer hitting soft 17, and no double after split
+
+I ran the same comparison on two more tables, changing one rule at a time. One
+has the dealer hit soft 17, the other allows no double after split. Each table
+reads its own two hand results as the third play in the bound, and each has its
+own saved file: [H17](resplit-study-h17-results.json) and
+[no DAS](resplit-study-no-das-results.json). The shoe, the four hand limit and
+the method are the same.
+
+```sh
+python tools/resplit_study.py --table h17 --check
+python tools/resplit_study.py --table no-das --check
+```
+
+### H17
+
+In 95 of the 100 cells the default is not above the bound by more than
+rounding, which reaches 1.1e-16 here. In the other 5 cells it is above by at
+most 0.000008657 units, for 6,6 against 2, and split stays the best action by
+at least 0.0099 units. The largest gap the other way is 0.000094950 units, for
+7,7 against T. No cell changes its best action under the bound. Where split is
+not the best action, the closest call is 3,3 against 8, where split trails by
+0.0106 units. The default and the bound agree within 1e-12 in 44 cells, and the
+default resplits in 42. The own play earns more than the default says in 37
+cells, by up to 0.000086885 units for 8,8 against 7, and less in 5 cells. The
+run took 83 seconds.
+
+The first table is the default value minus the lower bound. The second is the
+default's own play minus the default value.
+
+<!-- resplit-table-h17-bound:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | −8.38e−5 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
+| 9,9 | −8.85e−6 | −2.04e−5 | −2.39e−5 | −2.90e−5 | −3.33e−5 | 0 | −1.29e−5 | −1.10e−5 | −3.75e−5 | 0 |
+| 8,8 | −3.38e−5 | −3.66e−5 | −4.93e−5 | −5.45e−5 | −5.82e−5 | −8.69e−5 | −4.92e−5 | −1.98e−5 | −7.76e−6 | 4.79e−6 |
+| 7,7 | −9.33e−6 | −1.17e−5 | −1.73e−5 | −3.50e−5 | −4.17e−5 | −2.26e−5 | 0 | 0 | −9.49e−5 | 0 |
+| 6,6 | 8.66e−6 | 2.75e−6 | −8.06e−6 | −1.46e−5 | −2.95e−5 | 0 | 0 | 0 | −8.66e−6 | 0 |
+| 5,5 | −1.62e−6 | −8.34e−8 | 0 | 0 | −1.71e−9 | 0 | 0 | 0 | −5.45e−11 | 0 |
+| 4,4 | −5.57e−7 | −8.13e−7 | 0 | 5.23e−6 | −6.41e−8 | 0 | 0 | 0 | −1.25e−5 | 0 |
+| 3,3 | 3.21e−6 | −2.65e−6 | −5.51e−6 | −1.02e−5 | −1.46e−5 | −1.12e−6 | 0 | 0 | −6.92e−5 | 0 |
+| 2,2 | −1.59e−6 | −6.07e−6 | −1.12e−5 | −1.33e−5 | −1.83e−5 | −7.66e−6 | 0 | 0 | −8.60e−5 | 0 |
+<!-- resplit-table-h17-bound:end -->
+
+<!-- resplit-table-h17-own-play:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 9,9 | 8.85e−6 | 2.04e−5 | 2.39e−5 | 2.90e−5 | 3.33e−5 | 0 | 1.29e−5 | 1.10e−5 | 0 | 0 |
+| 8,8 | 3.38e−5 | 3.66e−5 | 4.93e−5 | 5.45e−5 | 5.82e−5 | 8.69e−5 | 4.92e−5 | 1.98e−5 | 7.76e−6 | −4.79e−6 |
+| 7,7 | 9.33e−6 | 1.17e−5 | 1.73e−5 | 3.50e−5 | 4.17e−5 | 2.26e−5 | 0 | 0 | 0 | 0 |
+| 6,6 | −8.66e−6 | −2.75e−6 | 8.06e−6 | 1.46e−5 | 2.95e−5 | 0 | 0 | 0 | 0 | 0 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 4,4 | 0 | 0 | 0 | −5.23e−6 | 6.41e−8 | 0 | 0 | 0 | 0 | 0 |
+| 3,3 | −3.21e−6 | 2.65e−6 | 5.51e−6 | 1.02e−5 | 1.46e−5 | 1.12e−6 | 0 | 0 | 0 | 0 |
+| 2,2 | 1.59e−6 | 6.07e−6 | 1.12e−5 | 1.33e−5 | 1.83e−5 | 7.66e−6 | 0 | 0 | 0 | 0 |
+<!-- resplit-table-h17-own-play:end -->
+
+### No double after split
+
+In 95 of the 100 cells the default is not above the bound by more than
+rounding, which reaches 1.1e-16 here. In the other 5 cells it is above by at
+most 0.000009928 units, for 6,6 against 3, and split stays the best action by
+at least 0.0111 units. The largest gap the other way is 0.000094955 units, for
+7,7 against T. No cell changes its best action under the bound. Where split is
+not the best action, the closest call is 2,2 against 3, where split trails by
+0.0124 units. The default and the bound agree within 1e-12 in 51 cells, and the
+default resplits in 35. The own play earns more than the default says in 30
+cells, by up to 0.000078700 units for 8,8 against 7, and less in 5 cells. The
+run took 75 seconds.
+
+<!-- resplit-table-no-das-bound:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
+| 9,9 | −3.49e−6 | −1.35e−5 | −1.64e−5 | −2.14e−5 | −2.02e−5 | 0 | −9.66e−6 | −9.11e−6 | −4.16e−5 | 0 |
+| 8,8 | −2.77e−5 | −3.03e−5 | −3.90e−5 | −4.24e−5 | −5.15e−5 | −7.87e−5 | −4.37e−5 | −1.83e−5 | −6.94e−6 | −8.33e−6 |
+| 7,7 | −4.45e−6 | −6.61e−6 | −9.26e−6 | −2.01e−5 | −2.76e−5 | −1.62e−5 | 0 | 0 | −9.50e−5 | −2.88e−6 |
+| 6,6 | 0 | 9.93e−6 | 1.98e−7 | −4.28e−6 | −1.34e−5 | 0 | 0 | 0 | −1.53e−5 | −2.65e−8 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −8.17e−11 | −3.88e−6 |
+| 4,4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.26e−5 | −6.39e−6 |
+| 3,3 | 0 | 0 | 4.72e−6 | 7.14e−7 | −1.29e−6 | 2.32e−6 | 0 | 0 | −6.98e−5 | −1.46e−6 |
+| 2,2 | 0 | 0 | −7.10e−7 | −2.90e−6 | −5.25e−6 | −3.84e−6 | 0 | 0 | −8.98e−5 | −1.13e−5 |
+<!-- resplit-table-no-das-bound:end -->
+
+<!-- resplit-table-no-das-own-play:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 9,9 | 3.49e−6 | 1.35e−5 | 1.64e−5 | 2.14e−5 | 2.02e−5 | 0 | 9.66e−6 | 9.11e−6 | 0 | 0 |
+| 8,8 | 2.77e−5 | 3.03e−5 | 3.90e−5 | 4.24e−5 | 5.15e−5 | 7.87e−5 | 4.37e−5 | 1.83e−5 | 6.94e−6 | 8.33e−6 |
+| 7,7 | 4.45e−6 | 6.61e−6 | 9.26e−6 | 2.01e−5 | 2.76e−5 | 1.62e−5 | 0 | 0 | 0 | 0 |
+| 6,6 | 0 | −9.93e−6 | −1.98e−7 | 4.28e−6 | 1.34e−5 | 0 | 0 | 0 | 0 | 0 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 4,4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 3,3 | 0 | 0 | −4.72e−6 | −7.14e−7 | 1.29e−6 | −2.32e−6 | 0 | 0 | 0 | 0 |
+| 2,2 | 0 | 0 | 7.10e−7 | 2.90e−6 | 5.25e−6 | 3.84e−6 | 0 | 0 | 0 | 0 |
+<!-- resplit-table-no-das-own-play:end -->
+
+Both tables agree with the default table on the main point. Where the default
+resplits it holds none of the shared shoe gain, and a better shared shoe play
+would have to gain more than the closest call above to change a best action.
+Two things in the H17 table are new. T,T against 4 is 0.0000838 units below the
+bound, where the default table shows no gap for it, and 8,8 against an ace is
+above the bound by 0.0000048 units. Against a dealer 7, 8, 9 or T a soft 17
+cannot come up, and the H17 cells there equal the default table's exactly.
+
 ## What this does not show
 
 The bound is not the best shared shoe play. The real gap can be larger in every
@@ -189,7 +300,8 @@ split trails by 0.0106 units. A better shared shoe play would have to gain that
 much over these values for a best action to change. The largest gain the two
 hand study found for using the shared shoe was 0.000538738 units.
 
-This is one table. The dealer hitting soft 17, no double after split, other deck
-counts, resplitting aces, hitting split aces and depleted shoes are not in it.
+These are three tables. The dealer hitting soft 17 together with no double after
+split, other deck counts, resplitting aces, hitting split aces and depleted
+shoes are not in them.
 The values are binary64, not rational arithmetic. The shortcut also needs a
 shoe that cannot run out, which a six deck shoe cannot.
