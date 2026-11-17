@@ -620,9 +620,14 @@ separate from this command. Current results are available in the linked CI run.
   ran the two hand comparison with one, two, four and eight decks. It is never higher
   by more than rounding there either, and no best action changes. The largest
   gap is 0.004040552 units for 3,3 against 2 with one deck, and it shrinks as decks
-  are added, to 0.000360496 units for 2,2 against 4 with eight. Neither study
-  measures resplitting at any deck count but six, deck counts other than 1, 2,
-  4, 6 and 8, or depleted shoes.
+  are added, to 0.000360496 units for 2,2 against 4 with eight. I ran the
+  resplit comparison at those deck counts too. With one deck the default is
+  never above the bound, with two decks it is above in one cell, with four in
+  three and with eight in five, by at most 0.000007468 units. It is below the
+  bound by at most 0.003897397 units with one deck, and the gap shrinks to
+  0.000347542 units for 2,2 against 4 with eight. No best action changes.
+  Neither study measures deck counts other than 1, 2, 4, 6 and 8, or depleted
+  shoes.
   Two of the split
   rules were conservative defaults in the original table (resplit aces, hit
   split aces), and the solver's defaults follow them. The EV

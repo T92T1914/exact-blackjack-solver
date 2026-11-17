@@ -401,6 +401,214 @@ information play adds nothing there. The 8,8 against T gain of 0.000008016
 units is the one the no DAS table shows as well. T,T against 4 is 0.0000838
 units below the bound, as it is under H17 alone.
 
+## Other deck counts
+
+I ran the same comparison with one, two, four and eight decks, on the default
+rules otherwise: dealer stands on soft 17, double after split, up to four hands.
+Each count reads its own two hand results from the [two hand
+study](split-error-study.md#other-deck-counts) as the third play in the bound,
+values its own information play as the fourth, and has its own saved file. The
+shoe is a fresh shoe of that many decks minus the pair and the upcard.
+
+```sh
+python tools/resplit_study.py --table decks-1 --check
+python tools/resplit_study.py --table decks-2 --check
+python tools/resplit_study.py --table decks-4 --check
+python tools/resplit_study.py --table decks-8 --check
+```
+
+The shortcut needs a shoe that cannot run out, and one deck can seem short for
+four hands. It cannot run out. A hand that stops drawing counts at most 21 with
+every ace as 1, a hand that busts at most 30, and the dealer ends at most at 26.
+So the cards drawn in a round total at most 4 x 30 + 26 = 146. The smallest 33 cards of a
+one deck shoe total more than that, so a round draws at most 32 cards, against
+the 49 the shoe holds after the pair and the upcard. A test computes that bound
+for all 100 cells. Two, four and eight decks have more cards and the same bound.
+
+The two tables under each count are the same as above. The first is the default
+value minus the lower bound. The second is the default's own play minus the
+default value.
+
+### One deck
+
+[Saved results](resplit-study-decks-1-results.json). In 100 of the 100 cells the
+default is not above the bound, not even by rounding. The largest gap the other
+way is 0.003897397 units, for 3,3 against 2. No cell changes its best action
+under the bound. Where split is not the best action, the closest call is 9,9
+against A, where split trails by 0.0141 units. The default and the bound agree
+within 1e-12 in 12 cells, and the default resplits in 47. The own play earns
+more than the default says in 40 cells, by up to 0.000107392 units for 8,8
+against 7, and less in 0 cells. The information play adds more than 1e-12 in 39
+of the 47 cells and is the largest of the four plays in 39 cells. Its largest
+gain is 0.003886484 units for 3,3 against 2. The run took 147 seconds.
+
+<!-- resplit-table-decks-1-bound:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | −2.14e−6 | −4.66e−4 | −2.66e−6 | −2.75e−4 | −1.83e−6 | −4.38e−5 | −1.15e−5 | −6.34e−5 | −1.17e−4 | 0 |
+| 9,9 | −1.42e−3 | −9.21e−4 | −1.86e−5 | −2.89e−5 | −2.06e−5 | −7.56e−7 | −6.18e−5 | −1.23e−4 | −3.26e−4 | −8.15e−4 |
+| 8,8 | −8.27e−4 | −8.32e−5 | −1.35e−4 | −8.00e−4 | −9.58e−4 | −1.09e−4 | −6.65e−6 | −4.54e−5 | −2.64e−4 | −1.53e−4 |
+| 7,7 | −9.86e−4 | −7.11e−5 | −6.88e−5 | −6.31e−5 | −6.87e−5 | −4.66e−4 | −2.22e−5 | −1.26e−5 | −1.17e−3 | −7.31e−4 |
+| 6,6 | −1.29e−4 | −4.99e−5 | −1.96e−4 | −7.67e−5 | −5.65e−4 | −6.62e−4 | −1.69e−5 | −1.63e−4 | −8.89e−4 | −1.34e−3 |
+| 5,5 | −8.14e−4 | −9.16e−5 | −3.61e−4 | −1.43e−7 | −7.79e−8 | −1.27e−3 | −3.40e−4 | −3.52e−4 | −8.88e−4 | −5.43e−4 |
+| 4,4 | −9.16e−4 | −1.94e−4 | 0 | −2.90e−5 | −1.98e−5 | −1.35e−3 | −4.62e−4 | −3.56e−4 | −2.55e−4 | −9.32e−4 |
+| 3,3 | −3.90e−3 | −2.21e−3 | −2.95e−4 | −6.90e−5 | −6.83e−5 | −1.41e−3 | −5.23e−4 | −5.24e−4 | −6.55e−4 | −6.97e−4 |
+| 2,2 | −8.94e−4 | −6.90e−4 | −2.18e−3 | −1.88e−4 | −2.51e−3 | −1.39e−3 | −4.34e−4 | −9.53e−4 | −6.97e−4 | −7.25e−4 |
+<!-- resplit-table-decks-1-bound:end -->
+
+<!-- resplit-table-decks-1-own-play:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 9,9 | 1.39e−5 | 1.07e−5 | 1.86e−5 | 2.89e−5 | 2.06e−5 | 0 | 2.58e−5 | 0 | 0 | 3.18e−6 |
+| 8,8 | 7.24e−5 | 7.67e−5 | 7.18e−5 | 7.95e−5 | 9.23e−5 | 1.07e−4 | 0 | 8.73e−6 | 1.02e−5 | 3.49e−5 |
+| 7,7 | 4.47e−5 | 5.63e−5 | 6.88e−5 | 6.31e−5 | 6.87e−5 | 0 | 1.29e−5 | 0 | 0 | 0 |
+| 6,6 | 3.49e−5 | 4.71e−5 | 6.13e−5 | 7.67e−5 | 0 | 2.09e−5 | 0 | 0 | 0 | 0 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 4,4 | 0 | 0 | 0 | 1.67e−5 | 8.91e−6 | 0 | 0 | 0 | 0 | 0 |
+| 3,3 | 1.09e−5 | 0 | 4.00e−5 | 5.80e−5 | 5.87e−5 | 3.08e−5 | 1.15e−5 | 0 | 0 | 0 |
+| 2,2 | 0 | 2.18e−5 | 2.84e−5 | 4.96e−5 | 5.23e−5 | 2.16e−5 | 0 | 0 | 0 | 0 |
+<!-- resplit-table-decks-1-own-play:end -->
+
+### Two decks
+
+[Saved results](resplit-study-decks-2-results.json). In 99 of the 100 cells the
+default is not above the bound by more than rounding, which reaches 5.6e-17
+here. In the other 1 cell it is above by at most 0.000007468 units, for 7,7
+against 8, and split stays the best action by at least 0.0024 units. The largest
+gap the other way is 0.001292822 units, for 3,3 against 2. No cell changes its
+best action under the bound. Where split is not the best action, the closest
+call is 3,3 against 8, where split trails by 0.0042 units. The default and the
+bound agree within 1e-12 in 17 cells, and the default resplits in 45. The own
+play earns more than the default says in 42 cells, by up to 0.000171031 units
+for 8,8 against 7, and less in 3 cells. The information play adds more than
+1e-12 in 32 of the 45 cells and is the largest of the four plays in 32 cells.
+Its largest gain is 0.001291284 units for 3,3 against 2. The run took 385
+seconds.
+
+<!-- resplit-table-decks-2-bound:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | −1.13e−4 | 0 | 0 | −8.36e−5 | −7.52e−5 | −1.51e−8 | 0 | −1.91e−7 | −4.96e−5 | 0 |
+| 9,9 | −2.97e−4 | −1.35e−4 | −3.91e−5 | −5.16e−5 | −4.66e−5 | −4.15e−12 | −2.98e−5 | −2.12e−5 | −1.31e−4 | −2.14e−4 |
+| 8,8 | −8.36e−5 | −3.23e−4 | −1.05e−4 | −1.43e−4 | −3.23e−4 | −1.71e−4 | −6.81e−5 | −4.14e−5 | −3.80e−5 | −5.30e−4 |
+| 7,7 | −2.75e−4 | −3.23e−4 | −6.11e−5 | −8.12e−5 | −9.68e−5 | −5.02e−5 | 7.47e−6 | −9.61e−8 | −3.69e−4 | −2.31e−4 |
+| 6,6 | −7.77e−5 | −5.96e−5 | −4.38e−5 | −7.29e−5 | −1.19e−4 | −2.93e−7 | −8.70e−9 | −2.24e−7 | −6.55e−5 | −3.95e−5 |
+| 5,5 | −3.21e−5 | −4.16e−4 | 0 | −9.25e−5 | 0 | −5.46e−5 | −1.97e−5 | −1.98e−4 | −1.79e−5 | −4.85e−5 |
+| 4,4 | −1.63e−4 | −4.91e−4 | 0 | −6.79e−6 | −1.45e−5 | −9.80e−5 | −2.43e−5 | −1.77e−4 | −3.53e−5 | −1.67e−4 |
+| 3,3 | −1.29e−3 | −2.21e−4 | −3.93e−5 | −1.07e−4 | −4.72e−5 | −6.80e−5 | −9.79e−6 | −7.16e−5 | −1.73e−4 | −3.47e−4 |
+| 2,2 | −1.95e−4 | −1.32e−4 | −1.04e−3 | −6.74e−5 | −2.23e−4 | −7.43e−5 | −1.52e−5 | −7.22e−5 | −2.28e−4 | −6.26e−4 |
+<!-- resplit-table-decks-2-bound:end -->
+
+<!-- resplit-table-decks-2-own-play:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 9,9 | 1.55e−5 | 3.00e−5 | 3.91e−5 | 5.16e−5 | 4.66e−5 | 0 | 2.98e−5 | 1.67e−5 | 0 | 0 |
+| 8,8 | 8.36e−5 | 9.06e−5 | 1.05e−4 | 1.15e−4 | 1.33e−4 | 1.71e−4 | 6.81e−5 | 3.03e−5 | 1.58e−5 | 3.01e−5 |
+| 7,7 | 3.61e−5 | 4.56e−5 | 6.11e−5 | 8.12e−5 | 9.68e−5 | 4.82e−5 | −7.47e−6 | 0 | 0 | 0 |
+| 6,6 | 7.00e−6 | 3.04e−5 | 4.38e−5 | 6.03e−5 | 5.22e−5 | −6.53e−6 | 0 | 0 | 0 | 0 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 4,4 | 0 | 0 | 0 | 6.79e−6 | 1.45e−5 | 0 | 0 | 0 | 0 | 0 |
+| 3,3 | 1.54e−6 | 1.11e−5 | 2.86e−5 | 4.40e−5 | 4.72e−5 | 1.62e−5 | −1.13e−5 | 0 | 0 | 0 |
+| 2,2 | 7.91e−6 | 2.04e−5 | 3.11e−5 | 4.45e−5 | 5.00e−5 | 2.06e−5 | 0 | 0 | 0 | 0 |
+<!-- resplit-table-decks-2-own-play:end -->
+
+### Four decks
+
+[Saved results](resplit-study-decks-4-results.json). In 97 of the 100 cells the
+default is not above the bound by more than rounding, which reaches 1.1e-16
+here. In the other 3 cells it is above by at most 0.000004596 units, for 4,4
+against 5, and split stays the best action by at least 0.0360 units. The largest
+gap the other way is 0.000625598 units, for 2,2 against 4. No cell changes its
+best action under the bound. Where split is not the best action, the closest
+call is 7,7 against 8, where split trails by 0.0087 units. The default and the
+bound agree within 1e-12 in 27 cells, and the default resplits in 42. The own
+play earns more than the default says in 37 cells, by up to 0.000118956 units
+for 8,8 against 7, and less in 5 cells. The information play adds more than
+1e-12 in 19 of the 42 cells and is the largest of the four plays in 20 cells.
+Its largest gain is 0.000608287 units for 2,2 against 4. The run took 453
+seconds.
+
+<!-- resplit-table-decks-4-bound:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | −7.83e−5 | 0 | 0 | 0 | −1.44e−5 | 0 | 0 | 0 | −2.28e−5 | 0 |
+| 9,9 | −1.13e−5 | −2.56e−5 | −3.05e−5 | −3.83e−5 | −3.68e−5 | 0 | −1.83e−5 | −1.44e−5 | −5.91e−5 | −9.27e−9 |
+| 8,8 | −5.06e−5 | −5.50e−5 | −7.00e−5 | −7.65e−5 | −9.58e−5 | −1.19e−4 | −6.29e−5 | −2.57e−5 | −2.16e−5 | −1.71e−5 |
+| 7,7 | −2.62e−4 | −2.10e−5 | −2.86e−5 | −5.03e−5 | −6.27e−5 | −3.25e−5 | 0 | 0 | −1.54e−4 | −8.70e−5 |
+| 6,6 | −2.15e−4 | 3.05e−7 | −1.55e−5 | −2.52e−5 | −3.96e−5 | 0 | 0 | 0 | −1.44e−5 | −2.16e−4 |
+| 5,5 | −1.40e−4 | −1.75e−6 | 0 | 0 | −2.69e−5 | −1.62e−9 | −7.01e−10 | −1.39e−6 | 0 | −2.23e−4 |
+| 4,4 | −8.26e−5 | −3.15e−6 | 0 | 4.60e−6 | 4.00e−6 | −1.29e−8 | −1.81e−9 | −1.69e−6 | −1.66e−5 | −1.06e−4 |
+| 3,3 | −7.17e−5 | −4.92e−6 | −1.40e−5 | −1.80e−5 | −4.76e−5 | −3.74e−6 | −1.06e−8 | −5.29e−7 | −9.49e−5 | −4.41e−5 |
+| 2,2 | −1.42e−4 | −1.00e−5 | −6.26e−4 | −2.19e−5 | −2.94e−5 | −1.17e−5 | −2.17e−9 | −4.50e−7 | −1.21e−4 | −2.27e−5 |
+<!-- resplit-table-decks-4-bound:end -->
+
+<!-- resplit-table-decks-4-own-play:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 9,9 | 1.13e−5 | 2.56e−5 | 3.05e−5 | 3.83e−5 | 3.68e−5 | 0 | 1.83e−5 | 1.44e−5 | 0 | 0 |
+| 8,8 | 5.06e−5 | 5.45e−5 | 7.00e−5 | 7.65e−5 | 8.98e−5 | 1.19e−4 | 6.29e−5 | 2.57e−5 | 1.07e−5 | 1.37e−5 |
+| 7,7 | 1.59e−5 | 2.03e−5 | 2.86e−5 | 5.03e−5 | 6.27e−5 | 3.25e−5 | 0 | 0 | 0 | 0 |
+| 6,6 | −9.83e−6 | −3.11e−7 | 1.55e−5 | 2.52e−5 | 3.96e−5 | 0 | 0 | 0 | 0 | 0 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 4,4 | 0 | 0 | 0 | −4.60e−6 | −4.00e−6 | 0 | 0 | 0 | 0 | 0 |
+| 3,3 | −3.14e−6 | 4.91e−6 | 9.83e−6 | 1.80e−5 | 2.10e−5 | 3.73e−6 | 0 | 0 | 0 | 0 |
+| 2,2 | 3.10e−6 | 1.00e−5 | 1.73e−5 | 2.12e−5 | 2.64e−5 | 1.16e−5 | 0 | 0 | 0 | 0 |
+<!-- resplit-table-decks-4-own-play:end -->
+
+### Eight decks
+
+[Saved results](resplit-study-decks-8-results.json). In 95 of the 100 cells the
+default is not above the bound by more than rounding, which reaches 1.1e-16
+here. In the other 5 cells it is above by at most 0.000005150 units, for 4,4
+against 5, and split stays the best action by at least 0.0074 units. The largest
+gap the other way is 0.000347542 units, for 2,2 against 4. No cell changes its
+best action under the bound. Where split is not the best action, the closest
+call is 3,3 against 8, where split trails by 0.0111 units. The default and the
+bound agree within 1e-12 in 42 cells, and the default resplits in 42. The own
+play earns more than the default says in 37 cells, by up to 0.000068014 units
+for 8,8 against 7, and less in 5 cells. The information play adds more than
+1e-12 in 7 of the 42 cells and is the largest of the four plays in 7 cells. Its
+largest gain is 0.000339346 units for 2,2 against 4. The run took 466 seconds.
+
+<!-- resplit-table-decks-8-bound:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −9.37e−6 | 0 |
+| 9,9 | −6.20e−6 | −1.57e−5 | −1.84e−5 | −2.27e−5 | −2.23e−5 | 0 | −9.90e−6 | −8.82e−6 | −2.73e−5 | 0 |
+| 8,8 | −2.68e−5 | −2.93e−5 | −3.91e−5 | −4.27e−5 | −5.07e−5 | −6.80e−5 | −3.97e−5 | −1.59e−5 | −1.20e−5 | −5.86e−6 |
+| 7,7 | −7.92e−5 | −9.05e−6 | −1.27e−5 | −2.70e−5 | −3.45e−5 | −1.71e−5 | 0 | 0 | −6.64e−5 | −3.73e−7 |
+| 6,6 | 5.10e−6 | 4.12e−6 | −4.93e−6 | −9.96e−6 | −2.26e−5 | 0 | 0 | 0 | −5.87e−6 | −3.65e−9 |
+| 5,5 | −8.91e−10 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −7.90e−9 | −6.77e−7 |
+| 4,4 | −5.43e−10 | 0 | 0 | 5.15e−6 | 3.90e−6 | 0 | 0 | 0 | −1.05e−5 | −1.27e−6 |
+| 3,3 | 2.97e−6 | −1.54e−6 | −3.35e−6 | −6.80e−6 | −9.65e−6 | −2.78e−7 | 0 | 0 | −5.65e−5 | −7.86e−6 |
+| 2,2 | −1.59e−6 | −4.57e−6 | −3.48e−4 | −2.77e−5 | −1.26e−5 | −5.67e−6 | 0 | 0 | −6.78e−5 | −2.93e−6 |
+<!-- resplit-table-decks-8-bound:end -->
+
+<!-- resplit-table-decks-8-own-play:begin -->
+| Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 9,9 | 6.20e−6 | 1.57e−5 | 1.84e−5 | 2.27e−5 | 2.23e−5 | 0 | 9.90e−6 | 8.82e−6 | 0 | 0 |
+| 8,8 | 2.68e−5 | 2.93e−5 | 3.91e−5 | 4.27e−5 | 5.07e−5 | 6.80e−5 | 3.97e−5 | 1.59e−5 | 6.03e−6 | 5.86e−6 |
+| 7,7 | 7.45e−6 | 9.05e−6 | 1.27e−5 | 2.70e−5 | 3.45e−5 | 1.71e−5 | 0 | 0 | 0 | 0 |
+| 6,6 | −8.15e−6 | −4.12e−6 | 4.93e−6 | 9.96e−6 | 2.26e−5 | 0 | 0 | 0 | 0 | 0 |
+| 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| 4,4 | 0 | 0 | 0 | −5.15e−6 | −3.90e−6 | 0 | 0 | 0 | 0 | 0 |
+| 3,3 | −2.97e−6 | 1.54e−6 | 3.35e−6 | 6.80e−6 | 9.65e−6 | 2.78e−7 | 0 | 0 | 0 | 0 |
+| 2,2 | 1.53e−6 | 4.57e−6 | 8.20e−6 | 9.50e−6 | 1.26e−5 | 5.67e−6 | 0 | 0 | 0 | 0 |
+<!-- resplit-table-decks-8-own-play:end -->
+
 ## What this does not show
 
 The bound is not the best shared shoe play. The real gap can be larger in every
@@ -415,7 +623,8 @@ much over these values for a best action to change. On the six deck default
 table the largest gain the two hand study found for using the shared shoe was
 0.000538738 units.
 
-These are four tables. Other deck counts, resplitting aces, hitting split aces
-and depleted shoes are not in them.
+These are eight tables. Deck counts other than 1, 2, 4, 6 and 8, the deck counts
+together with a rule change, resplitting aces, hitting split aces and depleted
+shoes are not in them.
 The values are binary64, not rational arithmetic. The shortcut also needs a
-shoe that cannot run out, which a six deck shoe cannot.
+shoe that cannot run out, which neither a six deck nor a one deck shoe can, as shown above.

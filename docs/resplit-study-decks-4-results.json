@@ -1,0 +1,4474 @@
+{
+ "schema_version": 1,
+ "study": "split_error_resplit_four_hands",
+ "rules": {
+  "decks": 4,
+  "s17": true,
+  "das": true,
+  "peek": true,
+  "surrender": false,
+  "resplit_aces": false,
+  "hit_split_aces": false,
+  "max_hands": 4,
+  "blackjack_payout": 1.5,
+  "double_any_two": true,
+  "tens_are_pairs": true,
+  "insurance_payout": 2.0
+ },
+ "tolerance": 1e-12,
+ "two_hand_results": "docs/split-error-study-decks-4-results.json",
+ "two_hand_results_sha256_lf": "32ea69855d08348246ca1c7b0f6d485c9b67d594ad197e37ffb0803900290814",
+ "evaluated_revision": "a493a45c44df9e5163cacb87be52b8157071f3ce",
+ "evaluated_sources_modified": false,
+ "source_sha256_lf": {
+  "tools/resplit_study.py": "cb11e35e82438fbb87afc5f47c710459d70c4015f8a4b46d04522c7b3411ed37",
+  "tools/split_error_study.py": "ef76cdb0daba265bd890ebb84563422b54ec39464f3196f5a67fa2f1299ba15c",
+  "bj/ev.py": "26af273a63413ed66705d9b78e7a3f7050057e2b7a93ec6fccf939b0b82bbf13",
+  "bj/dealer.py": "ed64f50a51de76309faa775d1dae4758e618c100077b9af2afdc19f835de2752",
+  "bj/core.py": "139219a38b818235a976e57fae8b9a6801bae748b0a50bf96de9bb56e454529d"
+ },
+ "python": "3.11.8",
+ "platform": "Windows-10-10.0.26300-SP0",
+ "elapsed_seconds": 452.74649010000576,
+ "summary": {
+  "cells": 100,
+  "worst": {
+   "pair": "2",
+   "up": "4",
+   "difference": -0.000625598048017928
+  },
+  "within_tolerance": 27,
+  "default_above_lower_bound": 3,
+  "largest_default_excess": {
+   "pair": "4",
+   "up": "5",
+   "difference": 4.596304524706607e-06
+  },
+  "largest_own_play_gain": {
+   "pair": "8",
+   "up": "7",
+   "difference": 0.00011895619695295734
+  },
+  "own_play_above_default": 37,
+  "own_play_below_default": 5,
+  "largest_own_play_shortfall": 9.832863415742965e-06,
+  "largest_rebuild_difference": 5.551115123125783e-17,
+  "resplitting_cells": 42,
+  "decision_changes": [],
+  "closest_split_shortfall": {
+   "pair": "7",
+   "up": "8",
+   "shortfall": 0.008691945665392609
+  },
+  "information_play_cells": 42,
+  "information_play_gains": 19,
+  "information_play_largest": 20,
+  "largest_information_gain": {
+   "pair": "2",
+   "up": "4",
+   "difference": 0.0006082870620642902
+  }
+ },
+ "cells": [
+  {
+   "pair": "A",
+   "up": "2",
+   "shoe": [
+    14,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.49357365386418933,
+   "default_rebuilt": 0.49357365386418933,
+   "default_play_in_common_shoe": 0.49357365386418933,
+   "three_hand_play_in_common_shoe": 0.49357365386418933,
+   "two_hand_common_shoe_split": 0.4935736538641865,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.49357365386418933,
+   "lower_bound_source": "default play",
+   "difference": 0.0,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.28839109250967176,
+    "H": 0.08486786859876343,
+    "D": -0.0587478453780475
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4087057852654259,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.4087057852654259,
+   "decision_changed": false,
+   "split_shortfall": -0.4087057852654259
+  },
+  {
+   "pair": "A",
+   "up": "3",
+   "shoe": [
+    14,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.5409395711812017,
+   "default_rebuilt": 0.5409395711812017,
+   "default_play_in_common_shoe": 0.5409395711812017,
+   "three_hand_play_in_common_shoe": 0.5409395711812017,
+   "two_hand_common_shoe_split": 0.5409395711812003,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.5409395711812017,
+   "lower_bound_source": "default play",
+   "difference": 0.0,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.2470842899587759,
+    "H": 0.1073392514440429,
+    "D": 0.00811698855444315
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.43360031973715885,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.43360031973715885,
+   "decision_changed": false,
+   "split_shortfall": -0.43360031973715885
+  },
+  {
+   "pair": "A",
+   "up": "4",
+   "shoe": [
+    14,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.5911055184868392,
+   "default_rebuilt": 0.5911055184868392,
+   "default_play_in_common_shoe": 0.5911055184868391,
+   "three_hand_play_in_common_shoe": 0.5911055184868391,
+   "two_hand_common_shoe_split": 0.5911055184868387,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.5911055184868391,
+   "lower_bound_source": "default play",
+   "difference": 1.1102230246251565e-16,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.20314716877423422,
+    "H": 0.1305168670545162,
+    "D": 0.07756358021284354
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.460588651432323,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.4605886514323229,
+   "decision_changed": false,
+   "split_shortfall": -0.4605886514323229
+  },
+  {
+   "pair": "A",
+   "up": "5",
+   "shoe": [
+    14,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.6435883407217045,
+   "default_rebuilt": 0.6435883407217045,
+   "default_play_in_common_shoe": 0.6435883407217045,
+   "three_hand_play_in_common_shoe": 0.6435883407217045,
+   "two_hand_common_shoe_split": 0.6435883407217048,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.6435883407217048,
+   "lower_bound_source": "two hand",
+   "difference": -3.3306690738754696e-16,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.15768848727648097,
+    "H": 0.16284948364675025,
+    "D": 0.14822795835906152
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.48073885707495423,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.48073885707495456,
+   "decision_changed": false,
+   "split_shortfall": -0.48073885707495456
+  },
+  {
+   "pair": "A",
+   "up": "6",
+   "shoe": [
+    14,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.6898888999303361,
+   "default_rebuilt": 0.6898888999303361,
+   "default_play_in_common_shoe": 0.6898888999303361,
+   "three_hand_play_in_common_shoe": 0.6898888999303361,
+   "two_hand_common_shoe_split": 0.6898888999303363,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.6898888999303363,
+   "lower_bound_source": "two hand",
+   "difference": -2.220446049250313e-16,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.14164516581817888,
+    "H": 0.18902020057118032,
+    "D": 0.1962486840809612
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4936402158493749,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.4936402158493751,
+   "decision_changed": false,
+   "split_shortfall": -0.4936402158493751
+  },
+  {
+   "pair": "A",
+   "up": "7",
+   "shoe": [
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.48199691908570785,
+   "default_rebuilt": 0.48199691908570785,
+   "default_play_in_common_shoe": 0.4819969190857078,
+   "three_hand_play_in_common_shoe": 0.4819969190857078,
+   "two_hand_common_shoe_split": 0.4819969190857072,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.4819969190857078,
+   "lower_bound_source": "default play",
+   "difference": 5.551115123125783e-17,
+   "default_policy_difference": -5.551115123125783e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.4698984411469278,
+    "H": 0.16375740548100448,
+    "D": -0.17262087802903314
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.3182395136047034,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.3182395136047033,
+   "decision_changed": false,
+   "split_shortfall": -0.3182395136047033
+  },
+  {
+   "pair": "A",
+   "up": "8",
+   "shoe": [
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    64
+   ],
+   "default_split": 0.36425755436423396,
+   "default_rebuilt": 0.36425755436423396,
+   "default_play_in_common_shoe": 0.364257554364234,
+   "three_hand_play_in_common_shoe": 0.364257554364234,
+   "two_hand_common_shoe_split": 0.36425755436423435,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.36425755436423435,
+   "lower_bound_source": "two hand",
+   "difference": -3.885780586188048e-16,
+   "default_policy_difference": 5.551115123125783e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5078753067454145,
+    "H": 0.09434382989388647,
+    "D": -0.3100034182871183
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.2699137244703475,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.2699137244703479,
+   "decision_changed": false,
+   "split_shortfall": -0.2699137244703479
+  },
+  {
+   "pair": "A",
+   "up": "9",
+   "shoe": [
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    64
+   ],
+   "default_split": 0.2427917050836751,
+   "default_rebuilt": 0.2427917050836751,
+   "default_play_in_common_shoe": 0.24279170508367506,
+   "three_hand_play_in_common_shoe": 0.24279170508367506,
+   "two_hand_common_shoe_split": 0.24279170508367526,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.24279170508367526,
+   "lower_bound_source": "two hand",
+   "difference": -1.6653345369377348e-16,
+   "default_policy_difference": -2.7755575615628914e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5355111534048613,
+    "H": -0.0005412169933449451,
+    "D": -0.4480712619238675
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.24333292207702004,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.2433329220770202,
+   "decision_changed": false,
+   "split_shortfall": -0.2433329220770202
+  },
+  {
+   "pair": "A",
+   "up": "T",
+   "shoe": [
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    63
+   ],
+   "default_split": 0.18315500975708524,
+   "default_rebuilt": 0.18315500975708524,
+   "default_play_in_common_shoe": 0.18315500975708524,
+   "three_hand_play_in_common_shoe": 0.18315500975708524,
+   "two_hand_common_shoe_split": 0.18315500975708507,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.18315500975708524,
+   "lower_bound_source": "default play",
+   "difference": 0.0,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5379805988878411,
+    "H": -0.06442277328104123,
+    "D": -0.5029266826131414
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.24757778303812647,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.24757778303812647,
+   "decision_changed": false,
+   "split_shortfall": -0.24757778303812647
+  },
+  {
+   "pair": "A",
+   "up": "A",
+   "shoe": [
+    13,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.13633782000623595,
+   "default_rebuilt": 0.13633782000623595,
+   "default_play_in_common_shoe": 0.13633782000623604,
+   "three_hand_play_in_common_shoe": 0.13633782000623604,
+   "two_hand_common_shoe_split": 0.13633782000623557,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.13633782000623604,
+   "lower_bound_source": "default play",
+   "difference": -8.326672684688674e-17,
+   "default_policy_difference": 8.326672684688674e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.6661940056632147,
+    "H": -0.02304194107562732,
+    "D": -0.6181474454530125
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.15937976108186327,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.15937976108186336,
+   "decision_changed": false,
+   "split_shortfall": -0.15937976108186336
+  },
+  {
+   "pair": "T",
+   "up": "2",
+   "shoe": [
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    62
+   ],
+   "default_split": 0.35201070911007826,
+   "default_rebuilt": 0.35201070911007826,
+   "default_play_in_common_shoe": 0.35201070911007826,
+   "three_hand_play_in_common_shoe": 0.35201070911007826,
+   "two_hand_common_shoe_split": 0.3520889763364117,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.3520889763364117,
+   "lower_bound_source": "two hand",
+   "difference": -7.82672263334172e-05,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.6368299174938833,
+    "H": -0.8531837873603216,
+    "D": -1.7063675747206433
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.28481920838380503,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.2847409411574716,
+   "decision_changed": false,
+   "split_shortfall": 0.2847409411574716
+  },
+  {
+   "pair": "T",
+   "up": "3",
+   "shoe": [
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    62
+   ],
+   "default_split": 0.4006696311871787,
+   "default_rebuilt": 0.4006696311871787,
+   "default_play_in_common_shoe": 0.4006696311871787,
+   "three_hand_play_in_common_shoe": 0.4006696311871787,
+   "two_hand_common_shoe_split": 0.4006696311871756,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.4006696311871787,
+   "lower_bound_source": "default play",
+   "difference": 0.0,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.6468296939237369,
+    "H": -0.8529087754319884,
+    "D": -1.7058175508639768
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.24616006273655822,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.24616006273655822,
+   "decision_changed": false,
+   "split_shortfall": 0.24616006273655822
+  },
+  {
+   "pair": "T",
+   "up": "4",
+   "shoe": [
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    62
+   ],
+   "default_split": 0.4518733051390339,
+   "default_rebuilt": 0.4518733051390339,
+   "default_play_in_common_shoe": 0.4518733051390339,
+   "three_hand_play_in_common_shoe": 0.4518733051390339,
+   "two_hand_common_shoe_split": 0.4518733051390331,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.4518733051390339,
+   "lower_bound_source": "default play",
+   "difference": 0.0,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.6571356996615775,
+    "H": -0.8526912128776445,
+    "D": -1.705382425755289
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.20526239452254358,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.20526239452254358,
+   "decision_changed": false,
+   "split_shortfall": 0.20526239452254358
+  },
+  {
+   "pair": "T",
+   "up": "5",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    62
+   ],
+   "default_split": 0.5087503414714085,
+   "default_rebuilt": 0.5087503414714085,
+   "default_play_in_common_shoe": 0.5087503414714084,
+   "three_hand_play_in_common_shoe": 0.5087503414714084,
+   "two_hand_common_shoe_split": 0.5087503414714072,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.5087503414714084,
+   "lower_bound_source": "default play",
+   "difference": 1.1102230246251565e-16,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.6711612583824256,
+    "H": -0.8523541736230622,
+    "D": -1.7047083472461244
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.16241091691101706,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.16241091691101717,
+   "decision_changed": false,
+   "split_shortfall": 0.16241091691101717
+  },
+  {
+   "pair": "T",
+   "up": "6",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    62
+   ],
+   "default_split": 0.5623009050450896,
+   "default_rebuilt": 0.5623009050450896,
+   "default_play_in_common_shoe": 0.5623009050450896,
+   "three_hand_play_in_common_shoe": 0.5623009050450896,
+   "two_hand_common_shoe_split": 0.5623153024520214,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.5623153024520214,
+   "lower_bound_source": "two hand",
+   "difference": -1.4397406931876411e-05,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.7022649762834681,
+    "H": -0.851570486176541,
+    "D": -1.703140972353082
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.1399640712383785,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.13994967383144663,
+   "decision_changed": false,
+   "split_shortfall": 0.13994967383144663
+  },
+  {
+   "pair": "T",
+   "up": "7",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    62
+   ],
+   "default_split": 0.5061672491285965,
+   "default_rebuilt": 0.5061672491285965,
+   "default_play_in_common_shoe": 0.5061672491285965,
+   "three_hand_play_in_common_shoe": 0.5061672491285965,
+   "two_hand_common_shoe_split": 0.5061672491285967,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.5061672491285967,
+   "lower_bound_source": "two hand",
+   "difference": -2.220446049250313e-16,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.7713742447970652,
+    "H": -0.8497323925878615,
+    "D": -1.699464785175723
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.2652069956684687,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.2652069956684685,
+   "decision_changed": false,
+   "split_shortfall": 0.2652069956684685
+  },
+  {
+   "pair": "T",
+   "up": "8",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    62
+   ],
+   "default_split": 0.38537821688317864,
+   "default_rebuilt": 0.38537821688317864,
+   "default_play_in_common_shoe": 0.3853782168831787,
+   "three_hand_play_in_common_shoe": 0.3853782168831787,
+   "two_hand_common_shoe_split": 0.3853782168831788,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.3853782168831788,
+   "lower_bound_source": "two hand",
+   "difference": -1.6653345369377348e-16,
+   "default_policy_difference": 5.551115123125783e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.7897176024741427,
+    "H": -0.8493950328005822,
+    "D": -1.6987900656011643
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.40433938559096405,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.4043393855909639,
+   "decision_changed": false,
+   "split_shortfall": 0.4043393855909639
+  },
+  {
+   "pair": "T",
+   "up": "9",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    62
+   ],
+   "default_split": 0.22069521524123425,
+   "default_rebuilt": 0.22069521524123425,
+   "default_play_in_common_shoe": 0.22069521524123425,
+   "three_hand_play_in_common_shoe": 0.22069521524123425,
+   "two_hand_common_shoe_split": 0.22069521524123414,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.22069521524123425,
+   "lower_bound_source": "default play",
+   "difference": 0.0,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.7549169615366786,
+    "H": -0.8487309171553847,
+    "D": -1.6974618343107695
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.5342217462954444,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.5342217462954444,
+   "decision_changed": false,
+   "split_shortfall": 0.5342217462954444
+  },
+  {
+   "pair": "T",
+   "up": "T",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    61
+   ],
+   "default_split": 0.05285008180275113,
+   "default_rebuilt": 0.05285008180275113,
+   "default_play_in_common_shoe": 0.052850081802751095,
+   "three_hand_play_in_common_shoe": 0.052850081802751095,
+   "two_hand_common_shoe_split": 0.05287285475877386,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.05287285475877386,
+   "lower_bound_source": "two hand",
+   "difference": -2.2772956022730495e-05,
+   "default_policy_difference": -3.469446951953614e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.5614727963355504,
+    "H": -0.8461803969136861,
+    "D": -1.6923607938273721
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.5086227145327993,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.5085999415767765,
+   "decision_changed": false,
+   "split_shortfall": 0.5085999415767765
+  },
+  {
+   "pair": "T",
+   "up": "A",
+   "shoe": [
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    62
+   ],
+   "default_split": 0.14741800827315243,
+   "default_rebuilt": 0.14741800827315243,
+   "default_play_in_common_shoe": 0.14741800827315243,
+   "three_hand_play_in_common_shoe": 0.14741800827315243,
+   "two_hand_common_shoe_split": 0.14741800827315266,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.14741800827315266,
+   "lower_bound_source": "two hand",
+   "difference": -2.220446049250313e-16,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.6541364205255031,
+    "H": -0.8596232569162201,
+    "D": -1.7192465138324402
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.5067184122523507,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.5067184122523505,
+   "decision_changed": false,
+   "split_shortfall": 0.5067184122523505
+  },
+  {
+   "pair": "9",
+   "up": "2",
+   "shoe": [
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    64
+   ],
+   "default_split": 0.199077567941299,
+   "default_rebuilt": 0.199077567941299,
+   "default_play_in_common_shoe": 0.1990888390811399,
+   "three_hand_play_in_common_shoe": 0.19777575898731453,
+   "two_hand_common_shoe_split": 0.18926794299560037,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.1990888390811399,
+   "common_shoe_lower_bound": 0.1990888390811399,
+   "lower_bound_source": "default play",
+   "difference": -1.1271139840896005e-05,
+   "default_policy_difference": 1.1271139840896005e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": 0.12548692267705566,
+    "H": -0.6236870995485011,
+    "D": -1.2473741990970022
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.07359064526424333,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.07360191640408423,
+   "decision_changed": false,
+   "split_shortfall": -0.07360191640408423
+  },
+  {
+   "pair": "9",
+   "up": "3",
+   "shoe": [
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    64
+   ],
+   "default_split": 0.2494216849720789,
+   "default_rebuilt": 0.2494216849720789,
+   "default_play_in_common_shoe": 0.24944733450318415,
+   "three_hand_play_in_common_shoe": 0.2477390706081731,
+   "two_hand_common_shoe_split": 0.23600026121222079,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.24944733450318415,
+   "common_shoe_lower_bound": 0.24944733450318415,
+   "lower_bound_source": "default play",
+   "difference": -2.5649531105259582e-05,
+   "default_policy_difference": 2.5649531105259582e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": 0.14293161462884468,
+    "H": -0.6242306972273619,
+    "D": -1.2484613944547238
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.10649007034323421,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.10651571987433947,
+   "decision_changed": false,
+   "split_shortfall": -0.10651571987433947
+  },
+  {
+   "pair": "9",
+   "up": "4",
+   "shoe": [
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    14,
+    64
+   ],
+   "default_split": 0.3191338337373195,
+   "default_rebuilt": 0.3191338337373195,
+   "default_play_in_common_shoe": 0.31916435368451523,
+   "three_hand_play_in_common_shoe": 0.31673545455108587,
+   "two_hand_common_shoe_split": 0.3003953224356538,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.31916435368451523,
+   "common_shoe_lower_bound": 0.31916435368451523,
+   "lower_bound_source": "default play",
+   "difference": -3.051994719571738e-05,
+   "default_policy_difference": 3.051994719571738e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": 0.17323034937964032,
+    "H": -0.6125577637610764,
+    "D": -1.2251155275221528
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.1459034843576792,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.1459340043048749,
+   "decision_changed": false,
+   "split_shortfall": -0.1459340043048749
+  },
+  {
+   "pair": "9",
+   "up": "5",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    14,
+    64
+   ],
+   "default_split": 0.39490259222743446,
+   "default_rebuilt": 0.39490259222743446,
+   "default_play_in_common_shoe": 0.3949409339528162,
+   "three_hand_play_in_common_shoe": 0.3916518038645045,
+   "two_hand_common_shoe_split": 0.36970886950023907,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.3949409339528162,
+   "common_shoe_lower_bound": 0.3949409339528162,
+   "lower_bound_source": "default play",
+   "difference": -3.8341725381751957e-05,
+   "default_policy_difference": 3.8341725381751957e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": 0.20029880435670605,
+    "H": -0.6093725409324721,
+    "D": -1.2187450818649441
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.1946037878707284,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.19464212959611016,
+   "decision_changed": false,
+   "split_shortfall": -0.19464212959611016
+  },
+  {
+   "pair": "9",
+   "up": "6",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    14,
+    64
+   ],
+   "default_split": 0.4601743706006368,
+   "default_rebuilt": 0.4601743706006368,
+   "default_play_in_common_shoe": 0.4602111827100695,
+   "three_hand_play_in_common_shoe": 0.4571809141914656,
+   "two_hand_common_shoe_split": 0.43687413028591315,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.4602111827100695,
+   "common_shoe_lower_bound": 0.4602111827100695,
+   "lower_bound_source": "default play",
+   "difference": -3.6812109432682316e-05,
+   "default_policy_difference": 3.6812109432682316e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": 0.2794301774741844,
+    "H": -0.6023854340354649,
+    "D": -1.2047708680709297
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.1807441931264524,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.18078100523588508,
+   "decision_changed": false,
+   "split_shortfall": -0.18078100523588508
+  },
+  {
+   "pair": "9",
+   "up": "7",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    14,
+    64
+   ],
+   "default_split": 0.3684768900372951,
+   "default_rebuilt": 0.3684768900372951,
+   "default_play_in_common_shoe": 0.36847689003729517,
+   "three_hand_play_in_common_shoe": 0.36847689003729517,
+   "two_hand_common_shoe_split": 0.36847689003729495,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.36847689003729517,
+   "lower_bound_source": "default play",
+   "difference": -5.551115123125783e-17,
+   "default_policy_difference": 5.551115123125783e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": 0.3996172897041902,
+    "H": -0.5851621417402735,
+    "D": -1.170324283480547
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.03114039966689508,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.031140399666895024,
+   "decision_changed": false,
+   "split_shortfall": 0.031140399666895024
+  },
+  {
+   "pair": "9",
+   "up": "8",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    14,
+    64
+   ],
+   "default_split": 0.227485186036418,
+   "default_rebuilt": 0.227485186036418,
+   "default_play_in_common_shoe": 0.22750344235179404,
+   "three_hand_play_in_common_shoe": 0.22512280997098033,
+   "two_hand_common_shoe_split": 0.20981860909245176,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.22750344235179404,
+   "common_shoe_lower_bound": 0.22750344235179404,
+   "lower_bound_source": "default play",
+   "difference": -1.8256315376025123e-05,
+   "default_policy_difference": 1.8256315376025123e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": 0.09588401070834027,
+    "H": -0.5851621194615528,
+    "D": -1.1703242389231057
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.13160117532807775,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.13161943164345377,
+   "decision_changed": false,
+   "split_shortfall": -0.13161943164345377
+  },
+  {
+   "pair": "9",
+   "up": "9",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    13,
+    64
+   ],
+   "default_split": -0.08315164765880434,
+   "default_rebuilt": -0.08315164765880434,
+   "default_play_in_common_shoe": -0.0831372533348917,
+   "three_hand_play_in_common_shoe": -0.08472703628777821,
+   "two_hand_common_shoe_split": -0.09589496911675727,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": -0.0831372533348917,
+   "common_shoe_lower_bound": -0.0831372533348917,
+   "lower_bound_source": "default play",
+   "difference": -1.4394323912633733e-05,
+   "default_policy_difference": 1.4394323912633733e-05,
+   "default_hands": 2.1403931174597424,
+   "common_shoe_hands": 2.140557573861011,
+   "other_actions": {
+    "S": -0.186288700560438,
+    "H": -0.6112907283112232,
+    "D": -1.2225814566224464
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.10313705290163366,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.1031514472255463,
+   "decision_changed": false,
+   "split_shortfall": -0.1031514472255463
+  },
+  {
+   "pair": "9",
+   "up": "T",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    63
+   ],
+   "default_split": -0.28728486091820277,
+   "default_rebuilt": -0.28728486091820277,
+   "default_play_in_common_shoe": -0.2872848609182028,
+   "three_hand_play_in_common_shoe": -0.2872848609182028,
+   "two_hand_common_shoe_split": -0.2872257642868528,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.2872257642868528,
+   "lower_bound_source": "two hand",
+   "difference": -5.909663134995302e-05,
+   "default_policy_difference": -5.551115123125783e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.16742764884356212,
+    "H": -0.6421159481761887,
+    "D": -1.2842318963523773
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.11985721207464065,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.11979811544329069,
+   "decision_changed": false,
+   "split_shortfall": 0.11979811544329069
+  },
+  {
+   "pair": "9",
+   "up": "A",
+   "shoe": [
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    64
+   ],
+   "default_split": -0.11709305454484681,
+   "default_rebuilt": -0.11709305454484681,
+   "default_play_in_common_shoe": -0.1170930545448468,
+   "three_hand_play_in_common_shoe": -0.1170930545448468,
+   "two_hand_common_shoe_split": -0.11709304527646808,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.11709304527646808,
+   "lower_bound_source": "two hand",
+   "difference": -9.268378731164262e-09,
+   "default_policy_difference": 1.3877787807814457e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.08945259406710758,
+    "H": -0.625904072619243,
+    "D": -1.251808145238486
+   },
+   "default_best": [
+    "S"
+   ],
+   "default_margin": 0.02764046047773923,
+   "lower_bound_best": [
+    "S"
+   ],
+   "lower_bound_margin": 0.027640451209360498,
+   "decision_changed": false,
+   "split_shortfall": 0.027640451209360498
+  },
+  {
+   "pair": "8",
+   "up": "2",
+   "shoe": [
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    64
+   ],
+   "default_split": 0.08585919184068026,
+   "default_rebuilt": 0.08585919184068026,
+   "default_play_in_common_shoe": 0.08590980265744337,
+   "three_hand_play_in_common_shoe": 0.07910033723926348,
+   "two_hand_common_shoe_split": 0.03543724776262335,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.08590980265744337,
+   "common_shoe_lower_bound": 0.08590980265744337,
+   "lower_bound_source": "default play",
+   "difference": -5.061081676310808e-05,
+   "default_policy_difference": 5.061081676310808e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.2886329741826304,
+    "H": -0.4671670175174702,
+    "D": -0.9343340350349404
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.37449216602331065,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.37454277684007375,
+   "decision_changed": false,
+   "split_shortfall": -0.37454277684007375
+  },
+  {
+   "pair": "8",
+   "up": "3",
+   "shoe": [
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    64
+   ],
+   "default_split": 0.1585657333715461,
+   "default_rebuilt": 0.1585657333715461,
+   "default_play_in_common_shoe": 0.1586201870789946,
+   "three_hand_play_in_common_shoe": 0.1512571369207301,
+   "two_hand_common_shoe_split": 0.10405289318098285,
+   "information_gain": 5.185104681726393e-07,
+   "information_play_in_common_shoe": 0.15862070558946278,
+   "common_shoe_lower_bound": 0.15862070558946278,
+   "lower_bound_source": "information play",
+   "difference": -5.497221791667117e-05,
+   "default_policy_difference": 5.4453707448498534e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.24647218796002224,
+    "H": -0.46058366842287096,
+    "D": -0.9211673368457419
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.40503792133156835,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.405092893549485,
+   "decision_changed": false,
+   "split_shortfall": -0.405092893549485
+  },
+  {
+   "pair": "8",
+   "up": "4",
+   "shoe": [
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    14,
+    16,
+    64
+   ],
+   "default_split": 0.22458615750580968,
+   "default_rebuilt": 0.2245861575058097,
+   "default_play_in_common_shoe": 0.224656172344506,
+   "three_hand_play_in_common_shoe": 0.21694556289068925,
+   "two_hand_common_shoe_split": 0.16673444873191853,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.224656172344506,
+   "common_shoe_lower_bound": 0.224656172344506,
+   "lower_bound_source": "default play",
+   "difference": -7.001483869631397e-05,
+   "default_policy_difference": 7.001483869631397e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.2117568800620766,
+    "H": -0.45724682734770616,
+    "D": -0.9144936546954123
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4363430375678863,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.43641305240658257,
+   "decision_changed": false,
+   "split_shortfall": -0.43641305240658257
+  },
+  {
+   "pair": "8",
+   "up": "5",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    14,
+    16,
+    64
+   ],
+   "default_split": 0.3068118115982624,
+   "default_rebuilt": 0.3068118115982624,
+   "default_play_in_common_shoe": 0.30688831491409274,
+   "three_hand_play_in_common_shoe": 0.2985417198571339,
+   "two_hand_common_shoe_split": 0.2441449178819757,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.30688831491409274,
+   "common_shoe_lower_bound": 0.30688831491409274,
+   "lower_bound_source": "default play",
+   "difference": -7.65033158303674e-05,
+   "default_policy_difference": 7.65033158303674e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.16623606417805004,
+    "H": -0.4501579068398237,
+    "D": -0.9003158136796474
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4730478757763124,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.4731243790921428,
+   "decision_changed": false,
+   "split_shortfall": -0.4731243790921428
+  },
+  {
+   "pair": "8",
+   "up": "6",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    14,
+    16,
+    64
+   ],
+   "default_split": 0.4037126997517848,
+   "default_rebuilt": 0.40371269975178486,
+   "default_play_in_common_shoe": 0.40380254234482105,
+   "three_hand_play_in_common_shoe": 0.39384748899145905,
+   "two_hand_common_shoe_split": 0.3290472062352548,
+   "information_gain": 5.933933706514516e-06,
+   "information_play_in_common_shoe": 0.40380847627852756,
+   "common_shoe_lower_bound": 0.40380847627852756,
+   "lower_bound_source": "information play",
+   "difference": -9.577652674275239e-05,
+   "default_policy_difference": 8.984259303623787e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.15943377454351537,
+    "H": -0.42272684240127884,
+    "D": -0.8454536848025577
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.5631464742953002,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.5632422508220429,
+   "decision_changed": false,
+   "split_shortfall": -0.5632422508220429
+  },
+  {
+   "pair": "8",
+   "up": "7",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    14,
+    16,
+    64
+   ],
+   "default_split": 0.3173398045907653,
+   "default_rebuilt": 0.3173398045907653,
+   "default_play_in_common_shoe": 0.31745876078771823,
+   "three_hand_play_in_common_shoe": 0.30475828723594744,
+   "two_hand_common_shoe_split": 0.22182224402361184,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.31745876078771823,
+   "common_shoe_lower_bound": 0.31745876078771823,
+   "lower_bound_source": "default play",
+   "difference": -0.00011895619695295734,
+   "default_policy_difference": 0.00011895619695295734,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.4825479703007028,
+    "H": -0.4051739741954561,
+    "D": -0.8103479483909122
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.7225137787862214,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.7226327349831743,
+   "decision_changed": false,
+   "split_shortfall": -0.7226327349831743
+  },
+  {
+   "pair": "8",
+   "up": "8",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    13,
+    16,
+    64
+   ],
+   "default_split": -0.03229430822332656,
+   "default_rebuilt": -0.03229430822332656,
+   "default_play_in_common_shoe": -0.03223138378953709,
+   "three_hand_play_in_common_shoe": -0.03858120792670439,
+   "two_hand_common_shoe_split": -0.08357492026682604,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": -0.03223138378953709,
+   "common_shoe_lower_bound": -0.03223138378953709,
+   "lower_bound_source": "default play",
+   "difference": -6.292443378946855e-05,
+   "default_policy_difference": 6.292443378946855e-05,
+   "default_hands": 2.1403931174597424,
+   "common_shoe_hands": 2.140557573861011,
+   "other_actions": {
+    "S": -0.5209809621075299,
+    "H": -0.45083733241256885,
+    "D": -0.9016746648251377
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.4185430241892423,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.41860594862303174,
+   "decision_changed": false,
+   "split_shortfall": -0.41860594862303174
+  },
+  {
+   "pair": "8",
+   "up": "9",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    15,
+    64
+   ],
+   "default_split": -0.3905035959701844,
+   "default_rebuilt": -0.3905035959701844,
+   "default_play_in_common_shoe": -0.39047785703548643,
+   "three_hand_play_in_common_shoe": -0.39232652410359814,
+   "two_hand_common_shoe_split": -0.4049115697125463,
+   "information_gain": 3.885780586188048e-16,
+   "information_play_in_common_shoe": -0.39047785703548604,
+   "common_shoe_lower_bound": -0.39047785703548604,
+   "lower_bound_source": "information play",
+   "difference": -2.573893469837163e-05,
+   "default_policy_difference": 2.573893469798305e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.5367322865309476,
+    "H": -0.5038868283985009,
+    "D": -1.0077736567970017
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.11338323242831644,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.11340897136301481,
+   "decision_changed": false,
+   "split_shortfall": -0.11340897136301481
+  },
+  {
+   "pair": "8",
+   "up": "T",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    63
+   ],
+   "default_split": -0.47202239784016176,
+   "default_rebuilt": -0.4720223978401617,
+   "default_play_in_common_shoe": -0.4720116509394132,
+   "three_hand_play_in_common_shoe": -0.47307133549873176,
+   "two_hand_common_shoe_split": -0.4799677728515581,
+   "information_gain": 1.0824058151504001e-05,
+   "information_play_in_common_shoe": -0.4720008268812617,
+   "common_shoe_lower_bound": -0.4720008268812617,
+   "lower_bound_source": "information play",
+   "difference": -2.1570958900041237e-05,
+   "default_policy_difference": 1.0746900748537236e-05,
+   "default_hands": 2.152218601505209,
+   "common_shoe_hands": 2.152408456069593,
+   "other_actions": {
+    "S": -0.5350480415861041,
+    "H": -0.5330975936112128,
+    "D": -1.0661951872224256
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.06107519577105103,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.06109676672995107,
+   "decision_changed": false,
+   "split_shortfall": -0.06109676672995107
+  },
+  {
+   "pair": "8",
+   "up": "A",
+   "shoe": [
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    64
+   ],
+   "default_split": -0.36017466687257116,
+   "default_rebuilt": -0.36017466687257116,
+   "default_play_in_common_shoe": -0.36016091967687963,
+   "three_hand_play_in_common_shoe": -0.36304339593703455,
+   "two_hand_common_shoe_split": -0.38109169283381283,
+   "information_gain": 3.3496932642651522e-06,
+   "information_play_in_common_shoe": -0.36015756998361537,
+   "common_shoe_lower_bound": -0.36015756998361537,
+   "lower_bound_source": "information play",
+   "difference": -1.709688895579209e-05,
+   "default_policy_difference": 1.3747195691526937e-05,
+   "default_hands": 2.1519172702438607,
+   "common_shoe_hands": 2.1521061642467023,
+   "other_actions": {
+    "S": -0.6613814406562464,
+    "H": -0.5117360815692569,
+    "D": -1.0234721631385137
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.15156141469668571,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.1515785115856415,
+   "decision_changed": false,
+   "split_shortfall": -0.1515785115856415
+  },
+  {
+   "pair": "7",
+   "up": "2",
+   "shoe": [
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.11306364882419317,
+   "default_rebuilt": -0.11306364882419317,
+   "default_play_in_common_shoe": -0.11304772526904955,
+   "three_hand_play_in_common_shoe": -0.11636936166970306,
+   "two_hand_common_shoe_split": -0.13688718404702999,
+   "information_gain": 0.0002457928646719537,
+   "information_play_in_common_shoe": -0.1128019324043776,
+   "common_shoe_lower_bound": -0.1128019324043776,
+   "lower_bound_source": "information play",
+   "difference": -0.00026171641981558025,
+   "default_policy_difference": 1.5923555143626533e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.2871581423398821,
+    "H": -0.3728235752411964,
+    "D": -0.7456471504823928
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.17409449351568895,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.17435620993550455,
+   "decision_changed": false,
+   "split_shortfall": -0.17435620993550455
+  },
+  {
+   "pair": "7",
+   "up": "3",
+   "shoe": [
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.02047287529209018,
+   "default_rebuilt": -0.020472875292090176,
+   "default_play_in_common_shoe": -0.020452622591367094,
+   "three_hand_play_in_common_shoe": -0.024717609710799268,
+   "two_hand_common_shoe_split": -0.05139672477191122,
+   "information_gain": 7.246086682483055e-07,
+   "information_play_in_common_shoe": -0.020451897982698846,
+   "common_shoe_lower_bound": -0.020451897982698846,
+   "lower_bound_source": "information play",
+   "difference": -2.097730939133388e-05,
+   "default_policy_difference": 2.0252700723085576e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.2444409244628689,
+    "H": -0.35840433483346,
+    "D": -0.71680866966692
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.22396804917077873,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.22398902648017008,
+   "decision_changed": false,
+   "split_shortfall": -0.22398902648017008
+  },
+  {
+   "pair": "7",
+   "up": "4",
+   "shoe": [
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    14,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.08353517427097476,
+   "default_rebuilt": 0.08353517427097475,
+   "default_play_in_common_shoe": 0.08356377051627997,
+   "three_hand_play_in_common_shoe": 0.07820990865794972,
+   "two_hand_common_shoe_split": 0.04456535786138741,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.08356377051627997,
+   "common_shoe_lower_bound": 0.08356377051627997,
+   "lower_bound_source": "default play",
+   "difference": -2.859624530521243e-05,
+   "default_policy_difference": 2.859624530521243e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.19990311711525702,
+    "H": -0.3432848464230893,
+    "D": -0.6865696928461786
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.2834382913862318,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.283466887631537,
+   "decision_changed": false,
+   "split_shortfall": -0.283466887631537
+  },
+  {
+   "pair": "7",
+   "up": "5",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    14,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.1670386785317093,
+   "default_rebuilt": 0.16703867853170934,
+   "default_play_in_common_shoe": 0.16708895575479427,
+   "three_hand_play_in_common_shoe": 0.16118490264073868,
+   "two_hand_common_shoe_split": 0.1229426345552957,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.16708895575479427,
+   "common_shoe_lower_bound": 0.16708895575479427,
+   "lower_bound_source": "default play",
+   "difference": -5.0277223084954636e-05,
+   "default_policy_difference": 5.0277223084954636e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.1637787386200053,
+    "H": -0.33312874632664524,
+    "D": -0.6662574926532905
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.33081741715171464,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.33086769437479957,
+   "decision_changed": false,
+   "split_shortfall": -0.33086769437479957
+  },
+  {
+   "pair": "7",
+   "up": "6",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    14,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.24922676691037254,
+   "default_rebuilt": 0.24922676691037257,
+   "default_play_in_common_shoe": 0.24928944214418478,
+   "three_hand_play_in_common_shoe": 0.24204682378678422,
+   "two_hand_common_shoe_split": 0.1950719328200247,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.24928944214418478,
+   "common_shoe_lower_bound": 0.24928944214418478,
+   "lower_bound_source": "default play",
+   "difference": -6.267523381223161e-05,
+   "default_policy_difference": 6.267523381223161e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.15760604732848618,
+    "H": -0.3162716904609486,
+    "D": -0.6325433809218972
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.40683281423885875,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.40689548947267096,
+   "decision_changed": false,
+   "split_shortfall": -0.40689548947267096
+  },
+  {
+   "pair": "7",
+   "up": "7",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    13,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.047933593897051485,
+   "default_rebuilt": -0.047933593897051485,
+   "default_play_in_common_shoe": -0.04790114060239601,
+   "three_hand_play_in_common_shoe": -0.052544326726202704,
+   "two_hand_common_shoe_split": -0.08446479957109763,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": -0.04790114060239601,
+   "common_shoe_lower_bound": -0.04790114060239601,
+   "lower_bound_source": "default play",
+   "difference": -3.245329465547536e-05,
+   "default_policy_difference": 3.245329465547536e-05,
+   "default_hands": 2.1403931174597424,
+   "common_shoe_hands": 2.140557573861011,
+   "other_actions": {
+    "S": -0.4811039903863551,
+    "H": -0.3371522030419284,
+    "D": -0.7041022812462878
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.2892186091448769,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.28925106243953236,
+   "decision_changed": false,
+   "split_shortfall": -0.28925106243953236
+  },
+  {
+   "pair": "7",
+   "up": "8",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    15,
+    16,
+    64
+   ],
+   "default_split": -0.3893257881455433,
+   "default_rebuilt": -0.3893257881455433,
+   "default_play_in_common_shoe": -0.3893257881455433,
+   "three_hand_play_in_common_shoe": -0.3893257881455433,
+   "two_hand_common_shoe_split": -0.38932578814554325,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.38932578814554325,
+   "lower_bound_source": "two hand",
+   "difference": -5.551115123125783e-17,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5183333411895642,
+    "H": -0.38063384248015064,
+    "D": -0.788316364193861
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.008691945665392664,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.008691945665392609,
+   "decision_changed": false,
+   "split_shortfall": 0.008691945665392609
+  },
+  {
+   "pair": "7",
+   "up": "9",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    15,
+    64
+   ],
+   "default_split": -0.5542582663134259,
+   "default_rebuilt": -0.5542582663134259,
+   "default_play_in_common_shoe": -0.5542582663134258,
+   "three_hand_play_in_common_shoe": -0.5542582663134258,
+   "two_hand_common_shoe_split": -0.5542582663134259,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.5542582663134258,
+   "lower_bound_source": "default play",
+   "difference": -1.1102230246251565e-16,
+   "default_policy_difference": 1.1102230246251565e-16,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5466729170183162,
+    "H": -0.44144699005621174,
+    "D": -0.9021004205545318
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.10522592696210448,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.10522592696210448,
+   "decision_changed": false,
+   "split_shortfall": 0.11281127625721404
+  },
+  {
+   "pair": "7",
+   "up": "T",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    63
+   ],
+   "default_split": -0.6269048148232302,
+   "default_rebuilt": -0.6269048148232302,
+   "default_play_in_common_shoe": -0.6269048148232303,
+   "three_hand_play_in_common_shoe": -0.6269048148232303,
+   "two_hand_common_shoe_split": -0.626750704369997,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.626750704369997,
+   "lower_bound_source": "two hand",
+   "difference": -0.00015411045323321382,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5331249173422865,
+    "H": -0.4779703942224565,
+    "D": -0.9613971600924245
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.05515452311982999,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.05515452311982999,
+   "decision_changed": false,
+   "split_shortfall": 0.1487803101475405
+  },
+  {
+   "pair": "7",
+   "up": "A",
+   "shoe": [
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.6185128974733611,
+   "default_rebuilt": -0.6185128974733611,
+   "default_play_in_common_shoe": -0.6185128974733611,
+   "three_hand_play_in_common_shoe": -0.6185128974733611,
+   "two_hand_common_shoe_split": -0.6184259415163272,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.6184259415163272,
+   "lower_bound_source": "two hand",
+   "difference": -8.695595703389625e-05,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.6584743060649573,
+    "H": -0.4531090570016095,
+    "D": -0.9553099372559177
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.1654038404717516,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.1653168845147177,
+   "decision_changed": false,
+   "split_shortfall": 0.1653168845147177
+  },
+  {
+   "pair": "6",
+   "up": "2",
+   "shoe": [
+    16,
+    15,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.18863303199232198,
+   "default_rebuilt": -0.18863303199232198,
+   "default_play_in_common_shoe": -0.18864286485573772,
+   "three_hand_play_in_common_shoe": -0.19019142411750933,
+   "two_hand_common_shoe_split": -0.19858170830576247,
+   "information_gain": 0.00022475291944212827,
+   "information_play_in_common_shoe": -0.1884181119362956,
+   "common_shoe_lower_bound": -0.1884181119362956,
+   "lower_bound_source": "information play",
+   "difference": -0.0002149200560263853,
+   "default_policy_difference": -9.832863415742965e-06,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.28565615329842764,
+    "H": -0.2532826293250817,
+    "D": -0.5065652586501634
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.06464959733275974,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.06486451738878612,
+   "decision_changed": false,
+   "split_shortfall": -0.06486451738878612
+  },
+  {
+   "pair": "6",
+   "up": "3",
+   "shoe": [
+    16,
+    16,
+    15,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.0883610558951044,
+   "default_rebuilt": -0.0883610558951044,
+   "default_play_in_common_shoe": -0.0883613670608884,
+   "three_hand_play_in_common_shoe": -0.09134358547501782,
+   "two_hand_common_shoe_split": -0.10912988663439024,
+   "information_gain": 5.89957627195048e-09,
+   "information_play_in_common_shoe": -0.08836136116131213,
+   "common_shoe_lower_bound": -0.08836136116131213,
+   "lower_bound_source": "information play",
+   "difference": 3.052662077285273e-07,
+   "default_policy_difference": -3.111657840004778e-07,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.24288819580827048,
+    "H": -0.23107694872449117,
+    "D": -0.46215389744898233
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.14271589282938676,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.14271558756317904,
+   "decision_changed": false,
+   "split_shortfall": -0.14271558756317904
+  },
+  {
+   "pair": "6",
+   "up": "4",
+   "shoe": [
+    16,
+    16,
+    16,
+    15,
+    16,
+    14,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.017674010334926934,
+   "default_rebuilt": 0.017674010334926934,
+   "default_play_in_common_shoe": 0.01768947743425799,
+   "three_hand_play_in_common_shoe": 0.013494562272674555,
+   "two_hand_common_shoe_split": -0.01244674089374517,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.01768947743425799,
+   "common_shoe_lower_bound": 0.01768947743425799,
+   "lower_bound_source": "default play",
+   "difference": -1.5467099331055445e-05,
+   "default_policy_difference": 1.5467099331055445e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.1977011953532629,
+    "H": -0.20826167057610837,
+    "D": -0.41652334115221673
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.21537520568818982,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.2153906727875209,
+   "decision_changed": false,
+   "split_shortfall": -0.2153906727875209
+  },
+  {
+   "pair": "6",
+   "up": "5",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    15,
+    14,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.1281562498435606,
+   "default_rebuilt": 0.12815624984356064,
+   "default_play_in_common_shoe": 0.12818140492992566,
+   "three_hand_play_in_common_shoe": 0.12283043507999161,
+   "two_hand_common_shoe_split": 0.08941195571060925,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.12818140492992566,
+   "common_shoe_lower_bound": 0.12818140492992566,
+   "lower_bound_source": "default play",
+   "difference": -2.5155086365052926e-05,
+   "default_policy_difference": 2.5155086365052926e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.15180564224831578,
+    "H": -0.18613966439154306,
+    "D": -0.3722793287830861
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.2799618920918764,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.2799870471782414,
+   "decision_changed": false,
+   "split_shortfall": -0.2799870471782414
+  },
+  {
+   "pair": "6",
+   "up": "6",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    13,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.16041193946450016,
+   "default_rebuilt": 0.16041193946450016,
+   "default_play_in_common_shoe": 0.16045158852839525,
+   "three_hand_play_in_common_shoe": 0.15547948718274973,
+   "two_hand_common_shoe_split": 0.12094534272701626,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.16045158852839525,
+   "common_shoe_lower_bound": 0.16045158852839525,
+   "lower_bound_source": "default play",
+   "difference": -3.964906389508638e-05,
+   "default_policy_difference": 3.964906389508638e-05,
+   "default_hands": 2.1403931174597424,
+   "common_shoe_hands": 2.140557573861011,
+   "other_actions": {
+    "S": -0.1553303244417542,
+    "H": -0.17555898855151036,
+    "D": -0.35111797710302073
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.3157422639062544,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.31578191297014946,
+   "decision_changed": false,
+   "split_shortfall": -0.31578191297014946
+  },
+  {
+   "pair": "6",
+   "up": "7",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    15,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.24477560120029307,
+   "default_rebuilt": -0.24477560120029307,
+   "default_play_in_common_shoe": -0.2447756012002931,
+   "three_hand_play_in_common_shoe": -0.2447756012002931,
+   "two_hand_common_shoe_split": -0.24477560120029293,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.24477560120029293,
+   "lower_bound_source": "two hand",
+   "difference": -1.3877787807814457e-16,
+   "default_policy_difference": -2.7755575615628914e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.47900820374248954,
+    "H": -0.22455616184603855,
+    "D": -0.5270957237291709
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.02021943935425452,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.02021943935425438,
+   "decision_changed": false,
+   "split_shortfall": 0.02021943935425438
+  },
+  {
+   "pair": "6",
+   "up": "8",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    15,
+    16,
+    64
+   ],
+   "default_split": -0.39516576381459423,
+   "default_rebuilt": -0.39516576381459423,
+   "default_play_in_common_shoe": -0.39516576381459423,
+   "three_hand_play_in_common_shoe": -0.39516576381459423,
+   "two_hand_common_shoe_split": -0.3951657638145941,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.3951657638145941,
+   "lower_bound_source": "two hand",
+   "difference": -1.1102230246251565e-16,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5167102580495154,
+    "H": -0.2832525297140044,
+    "D": -0.6381274074020593
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.11191323410058984,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.11191323410058973,
+   "decision_changed": false,
+   "split_shortfall": 0.11191323410058973
+  },
+  {
+   "pair": "6",
+   "up": "9",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    15,
+    64
+   ],
+   "default_split": -0.5647179793209686,
+   "default_rebuilt": -0.5647179793209686,
+   "default_play_in_common_shoe": -0.5647179793209686,
+   "three_hand_play_in_common_shoe": -0.5647179793209686,
+   "two_hand_common_shoe_split": -0.5647179793209687,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.5647179793209686,
+   "lower_bound_source": "default play",
+   "difference": 0.0,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5443013086660007,
+    "H": -0.35080577210916136,
+    "D": -0.7562760701498806
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.19349553655683932,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.19349553655683932,
+   "decision_changed": false,
+   "split_shortfall": 0.2139122072118072
+  },
+  {
+   "pair": "6",
+   "up": "T",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    63
+   ],
+   "default_split": -0.6605565114269284,
+   "default_rebuilt": -0.6605565114269284,
+   "default_play_in_common_shoe": -0.6605565114269284,
+   "three_hand_play_in_common_shoe": -0.6605565114269284,
+   "two_hand_common_shoe_split": -0.660542108456963,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.660542108456963,
+   "lower_bound_source": "two hand",
+   "difference": -1.4402969965354728e-05,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5439070826857286,
+    "H": -0.38240741368699216,
+    "D": -0.7989733491358957
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.16149966899873647,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.16149966899873647,
+   "decision_changed": false,
+   "split_shortfall": 0.2781346947699709
+  },
+  {
+   "pair": "6",
+   "up": "A",
+   "shoe": [
+    15,
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.6163297987909768,
+   "default_rebuilt": -0.6163297987909768,
+   "default_play_in_common_shoe": -0.6163297987909767,
+   "three_hand_play_in_common_shoe": -0.6163297987909767,
+   "two_hand_common_shoe_split": -0.6161136176916129,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.6161136176916129,
+   "lower_bound_source": "two hand",
+   "difference": -0.00021618109936394347,
+   "default_policy_difference": 1.1102230246251565e-16,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.6555701286984342,
+    "H": -0.35947485823248954,
+    "D": -0.8317829183691698
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.2568549405584873,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.25663875945912334,
+   "decision_changed": false,
+   "split_shortfall": 0.25663875945912334
+  },
+  {
+   "pair": "5",
+   "up": "2",
+   "shoe": [
+    16,
+    15,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.18511451356975286,
+   "default_rebuilt": -0.18511451356975286,
+   "default_play_in_common_shoe": -0.1851145135697529,
+   "three_hand_play_in_common_shoe": -0.1851145135697529,
+   "two_hand_common_shoe_split": -0.18497454978397393,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.18497454978397393,
+   "lower_bound_source": "two hand",
+   "difference": -0.00013996378577893487,
+   "default_policy_difference": -2.7755575615628914e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.28421378169603206,
+    "H": 0.19259840459030347,
+    "D": 0.380350712814539
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.18775230822423555,
+   "lower_bound_best": [
+    "D"
+   ],
+   "lower_bound_margin": 0.18775230822423555,
+   "decision_changed": false,
+   "split_shortfall": 0.565325262598513
+  },
+  {
+   "pair": "5",
+   "up": "3",
+   "shoe": [
+    16,
+    16,
+    15,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.10219753753487118,
+   "default_rebuilt": -0.10219753753487118,
+   "default_play_in_common_shoe": -0.10219753753487118,
+   "three_hand_play_in_common_shoe": -0.10219753753487118,
+   "two_hand_common_shoe_split": -0.10219578342912318,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.10219578342912318,
+   "lower_bound_source": "two hand",
+   "difference": -1.7541057480002786e-06,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.24147396667244547,
+    "H": 0.21791451384088475,
+    "D": 0.43389499217192873
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.21598047833104397,
+   "lower_bound_best": [
+    "D"
+   ],
+   "lower_bound_margin": 0.21598047833104397,
+   "decision_changed": false,
+   "split_shortfall": 0.5360907756010519
+  },
+  {
+   "pair": "5",
+   "up": "4",
+   "shoe": [
+    16,
+    16,
+    16,
+    15,
+    14,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.008141134150517731,
+   "default_rebuilt": -0.008141134150517731,
+   "default_play_in_common_shoe": -0.008141134150517721,
+   "three_hand_play_in_common_shoe": -0.008141134150517721,
+   "two_hand_common_shoe_split": -0.008141134150517038,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.008141134150517038,
+   "lower_bound_source": "two hand",
+   "difference": -6.938893903907228e-16,
+   "default_policy_difference": 1.0408340855860843e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.19632005907375438,
+    "H": 0.2456944176709786,
+    "D": 0.4913888353419572
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.2456944176709786,
+   "lower_bound_best": [
+    "D"
+   ],
+   "lower_bound_margin": 0.2456944176709786,
+   "decision_changed": false,
+   "split_shortfall": 0.49952996949247425
+  },
+  {
+   "pair": "5",
+   "up": "5",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    13,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.09304077235058784,
+   "default_rebuilt": 0.09304077235058784,
+   "default_play_in_common_shoe": 0.09304077235058787,
+   "three_hand_play_in_common_shoe": 0.09304077235058787,
+   "two_hand_common_shoe_split": 0.09304077235058891,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.09304077235058891,
+   "lower_bound_source": "two hand",
+   "difference": -1.0685896612017132e-15,
+   "default_policy_difference": 2.7755575615628914e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.14961062061084857,
+    "H": 0.27740141050938294,
+    "D": 0.5548028210187659
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.27740141050938294,
+   "lower_bound_best": [
+    "D"
+   ],
+   "lower_bound_margin": 0.27740141050938294,
+   "decision_changed": false,
+   "split_shortfall": 0.46176204866817694
+  },
+  {
+   "pair": "5",
+   "up": "6",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    14,
+    15,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.1423005734438335,
+   "default_rebuilt": 0.1423005734438335,
+   "default_play_in_common_shoe": 0.14230057344383348,
+   "three_hand_play_in_common_shoe": 0.14230057344383348,
+   "two_hand_common_shoe_split": 0.1423274544620332,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.1423274544620332,
+   "lower_bound_source": "two hand",
+   "difference": -2.6881018199698126e-05,
+   "default_policy_difference": -2.7755575615628914e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.1434961675911114,
+    "H": 0.3053410539746726,
+    "D": 0.6106821079493452
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.3053410539746726,
+   "lower_bound_best": [
+    "D"
+   ],
+   "lower_bound_margin": 0.3053410539746726,
+   "decision_changed": false,
+   "split_shortfall": 0.468354653487312
+  },
+  {
+   "pair": "5",
+   "up": "7",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    15,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.2025020777048498,
+   "default_rebuilt": -0.2025020777048498,
+   "default_play_in_common_shoe": -0.20250207770484976,
+   "three_hand_play_in_common_shoe": -0.20250207770484976,
+   "two_hand_common_shoe_split": -0.2025020760825313,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.2025020760825313,
+   "lower_bound_source": "two hand",
+   "difference": -1.6223185017594233e-09,
+   "default_policy_difference": 2.7755575615628914e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.4767270964404501,
+    "H": 0.2621569411848301,
+    "D": 0.4109165540836826
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.14875961289885253,
+   "lower_bound_best": [
+    "D"
+   ],
+   "lower_bound_margin": 0.14875961289885253,
+   "decision_changed": false,
+   "split_shortfall": 0.6134186301662139
+  },
+  {
+   "pair": "5",
+   "up": "8",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    15,
+    16,
+    64
+   ],
+   "default_split": -0.35854150554352693,
+   "default_rebuilt": -0.35854150554352693,
+   "default_play_in_common_shoe": -0.35854150554352693,
+   "three_hand_play_in_common_shoe": -0.35854150554352693,
+   "two_hand_common_shoe_split": -0.35854150484273867,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.35854150484273867,
+   "lower_bound_source": "two hand",
+   "difference": -7.007882607545923e-10,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5148070412438337,
+    "H": 0.20033117565308364,
+    "D": 0.296188342245741
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.09585716659265733,
+   "lower_bound_best": [
+    "D"
+   ],
+   "lower_bound_margin": 0.09585716659265733,
+   "decision_changed": false,
+   "split_shortfall": 0.6547298470884797
+  },
+  {
+   "pair": "5",
+   "up": "9",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    15,
+    64
+   ],
+   "default_split": -0.5326059739415098,
+   "default_rebuilt": -0.5326059739415098,
+   "default_play_in_common_shoe": -0.5326059739415098,
+   "three_hand_play_in_common_shoe": -0.5326059739415098,
+   "two_hand_common_shoe_split": -0.5326045800762194,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.5326045800762194,
+   "lower_bound_source": "two hand",
+   "difference": -1.3938652904110782e-06,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5424264467310306,
+    "H": 0.1167510796818115,
+    "D": 0.1516445158751759
+   },
+   "default_best": [
+    "D"
+   ],
+   "default_margin": 0.03489343619336441,
+   "lower_bound_best": [
+    "D"
+   ],
+   "lower_bound_margin": 0.03489343619336441,
+   "decision_changed": false,
+   "split_shortfall": 0.6842490959513953
+  },
+  {
+   "pair": "5",
+   "up": "T",
+   "shoe": [
+    16,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    63
+   ],
+   "default_split": -0.6269546966820055,
+   "default_rebuilt": -0.6269546966820055,
+   "default_play_in_common_shoe": -0.6269546966820057,
+   "three_hand_play_in_common_shoe": -0.6269546966820057,
+   "two_hand_common_shoe_split": -0.6269546966820057,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.6269546966820057,
+   "lower_bound_source": "default play",
+   "difference": 1.1102230246251565e-16,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5413592341411194,
+    "H": 0.028132949191074452,
+    "D": -0.001792354858190015
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.029925304049264467,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.029925304049264467,
+   "decision_changed": false,
+   "split_shortfall": 0.6550876458730801
+  },
+  {
+   "pair": "5",
+   "up": "A",
+   "shoe": [
+    15,
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.5778130485603292,
+   "default_rebuilt": -0.5778130485603292,
+   "default_play_in_common_shoe": -0.5778130485603293,
+   "three_hand_play_in_common_shoe": -0.5778130485603293,
+   "two_hand_common_shoe_split": -0.5775903854615382,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.5775903854615382,
+   "lower_bound_source": "two hand",
+   "difference": -0.00022266309879104274,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.663124801659872,
+    "H": 0.08360361905664468,
+    "D": 0.0033949131328478432
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.08020870592379684,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.08020870592379684,
+   "decision_changed": false,
+   "split_shortfall": 0.6611940045181829
+  },
+  {
+   "pair": "4",
+   "up": "2",
+   "shoe": [
+    16,
+    15,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.16229378986002055,
+   "default_rebuilt": -0.16229378986002055,
+   "default_play_in_common_shoe": -0.16229378986002055,
+   "three_hand_play_in_common_shoe": -0.16229378986002055,
+   "two_hand_common_shoe_split": -0.1622111707403322,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.1622111707403322,
+   "lower_bound_source": "two hand",
+   "difference": -8.261911968834856e-05,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.29141908004767464,
+    "H": -0.018929229287375046,
+    "D": -0.1982346240134128
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.14336456057264552,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.14328194145295714,
+   "decision_changed": false,
+   "split_shortfall": 0.14328194145295714
+  },
+  {
+   "pair": "4",
+   "up": "3",
+   "shoe": [
+    16,
+    16,
+    15,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.07359712524470578,
+   "default_rebuilt": -0.07359712524470578,
+   "default_play_in_common_shoe": -0.07359712524470577,
+   "three_hand_play_in_common_shoe": -0.07359712524470577,
+   "two_hand_common_shoe_split": -0.07359397344123718,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.07359397344123718,
+   "lower_bound_source": "two hand",
+   "difference": -3.1518034686039975e-06,
+   "default_policy_difference": 1.3877787807814457e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.24285596210564103,
+    "H": 0.0133351992767261,
+    "D": -0.12204668646282323
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.08693232452143188,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.08692917271796327,
+   "decision_changed": false,
+   "split_shortfall": 0.08692917271796327
+  },
+  {
+   "pair": "4",
+   "up": "4",
+   "shoe": [
+    16,
+    16,
+    16,
+    13,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.01918250650949571,
+   "default_rebuilt": 0.01918250650949571,
+   "default_play_in_common_shoe": 0.019182506509495708,
+   "three_hand_play_in_common_shoe": 0.019182506509495708,
+   "two_hand_common_shoe_split": 0.01918250650949681,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": 0.01918250650949681,
+   "lower_bound_source": "two hand",
+   "difference": -1.0998146837692957e-15,
+   "default_policy_difference": -3.469446951953614e-18,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.1974909609282716,
+    "H": 0.05273539213479002,
+    "D": -0.04063777051806815
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.03355288562529431,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.03355288562529321,
+   "decision_changed": false,
+   "split_shortfall": 0.03355288562529321
+  },
+  {
+   "pair": "4",
+   "up": "5",
+   "shoe": [
+    16,
+    16,
+    16,
+    14,
+    15,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.12625608867876426,
+   "default_rebuilt": 0.12625608867876426,
+   "default_play_in_common_shoe": 0.12625149237423955,
+   "three_hand_play_in_common_shoe": 0.12540116309766294,
+   "two_hand_common_shoe_split": 0.12061499303494617,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.12625149237423955,
+   "common_shoe_lower_bound": 0.12625149237423955,
+   "lower_bound_source": "default play",
+   "difference": 4.596304524706607e-06,
+   "default_policy_difference": -4.596304524706607e-06,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.15071364475746796,
+    "H": 0.09017688872760612,
+    "D": 0.04009509058049271
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.03607919995115813,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.036074603646633424,
+   "decision_changed": false,
+   "split_shortfall": -0.036074603646633424
+  },
+  {
+   "pair": "4",
+   "up": "6",
+   "shoe": [
+    16,
+    16,
+    16,
+    14,
+    16,
+    15,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.1757015783836202,
+   "default_rebuilt": 0.1757015783836202,
+   "default_play_in_common_shoe": 0.17569757410526954,
+   "three_hand_play_in_common_shoe": 0.1746540642546007,
+   "two_hand_common_shoe_split": 0.16865424732116424,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.17569757410526954,
+   "common_shoe_lower_bound": 0.17569757410526954,
+   "lower_bound_source": "default play",
+   "difference": 4.004278350649981e-06,
+   "default_policy_difference": -4.004278350649981e-06,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.14441562454615142,
+    "H": 0.1292055666637613,
+    "D": 0.11198600059630982
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.0464960117198589,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.04649200744150825,
+   "decision_changed": false,
+   "split_shortfall": -0.04649200744150825
+  },
+  {
+   "pair": "4",
+   "up": "7",
+   "shoe": [
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    15,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.1351563790542128,
+   "default_rebuilt": -0.1351563790542128,
+   "default_play_in_common_shoe": -0.1351563790542128,
+   "three_hand_play_in_common_shoe": -0.1351563790542128,
+   "two_hand_common_shoe_split": -0.1351563661415026,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.1351563661415026,
+   "lower_bound_source": "two hand",
+   "difference": -1.2912710206647304e-08,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.4722336355625697,
+    "H": 0.08886751283315006,
+    "D": -0.1687011322469375
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.22402389188736285,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.22402387897465265,
+   "decision_changed": false,
+   "split_shortfall": 0.22402387897465265
+  },
+  {
+   "pair": "4",
+   "up": "8",
+   "shoe": [
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    15,
+    16,
+    64
+   ],
+   "default_split": -0.2893806688230405,
+   "default_rebuilt": -0.2893806688230405,
+   "default_play_in_common_shoe": -0.2893806688230405,
+   "three_hand_play_in_common_shoe": -0.2893806688230405,
+   "two_hand_common_shoe_split": -0.289380667016679,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.289380667016679,
+   "lower_bound_source": "two hand",
+   "difference": -1.8063614493080138e-09,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5149177845199985,
+    "H": -0.05868046329041823,
+    "D": -0.4505788312932186
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.23070020553262224,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.2307002037262608,
+   "decision_changed": false,
+   "split_shortfall": 0.2307002037262608
+  },
+  {
+   "pair": "4",
+   "up": "9",
+   "shoe": [
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    15,
+    64
+   ],
+   "default_split": -0.466822889856808,
+   "default_rebuilt": -0.466822889856808,
+   "default_play_in_common_shoe": -0.466822889856808,
+   "three_hand_play_in_common_shoe": -0.466822889856808,
+   "two_hand_common_shoe_split": -0.4668212019059068,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.4668212019059068,
+   "lower_bound_source": "two hand",
+   "difference": -1.6879509011635818e-06,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5427483997910886,
+    "H": -0.2096390100496428,
+    "D": -0.7142770011881984
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.25718387980716517,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.257182191856264,
+   "decision_changed": false,
+   "split_shortfall": 0.257182191856264
+  },
+  {
+   "pair": "4",
+   "up": "T",
+   "shoe": [
+    16,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    63
+   ],
+   "default_split": -0.5664296677270856,
+   "default_rebuilt": -0.5664296677270856,
+   "default_play_in_common_shoe": -0.5664296677270856,
+   "three_hand_play_in_common_shoe": -0.5664296677270856,
+   "two_hand_common_shoe_split": -0.566413027652461,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.566413027652461,
+   "lower_bound_source": "two hand",
+   "difference": -1.664007462454098e-05,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5417225422174069,
+    "H": -0.24727255807610624,
+    "D": -0.7444007822925103
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.29444998414130064,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.29444998414130064,
+   "decision_changed": false,
+   "split_shortfall": 0.3191404695763548
+  },
+  {
+   "pair": "4",
+   "up": "A",
+   "shoe": [
+    15,
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.5157861381008811,
+   "default_rebuilt": -0.5157861381008811,
+   "default_play_in_common_shoe": -0.5157861381008811,
+   "three_hand_play_in_common_shoe": -0.5157861381008811,
+   "two_hand_common_shoe_split": -0.5156804096052574,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.5156804096052574,
+   "lower_bound_source": "two hand",
+   "difference": -0.00010572849562373587,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.6639789956748103,
+    "H": -0.19963732097039147,
+    "D": -0.8064516786621869
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.3161488171304897,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.31604308863486597,
+   "decision_changed": false,
+   "split_shortfall": 0.31604308863486597
+  },
+  {
+   "pair": "3",
+   "up": "2",
+   "shoe": [
+    16,
+    15,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.13121256206702958,
+   "default_rebuilt": -0.13121256206702958,
+   "default_play_in_common_shoe": -0.13121569778489153,
+   "three_hand_play_in_common_shoe": -0.13152789899242914,
+   "two_hand_common_shoe_split": -0.13311402256758437,
+   "information_gain": 7.480264767155409e-05,
+   "information_play_in_common_shoe": -0.13114089513722,
+   "common_shoe_lower_bound": -0.13114089513722,
+   "lower_bound_source": "information play",
+   "difference": -7.166692980958844e-05,
+   "default_policy_difference": -3.13571786195177e-06,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.2923657105569608,
+    "H": -0.14297670312118305,
+    "D": -0.5630917694518232
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.011764141054153465,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.011835807983963054,
+   "decision_changed": false,
+   "split_shortfall": -0.011835807983963054
+  },
+  {
+   "pair": "3",
+   "up": "3",
+   "shoe": [
+    16,
+    16,
+    13,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.045999705616891824,
+   "default_rebuilt": -0.045999705616891824,
+   "default_play_in_common_shoe": -0.04599479218121677,
+   "three_hand_play_in_common_shoe": -0.04705501803034185,
+   "two_hand_common_shoe_split": -0.05416022034895693,
+   "information_gain": 4.6012345392143494e-09,
+   "information_play_in_common_shoe": -0.04599478757998223,
+   "common_shoe_lower_bound": -0.04599478757998223,
+   "lower_bound_source": "information play",
+   "difference": -4.9180369095930265e-06,
+   "default_policy_difference": 4.913435675053812e-06,
+   "default_hands": 2.1403931174597424,
+   "common_shoe_hands": 2.140557573861011,
+   "other_actions": {
+    "S": -0.24997550939869423,
+    "H": -0.10885853990099412,
+    "D": -0.479328172108625
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.0628588342841023,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.06286375232101188,
+   "decision_changed": false,
+   "split_shortfall": -0.06286375232101188
+  },
+  {
+   "pair": "3",
+   "up": "4",
+   "shoe": [
+    16,
+    16,
+    14,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.059358052592346,
+   "default_rebuilt": 0.059358052592346,
+   "default_play_in_common_shoe": 0.05936787920501199,
+   "three_hand_play_in_common_shoe": 0.056938489800201164,
+   "two_hand_common_shoe_split": 0.04183387553456274,
+   "information_gain": 4.161094364373008e-06,
+   "information_play_in_common_shoe": 0.059372040299376365,
+   "common_shoe_lower_bound": 0.059372040299376365,
+   "lower_bound_source": "information play",
+   "difference": -1.3987707030364838e-05,
+   "default_policy_difference": 9.82661266599183e-06,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.19890147188608054,
+    "H": -0.06670063028623699,
+    "D": -0.3783077608059822
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.126058682878583,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.12607267058561336,
+   "decision_changed": false,
+   "split_shortfall": -0.12607267058561336
+  },
+  {
+   "pair": "3",
+   "up": "5",
+   "shoe": [
+    16,
+    16,
+    14,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.16799237808604559,
+   "default_rebuilt": 0.1679923780860456,
+   "default_play_in_common_shoe": 0.16801033377510569,
+   "three_hand_play_in_common_shoe": 0.16433686185838814,
+   "two_hand_common_shoe_split": 0.1413578818923283,
+   "information_gain": 0.0,
+   "information_play_in_common_shoe": 0.16801033377510569,
+   "common_shoe_lower_bound": 0.16801033377510569,
+   "lower_bound_source": "default play",
+   "difference": -1.79556890601007e-05,
+   "default_policy_difference": 1.79556890601007e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.15194898752849456,
+    "H": -0.02475341134237751,
+    "D": -0.2850667626578749
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.1927457894284231,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.1927637451174832,
+   "decision_changed": false,
+   "split_shortfall": -0.1927637451174832
+  },
+  {
+   "pair": "3",
+   "up": "6",
+   "shoe": [
+    16,
+    16,
+    14,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.22380150947794974,
+   "default_rebuilt": 0.22380150947794974,
+   "default_play_in_common_shoe": 0.2238225077067364,
+   "three_hand_play_in_common_shoe": 0.21943391970903464,
+   "two_hand_common_shoe_split": 0.19207783860743435,
+   "information_gain": 2.6570685867588484e-05,
+   "information_play_in_common_shoe": 0.22384907839260398,
+   "common_shoe_lower_bound": 0.22384907839260398,
+   "lower_bound_source": "information play",
+   "difference": -4.756891465423907e-05,
+   "default_policy_difference": 2.0998228786650586e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.14545702965210625,
+    "H": -0.006443883798931384,
+    "D": -0.2659222019229052
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.23024539327688112,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.23029296219153536,
+   "decision_changed": false,
+   "split_shortfall": -0.23029296219153536
+  },
+  {
+   "pair": "3",
+   "up": "7",
+   "shoe": [
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.05031159724488363,
+   "default_rebuilt": -0.05031159724488362,
+   "default_play_in_common_shoe": -0.05030786330835719,
+   "three_hand_play_in_common_shoe": -0.052414092992742516,
+   "two_hand_common_shoe_split": -0.06520316041853726,
+   "information_gain": 6.715790722144899e-09,
+   "information_play_in_common_shoe": -0.050307856592566466,
+   "common_shoe_lower_bound": -0.050307856592566466,
+   "lower_bound_source": "information play",
+   "difference": -3.7406523171606976e-06,
+   "default_policy_difference": 3.7339365264385527e-06,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.4732620543063986,
+    "H": -0.15476012897081715,
+    "D": -0.8883388726164543
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.10444853172593352,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.10445227237825068,
+   "decision_changed": false,
+   "split_shortfall": -0.10445227237825068
+  },
+  {
+   "pair": "3",
+   "up": "8",
+   "shoe": [
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    64
+   ],
+   "default_split": -0.22968721835427747,
+   "default_rebuilt": -0.22968721835427747,
+   "default_play_in_common_shoe": -0.22968721835427744,
+   "three_hand_play_in_common_shoe": -0.22968721835427744,
+   "two_hand_common_shoe_split": -0.2296872077287797,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.2296872077287797,
+   "lower_bound_source": "two hand",
+   "difference": -1.0625497759431113e-08,
+   "default_policy_difference": 2.7755575615628914e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.510584692668088,
+    "H": -0.22020155505559988,
+    "D": -1.0010645995939287
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.009485663298677588,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.009485652673179829,
+   "decision_changed": false,
+   "split_shortfall": 0.009485652673179829
+  },
+  {
+   "pair": "3",
+   "up": "9",
+   "shoe": [
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    64
+   ],
+   "default_split": -0.41151296316354274,
+   "default_rebuilt": -0.41151296316354274,
+   "default_play_in_common_shoe": -0.41151296316354274,
+   "three_hand_play_in_common_shoe": -0.41151296316354274,
+   "two_hand_common_shoe_split": -0.4115124343753783,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.4115124343753783,
+   "lower_bound_source": "two hand",
+   "difference": -5.287881644222558e-07,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.542943194961523,
+    "H": -0.296613138855697,
+    "D": -1.0671420436867491
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.11489982430784573,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.11489929551968131,
+   "decision_changed": false,
+   "split_shortfall": 0.11489929551968131
+  },
+  {
+   "pair": "3",
+   "up": "T",
+   "shoe": [
+    16,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    63
+   ],
+   "default_split": -0.5153952179853482,
+   "default_rebuilt": -0.5153952179853482,
+   "default_play_in_common_shoe": -0.5153952179853482,
+   "three_hand_play_in_common_shoe": -0.5153952179853482,
+   "two_hand_common_shoe_split": -0.5153002807238203,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.5153002807238203,
+   "lower_bound_source": "two hand",
+   "difference": -9.493726152787207e-05,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5418770366620864,
+    "H": -0.339158884816574,
+    "D": -1.0648254785550029
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.17623633316877413,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.17614139590724626,
+   "decision_changed": false,
+   "split_shortfall": 0.17614139590724626
+  },
+  {
+   "pair": "3",
+   "up": "A",
+   "shoe": [
+    15,
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.46075025376064427,
+   "default_rebuilt": -0.46075025376064427,
+   "default_play_in_common_shoe": -0.4607502537606442,
+   "three_hand_play_in_common_shoe": -0.4607502537606442,
+   "two_hand_common_shoe_split": -0.4607061539761733,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.4607061539761733,
+   "lower_bound_source": "two hand",
+   "difference": -4.409978447095231e-05,
+   "default_policy_difference": 5.551115123125783e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.6648709815221463,
+    "H": -0.31162217848962204,
+    "D": -1.3024853491926918
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.14912807527102223,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.14908397548655128,
+   "decision_changed": false,
+   "split_shortfall": 0.14908397548655128
+  },
+  {
+   "pair": "2",
+   "up": "2",
+   "shoe": [
+    16,
+    13,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.07398688192695986,
+   "default_rebuilt": -0.07398688192695986,
+   "default_play_in_common_shoe": -0.07398377926187641,
+   "three_hand_play_in_common_shoe": -0.0746702947728526,
+   "two_hand_common_shoe_split": -0.07912687782367422,
+   "information_gain": 0.000139282986276551,
+   "information_play_in_common_shoe": -0.07384449627559986,
+   "common_shoe_lower_bound": -0.07384449627559986,
+   "lower_bound_source": "information play",
+   "difference": -0.00014238565136000247,
+   "default_policy_difference": 3.1026650834514724e-06,
+   "default_hands": 2.1403931174597424,
+   "common_shoe_hands": 2.140557573861011,
+   "other_actions": {
+    "S": -0.29240162704572314,
+    "H": -0.11464074290532351,
+    "D": -0.5848032540914462
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.040653860978363654,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.040796246629723656,
+   "decision_changed": false,
+   "split_shortfall": -0.040796246629723656
+  },
+  {
+   "pair": "2",
+   "up": "3",
+   "shoe": [
+    16,
+    14,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.0012451701782551867,
+   "default_rebuilt": -0.0012451701782551867,
+   "default_play_in_common_shoe": -0.001235155336583592,
+   "three_hand_play_in_common_shoe": -0.0027198222459313714,
+   "two_hand_common_shoe_split": -0.012175313228843777,
+   "information_gain": 1.5785932973343478e-08,
+   "information_play_in_common_shoe": -0.0012351395506506188,
+   "common_shoe_lower_bound": -0.0012351395506506188,
+   "lower_bound_source": "information play",
+   "difference": -1.003062760456799e-05,
+   "default_policy_difference": 1.0014841671594646e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.25090542421376705,
+    "H": -0.0818432726830624,
+    "D": -0.5018108484275342
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.08059810250480721,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.08060813313241179,
+   "decision_changed": false,
+   "split_shortfall": -0.08060813313241179
+  },
+  {
+   "pair": "2",
+   "up": "4",
+   "shoe": [
+    16,
+    14,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.0756722665979079,
+   "default_rebuilt": 0.0756722665979079,
+   "default_play_in_common_shoe": 0.07568957758386155,
+   "three_hand_play_in_common_shoe": 0.0735033808781462,
+   "two_hand_common_shoe_split": 0.06008052119252623,
+   "information_gain": 0.0006082870620642902,
+   "information_play_in_common_shoe": 0.07629786464592583,
+   "common_shoe_lower_bound": 0.07629786464592583,
+   "lower_bound_source": "information play",
+   "difference": -0.000625598048017928,
+   "default_policy_difference": 1.7310985953644664e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.2060089907436014,
+    "H": -0.045497571676738624,
+    "D": -0.4120179814872027
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.12116983827464653,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.12179543632266446,
+   "decision_changed": false,
+   "split_shortfall": -0.12179543632266446
+  },
+  {
+   "pair": "2",
+   "up": "5",
+   "shoe": [
+    16,
+    14,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.18603611211195506,
+   "default_rebuilt": 0.18603611211195506,
+   "default_play_in_common_shoe": 0.18605732326369967,
+   "three_hand_play_in_common_shoe": 0.1825670416604646,
+   "two_hand_common_shoe_split": 0.16048096275758114,
+   "information_gain": 6.535995395184901e-07,
+   "information_play_in_common_shoe": 0.1860579768632392,
+   "common_shoe_lower_bound": 0.1860579768632392,
+   "lower_bound_source": "information play",
+   "difference": -2.186475128412857e-05,
+   "default_policy_difference": 2.121115174461008e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.15323388391577678,
+    "H": -0.0011671903313473786,
+    "D": -0.3064677678315535
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.18720330244330244,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.18722516719458657,
+   "decision_changed": false,
+   "split_shortfall": -0.18722516719458657
+  },
+  {
+   "pair": "2",
+   "up": "6",
+   "shoe": [
+    16,
+    14,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.24669642028223254,
+   "default_rebuilt": 0.24669642028223251,
+   "default_play_in_common_shoe": 0.2467227924449054,
+   "three_hand_play_in_common_shoe": 0.24243474228765055,
+   "two_hand_common_shoe_split": 0.21528342685983623,
+   "information_gain": 3.0283367777050874e-06,
+   "information_play_in_common_shoe": 0.2467258207816831,
+   "common_shoe_lower_bound": 0.2467258207816831,
+   "lower_bound_source": "information play",
+   "difference": -2.9400499450549233e-05,
+   "default_policy_difference": 2.6372162672844146e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.1465956948599747,
+    "H": 0.01637138781221964,
+    "D": -0.29319138971994935
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.2303250324700129,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.23035443296946345,
+   "decision_changed": false,
+   "split_shortfall": -0.23035443296946345
+  },
+  {
+   "pair": "2",
+   "up": "7",
+   "shoe": [
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    16,
+    64
+   ],
+   "default_split": 0.009304776958434867,
+   "default_rebuilt": 0.009304776958434869,
+   "default_play_in_common_shoe": 0.009316424294554525,
+   "three_hand_play_in_common_shoe": 0.007489754870428668,
+   "two_hand_common_shoe_split": -0.004098914505076622,
+   "information_gain": 6.065654568898626e-09,
+   "information_play_in_common_shoe": 0.009316430360209094,
+   "common_shoe_lower_bound": 0.009316430360209094,
+   "lower_bound_source": "information play",
+   "difference": -1.1653401774227093e-05,
+   "default_policy_difference": 1.1647336119658194e-05,
+   "default_hands": 2.152287684620453,
+   "common_shoe_hands": 2.1524777619997195,
+   "other_actions": {
+    "S": -0.47424779965843916,
+    "H": -0.08910698758337258,
+    "D": -0.9484955993168783
+   },
+   "default_best": [
+    "P"
+   ],
+   "default_margin": 0.09841176454180744,
+   "lower_bound_best": [
+    "P"
+   ],
+   "lower_bound_margin": 0.09842341794358168,
+   "decision_changed": false,
+   "split_shortfall": -0.09842341794358168
+  },
+  {
+   "pair": "2",
+   "up": "8",
+   "shoe": [
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    16,
+    64
+   ],
+   "default_split": -0.17438988427381125,
+   "default_rebuilt": -0.17438988427381125,
+   "default_play_in_common_shoe": -0.17438988427381125,
+   "three_hand_play_in_common_shoe": -0.17438988427381125,
+   "two_hand_common_shoe_split": -0.17438988210852413,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.17438988210852413,
+   "lower_bound_source": "two hand",
+   "difference": -2.1652871162736176e-09,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5116130469672513,
+    "H": -0.155450622385137,
+    "D": -1.0232260939345026
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.018939261888674258,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.018939259723387142,
+   "decision_changed": false,
+   "split_shortfall": 0.018939259723387142
+  },
+  {
+   "pair": "2",
+   "up": "9",
+   "shoe": [
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    15,
+    64
+   ],
+   "default_split": -0.3638141898049899,
+   "default_rebuilt": -0.3638141898049899,
+   "default_play_in_common_shoe": -0.3638141898049899,
+   "three_hand_play_in_common_shoe": -0.3638141898049899,
+   "two_hand_common_shoe_split": -0.3638137395723649,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.3638137395723649,
+   "lower_bound_source": "two hand",
+   "difference": -4.502326250155342e-07,
+   "default_policy_difference": 0.0,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5385921424070267,
+    "H": -0.23644226102964533,
+    "D": -1.0771842848140534
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.1273719287753446,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.12737147854271957,
+   "decision_changed": false,
+   "split_shortfall": 0.12737147854271957
+  },
+  {
+   "pair": "2",
+   "up": "T",
+   "shoe": [
+    16,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    63
+   ],
+   "default_split": -0.46904012024074043,
+   "default_rebuilt": -0.46904012024074043,
+   "default_play_in_common_shoe": -0.46904012024074054,
+   "three_hand_play_in_common_shoe": -0.46904012024074054,
+   "two_hand_common_shoe_split": -0.4689189053456931,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.4689189053456931,
+   "lower_bound_source": "two hand",
+   "difference": -0.00012121489504735017,
+   "default_policy_difference": -1.1102230246251565e-16,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.5421618422808152,
+    "H": -0.2860041923405233,
+    "D": -1.0843236845616304
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.1830359279002171,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.18291471300516976,
+   "decision_changed": false,
+   "split_shortfall": 0.18291471300516976
+  },
+  {
+   "pair": "2",
+   "up": "A",
+   "shoe": [
+    15,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    64
+   ],
+   "default_split": -0.41182237113114495,
+   "default_rebuilt": -0.41182237113114495,
+   "default_play_in_common_shoe": -0.411822371131145,
+   "three_hand_play_in_common_shoe": -0.411822371131145,
+   "two_hand_common_shoe_split": -0.4117996928646776,
+   "information_gain": null,
+   "information_play_in_common_shoe": null,
+   "common_shoe_lower_bound": -0.4117996928646776,
+   "lower_bound_source": "two hand",
+   "difference": -2.2678266467346386e-05,
+   "default_policy_difference": -5.551115123125783e-17,
+   "default_hands": 2.0,
+   "common_shoe_hands": 2.0,
+   "other_actions": {
+    "S": -0.6654866783946648,
+    "H": -0.25485163112113285,
+    "D": -1.3309733567893298
+   },
+   "default_best": [
+    "H"
+   ],
+   "default_margin": 0.1569707400100121,
+   "lower_bound_best": [
+    "H"
+   ],
+   "lower_bound_margin": 0.15694806174354475,
+   "decision_changed": false,
+   "split_shortfall": 0.15694806174354475
+  }
+ ]
+}
