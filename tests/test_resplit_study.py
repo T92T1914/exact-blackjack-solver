@@ -72,8 +72,13 @@ def _total(cards):
     return _state(cards)[0]
 
 
-def physical_value(model):
-    """Deal the default's play card by card from one shoe and settle every hand together."""
+def physical_value(model, information=False):
+    """Deal the default's play card by card from one shoe and settle every hand together.
+
+    With `information` the second of the first two hands plays the information
+    play in a round where neither of the two resplits: every choice is the best
+    one on the value of the whole round, found here by trying each.
+    """
     up, rules, pair = model.up, model.rules, model.pair
     excluded = {'A': 9, 'T': 0}.get(up, -1)
 
@@ -109,6 +114,9 @@ def physical_value(model):
             if not waiting:
                 return settle(shoe, completed)
             depth, rest = waiting[0], waiting[1:]
+            # Only the second hand waits, and every slot is left, so the first
+            # hand did not resplit.
+            informed = information and waiting == (0,) and slots == model.pool
             value = 0.0
             for rank, chance in enumerate(draws(shoe)):
                 if chance <= 0.0:
@@ -117,13 +125,29 @@ def physical_value(model):
                     value += chance * deal(take(shoe, rank), (depth + 1, depth + 1) + rest,
                                            slots - 1, None, completed)
                 else:
-                    value += chance * deal(take(shoe, rank), rest, slots, (depth, (rank,)),
-                                           completed)
+                    value += chance * deal(take(shoe, rank), rest, slots,
+                                           (depth, (rank,), informed), completed)
             return value
-        depth, drawn = hand
+        depth, drawn, informed = hand
         total, soft = _state((pair,) + drawn)
         if total > 21 or (total == 21 and len(drawn) > 1):
             return deal(shoe, waiting, slots, None, tuple(sorted(completed + ((total, 1),))))
+        if informed:
+            stand = deal(shoe, waiting, slots, None, tuple(sorted(completed + ((total, 1),))))
+            if total == 21 or (pair == 0 and not rules.hit_split_aces):
+                return stand
+            hit = double = 0.0
+            for rank, chance in enumerate(draws(shoe)):
+                if chance <= 0.0:
+                    continue
+                hit += chance * deal(take(shoe, rank), waiting, slots,
+                                     (depth, drawn + (rank,), True), completed)
+                ending = ((_total((pair,) + drawn + (rank,)), 2),)
+                double += chance * deal(take(shoe, rank), waiting, slots, None,
+                                        tuple(sorted(completed + ending)))
+            if len(drawn) == 1 and rules.das:
+                return max(stand, hit, double)
+            return max(stand, hit)
         if len(drawn) == 1:
             choice = model.action(depth, drawn[0])
         else:
@@ -145,7 +169,7 @@ def physical_value(model):
                                        tuple(sorted(completed + ending)))
             else:
                 value += chance * deal(take(shoe, rank), waiting, slots,
-                                       (depth, drawn + (rank,)), completed)
+                                       (depth, drawn + (rank,), False), completed)
         return value
 
     return deal(model.shoe, (0, 0), model.pool, None, ())
@@ -159,6 +183,44 @@ def test_shortcut_matches_a_deal_by_deal_enumeration(pair, up, shoe, max_hands):
         expected = physical_value(model)
         assert model.shared_shoe_value() == pytest.approx(expected, abs=1e-12, rel=0)
         study.clear_caches()
+
+
+@pytest.mark.parametrize('max_hands', [3, 4])
+@pytest.mark.parametrize('pair, up, shoe', SMALL + BOUNDED)
+def test_information_play_matches_a_deal_by_deal_enumeration(pair, up, shoe, max_hands):
+    for rules in (Rules(max_hands=max_hands), Rules(max_hands=max_hands, das=False, s17=False)):
+        model = study.DefaultResplit(pair, up, shoe, rules)
+        gain = study.information_gain(pair, up, shoe, rules)
+        if gain is None:
+            # Then the default never resplits and the play is a two hand play.
+            assert not model.resplits(0, model.pool)
+            continue
+        assert gain >= 0.0
+        expected = physical_value(model, information=True)
+        assert model.shared_shoe_value() + gain == pytest.approx(expected, abs=1e-12, rel=0)
+        study.clear_caches()
+
+
+def test_check_mode_reports_an_information_play_that_disappears():
+    # A saved gain against a fresh None is a problem to report, not a crash.
+    cell = dict(pair='8', up='7', information_gain=1e-5, information_play_in_common_shoe=0.1)
+    fresh = dict(cell, information_gain=None, information_play_in_common_shoe=None)
+    problems = study.compare({'cells': [cell]}, {'cells': [fresh]})
+    assert len(problems) == 2 and all('became None' in problem for problem in problems)
+    assert study.compare({'cells': [fresh]}, {'cells': [cell]})
+
+
+def test_information_play_gains_on_small_shoes():
+    # Otherwise the enumeration above would only test a gain of 0, and the
+    # bounded optimum below would never meet a real gain.
+    def gains(shoes, rules):
+        found = [study.information_gain(pair, up, shoe, rules) for pair, up, shoe in shoes]
+        return sum(gain is not None and gain > 1e-5 for gain in found)
+
+    assert gains(SMALL + BOUNDED, Rules()) == 4
+    assert gains(SMALL + BOUNDED, Rules(das=False, s17=False)) == 3
+    assert gains(BOUNDED, Rules(max_hands=3)) == 1
+    study.clear_caches()
 
 
 def _at_least(value: float) -> str:
@@ -198,6 +260,9 @@ def test_the_play_never_beats_the_bounded_optimum(pair, up, shoe):
                                       max_seconds=120).value
         own = study.DefaultResplit(pair, up, shoe, rules).shared_shoe_value()
         assert own <= optimum + 1e-12, (pair, up, das)
+        gain = study.information_gain(pair, up, shoe, rules)
+        if gain is not None:
+            assert own <= own + gain <= optimum + 1e-12, (pair, up, das)
         study.clear_caches()
 
 
@@ -272,11 +337,46 @@ def test_output_never_replaces_an_existing_file(tmp_path, capsys):
     assert 'Choose a new path' in capsys.readouterr().err
 
 
+def _check_information_play(cell):
+    """A resplitting cell: the information play adds its gain to the default's play."""
+    gain = cell['information_gain']
+    assert gain >= 0.0
+    assert cell['information_play_in_common_shoe'] == cell['default_play_in_common_shoe'] + gain
+    above = cell['information_play_in_common_shoe'] > cell['default_play_in_common_shoe']
+    expected = 'information play' if above else 'default play'
+    assert cell['lower_bound_source'] == expected
+
+
+def _check_summary_extremes(results):
+    """Each extreme in the summary names the cell that holds it in its own field."""
+    summary, cells = results['summary'], results['cells']
+    for key, field in (('largest_own_play_gain', 'default_policy_difference'),
+                       ('largest_information_gain', 'information_gain'),
+                       ('largest_default_excess', 'difference')):
+        held = [cell for cell in cells if cell[field] is not None]
+        best = max(held, key=lambda cell: cell[field])
+        assert summary[key] == dict(pair=best['pair'], up=best['up'], difference=best[field])
+    gains = [c['information_gain'] for c in cells if c['information_gain'] is not None]
+    assert summary['information_play_cells'] == summary['resplitting_cells'] == len(gains)
+
+
+def _check_information_prose(summary, text):
+    """The information play's counts and largest gain as the prose states them."""
+    best = summary['largest_information_gain']
+    assert (f"{best['difference']:.9f} units for "
+            f"{best['pair']},{best['pair']} against {best['up']}") in text
+    assert (f"more than 1e-12 in {summary['information_play_gains']} of the "
+            f"{summary['information_play_cells']} cells") in text
+    largest = summary['information_play_largest']
+    assert f"largest of the four plays in {largest} cells" in ' '.join(text.split())
+
+
 def test_saved_study_matches_its_document_and_the_readme():
     results = saved()
     assert len(results['cells']) == 100
     assert results['rules'] == asdict(study.TABLE)
     assert results['summary'] == study.summarize(results['cells'])
+    _check_summary_extremes(results)
     assert results['two_hand_results_sha256_lf'] == study._sha256(study.TWO_HAND_RESULTS)
     document = study.DOCUMENT.read_text(encoding='utf-8')
     for table in study.TABLES:
@@ -290,14 +390,16 @@ def test_saved_study_matches_its_document_and_the_readme():
     for cell in above:
         assert cell['default_best'] == cell['lower_bound_best'] == ['P']
         assert cell['lower_bound_margin'] > 100 * cell['difference']
-    # Where the default resplits its own play gives the bound. Elsewhere that
-    # play is its two hand play, and the two hand value is at least as large.
+    # Where the default resplits its own play or the information play gives
+    # the bound. Elsewhere that play is its two hand play, and the two hand
+    # value is at least as large.
     for cell in results['cells']:
         assert cell['three_hand_play_in_common_shoe'] <= max(
             cell['default_play_in_common_shoe'], cell['two_hand_common_shoe_split'])
         if cell['default_hands'] > 2.0:
-            assert cell['lower_bound_source'] == 'default play'
+            _check_information_play(cell)
         else:
+            assert cell['information_gain'] is None
             assert abs(cell['default_policy_difference']) <= study.TOLERANCE
             assert (cell['two_hand_common_shoe_split']
                     >= cell['default_play_in_common_shoe'] - study.TOLERANCE)
@@ -318,6 +420,9 @@ def test_saved_study_matches_its_document_and_the_readme():
     assert f"{summary['own_play_above_default']} of the 100 cells" in text
     assert f"In {summary['own_play_below_default']} cells it earns less" in text
     assert f"other {summary['default_above_lower_bound']} cells" in text
+    _check_information_prose(summary, text)
+    best = summary['largest_information_gain']
+    assert f"{best['difference']:.9f} of" in readme
     assert f"{summary['within_tolerance']} of the 100 cells" in text
     assert f"{100 - summary['default_above_lower_bound']} of the 100 cells" in text
     rounding = max(c['difference'] for c in results['cells'] if c not in above)
@@ -342,6 +447,7 @@ def test_saved_variant_studies_match_their_document(name):
     assert len(results['cells']) == 100
     assert results['rules'] == asdict(rules)
     assert results['summary'] == study.summarize(results['cells'])
+    _check_summary_extremes(results)
     two_hand_path = study.two_hand.results_path(name)
     assert results['two_hand_results_sha256_lf'] == study._sha256(two_hand_path)
     assert results['evaluated_sources_modified'] is False
@@ -359,8 +465,9 @@ def test_saved_variant_studies_match_their_document(name):
         assert cell['three_hand_play_in_common_shoe'] <= max(
             cell['default_play_in_common_shoe'], cell['two_hand_common_shoe_split'])
         if cell['default_hands'] > 2.0:
-            assert cell['lower_bound_source'] == 'default play'
+            _check_information_play(cell)
         else:
+            assert cell['information_gain'] is None
             assert abs(cell['default_policy_difference']) <= study.TOLERANCE
     # The prose states these numbers, so they must follow from the saved cells.
     text = _section(document, name)
@@ -382,13 +489,17 @@ def test_saved_variant_studies_match_their_document(name):
     rounding = max(c['difference'] for c in results['cells'] if c not in above)
     assert f"rounding, which reaches {rounding:.1e} here" in text
     assert f"{round(results['elapsed_seconds'])} seconds" in text
+    _check_information_prose(summary, text)
 
 
 def test_the_readme_states_the_variant_extremes():
     readme = ' '.join((study.ROOT / 'README.md').read_text(encoding='utf-8').split())
     summaries = [json.loads(study.results_path(name).read_text(encoding='utf-8'))['summary']
                  for name in ('h17', 'no-das')]
-    assert all(summary['default_above_lower_bound'] == 5 for summary in summaries)
+    words = {4: 'four', 5: 'five'}
+    h17, no_das = (words[summary['default_above_lower_bound']] for summary in summaries)
+    assert (f'above the bound in {h17} cells under H17 and {no_das} without double '
+            f'after split') in readme
     most_above = max(s['largest_default_excess']['difference'] for s in summaries)
     most_below = max(-s['worst']['difference'] for s in summaries)
     assert f'{most_above:.9f} units' in readme

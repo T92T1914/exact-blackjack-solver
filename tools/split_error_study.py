@@ -79,6 +79,8 @@ UNIT = tuple(1 << (BITS * r) for r in range(10))
 BUST = 5
 #: Union shoes per dealer batch. This bounds memory and does not change a value.
 DEALER_BATCH = 1 << 16
+#: Marks a second hand that plays the first hand's policy.
+SAME = object()
 #: Option order at a player node.
 OPTIONS = (STAND, HIT, DOUBLE)
 
@@ -359,8 +361,11 @@ class TwoHandSplit:
             value = np.where(self.first_bust, -(self.first_wagers + wager), value)
         return value
 
-    def _second_hand(self, policy):
-        """Second hand values for every first hand ending, deepest level first."""
+    def _second_hand(self, policy, skip=()):
+        """Second hand values for every first hand ending, deepest level first.
+
+        A second hand whose first card is a rank in `skip` adds nothing.
+        """
         first_unseen = np.asarray(self.shoe, dtype=float)[None, :] - _decode(self.first_keys)
         first_cards = first_unseen.sum(axis=1)
         deeper = {}
@@ -389,7 +394,7 @@ class TwoHandSplit:
             p, refused = _draw_rows(first_unseen, first_cards, self.excluded)
             second = np.zeros(len(self.endings))
             for r in range(10):
-                if UNIT[r] in deeper:
+                if UNIT[r] in deeper and r not in skip:
                     second += np.where(p[:, r] > 0, p[:, r] * deeper[UNIT[r]], 0.0)
         return dict(zip(self.endings, np.where(refused, np.nan, second).tolist()))
 
@@ -404,9 +409,15 @@ class TwoHandSplit:
             return math.nan
         return math.fsum(p[r] * value for r, value in values if p[r] > 0)
 
-    def value(self, policy=None):
-        """Split value in original wager units, optimal or under a fixed policy."""
-        ending = self._second_hand(policy)
+    def value(self, policy=None, *, second=SAME, skip=()):
+        """Split value in original wager units, optimal or under a fixed policy.
+
+        `second` plays the second hand by its own policy, and None there makes
+        every second hand choice on the combined round value. `skip` leaves out
+        every round in which either hand's first card is one of these ranks, so
+        the result is that part of the value and not the whole of it.
+        """
+        ending = self._second_hand(policy if second is SAME else second, skip)
         deeper = {}
         for depth in range(len(self.hands.levels) - 1, -1, -1):
             current = {}
@@ -428,7 +439,7 @@ class TwoHandSplit:
             deeper = current
         p, refused = self._draws((0,) * 10)
         value = self._expect(p, refused, [(r, deeper[UNIT[r]]) for r in range(10)
-                                          if UNIT[r] in deeper])
+                                          if UNIT[r] in deeper and r not in skip])
         if math.isnan(value):
             raise UnsupportedShoeError('an admitted continuation needs an unavailable card')
         return value

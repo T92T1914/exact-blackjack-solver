@@ -398,7 +398,7 @@ full size and measured the default's gap to it in every pair and upcard cell of
 three six deck tables, with two hands and no resplit. The
 [resplit study](docs/resplit-study.md) covers the default table with up to four
 hands. The best play from one shared shoe is out of reach there, so it compares
-the default with the best of three plays from one shared shoe that it values
+the default with the best of four plays from one shared shoe that it values
 to rounding.
 
 The supported common shoe calculation families above expose joint computation
@@ -596,28 +596,32 @@ separate from this command. Current results are available in the linked CI run.
   tables and shows why the default cannot be higher in that model. With
   resplitting to four hands on the six deck table, the
   [resplit study](docs/resplit-study.md) compares the default with a lower
-  bound, the best of three plays from one shared shoe that it values to
+  bound, the best of four plays from one shared shoe that it values to
   rounding, because the best play is out of reach at six decks. The bound is
-  not the best play, so the real gap can be larger in every cell, and where
-  the default resplits it holds none of the gain the two hand study found for
-  using the shared shoe. The default is below
-  that bound by up to 0.000094950 units, for 7,7 against T, and above it in
-  five cells by at most 0.000009505 units, for 6,6 against 2. In those five
-  the default's own resplitting earns less from one shoe than the default
-  states. In 37 cells it earns more, by up to 0.000086885 units for 8,8
-  against 7. No best action changes under the bound, and a better shared shoe
-  play would have to gain at least 0.0106 units in some cell to change one.
+  not the best play, so the real gap can be larger in every cell. One of the
+  four lets the second hand use the first hand's cards in rounds where
+  neither resplits. Where the default resplits, that play holds part of the
+  gain the two hand study found for using the shared shoe, 0.000497243 of
+  its 0.000538738 units for 2,2 against 4. The default is below the bound by
+  up to 0.000508234 units, for 2,2 against 4, and above it in four cells by
+  at most 0.000005520 units, for 4,4 against 5. In those four the default's
+  own resplitting earns less from one shoe than the default states. In 37
+  cells it earns more, by up to 0.000086885 units for 8,8 against 7. No best
+  action changes under the bound. Where split is not the best action, the
+  closest call is 3,3 against 8, where split valued at the bound trails the
+  best action by 0.0106 units.
   I ran the resplit comparison with the dealer hitting soft 17 and with no
-  double after split too, one change at a time. The result has the same
-  shape: the default is above the bound in five cells in each, by at most
-  0.000009928 units, and below it by at most 0.000094955 units, and no best
-  action changes. I also ran the two hand comparison with one, two, four and
-  eight decks. It is never higher by more than rounding there either, and no
-  best action changes. The largest gap is 0.004040552 units for 3,3 against 2
-  with one deck, and it shrinks as decks are added, to 0.000360496 units for
-  2,2 against 4 with eight. Neither study measures resplitting at any deck
-  count but six, resplitting with both rule changes together, deck counts
-  other than 1, 2, 4, 6 and 8, or depleted shoes. Two of the split
+  double after split too, one change at a time. The result has the same shape:
+  the default is above the bound in four cells under H17 and five without
+  double after split, by at most 0.000009928 units, below it by at most
+  0.000500758 units, and no best action changes. I also ran the two hand
+  comparison with one, two, four and eight decks. It is never higher by more
+  than rounding there either, and no best action changes. The largest gap is
+  0.004040552 units for 3,3 against 2 with one deck, and it shrinks as decks
+  are added, to 0.000360496 units for 2,2 against 4 with eight. Neither study
+  measures resplitting at any deck count but six, resplitting with both rule
+  changes together, deck counts other than 1, 2, 4, 6 and 8, or depleted shoes.
+  Two of the split
   rules were conservative defaults in the original table (resplit aces, hit
   split aces), and the solver's defaults follow them. The EV
   of a table that allows them can be requested through the original interface,

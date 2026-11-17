@@ -7,15 +7,15 @@ there as independent hands that share one pool of extra hands. I measured that
 value against plays that deal every hand from one shared shoe, in every pair and
 upcard cell of the six deck table. The best play from one shared shoe is out of
 reach at six decks, so the comparison is with a lower bound on it: the best of
-three plays I can value exactly.
+four plays I can value exactly.
 
-In 95 of the 100 cells the default is not above that bound by more than
-rounding, which reaches 1.1e-16 here. In the other 5 cells it is above by at
-most 0.000009505 units of the
-original wager, for 6,6 against 2. There the default states slightly more than
-its own resplitting earns from one shoe, and split stays the best action by at
-least 0.0089 units. The largest gap the other way is 0.000094950 units, for 7,7
-against T. No cell changes its best action under the bound.
+In 96 of the 100 cells the default is not above that bound by more than
+rounding, which reaches 1.1e-16 here. In the other 4 cells it is above by at
+most 0.000005520 units of the original wager, for 4,4 against 5. There the
+default states slightly more than its own resplitting earns from one shoe, and
+split stays the best action by at least 0.0089 units. The largest gap the other
+way is 0.000508234 units, for 2,2 against 4. No cell changes its best action
+under the bound.
 
 ## What is compared
 
@@ -42,7 +42,7 @@ every earlier hand's total in mind. With two hands that already needed up to
 614,501 dealer shoes for one cell in the two hand study, where a 2,2 hand can
 end in 8,050 ways. With four hands the state holds the endings of three earlier
 hands, so I expect it to be far past one machine at six decks. I did not
-attempt it. Instead I valued three plays a player at this table can follow,
+attempt it. Instead I valued four plays a player at this table can follow,
 each exact to rounding.
 
 1. The default's own play. Every hand decides from its own cards and the shoe
@@ -52,12 +52,18 @@ each exact to rounding.
    may decline.
 3. The two hand shared shoe value from the [two hand study](split-error-study.md).
    It never resplits and uses every card it has seen.
+4. The information play, which I value where the default resplits. It is the
+   default's own play with one change. In a round where neither of the first
+   two hands resplits, the second hand sees the first hand's cards and makes
+   every choice on the combined value of both hands, the way the two hand
+   study's play does.
 
-The best play is worth at least the largest of the three. In each of the 42
-cells where the default resplits, the largest is its own play. In the other 58
-the default never resplits, so its own play is its two hand play, and the two
-hand value is at least as large. The three hand play is never larger than both
-of the others.
+The best play is worth at least the largest of the four. In each of the 42
+cells where the default resplits, the largest is the information play, or its
+own play where the information play adds nothing. In the other 58 the default
+never resplits, so its own play is its two hand play, the information play
+would be a two hand play too, and the two hand value is at least as large as
+either. The three hand play is never larger than both of the others.
 
 ## The table
 
@@ -71,13 +77,13 @@ wager, to three significant digits. A 0 means the two differ by no more than
 | A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
 | 9,9 | −8.03e−6 | −1.96e−5 | −2.31e−5 | −2.86e−5 | −2.79e−5 | 0 | −1.29e−5 | −1.10e−5 | −3.75e−5 | 0 |
-| 8,8 | −3.52e−5 | −3.84e−5 | −5.03e−5 | −5.50e−5 | −6.50e−5 | −8.69e−5 | −4.92e−5 | −1.98e−5 | −7.76e−6 | −8.33e−6 |
-| 7,7 | −9.96e−6 | −1.28e−5 | −1.77e−5 | −3.53e−5 | −4.46e−5 | −2.26e−5 | 0 | 0 | −9.49e−5 | −2.89e−6 |
-| 6,6 | 9.50e−6 | 3.50e−6 | −7.93e−6 | −1.46e−5 | −2.89e−5 | 0 | 0 | 0 | −8.66e−6 | −1.25e−6 |
+| 8,8 | −3.52e−5 | −3.84e−5 | −5.03e−5 | −5.50e−5 | −6.50e−5 | −8.69e−5 | −4.92e−5 | −1.98e−5 | −1.53e−5 | −8.33e−6 |
+| 7,7 | −1.47e−4 | −1.28e−5 | −1.77e−5 | −3.53e−5 | −4.46e−5 | −2.26e−5 | 0 | 0 | −9.49e−5 | −2.89e−6 |
+| 6,6 | −2.38e−5 | 3.50e−6 | −7.93e−6 | −1.46e−5 | −2.89e−5 | 0 | 0 | 0 | −8.66e−6 | −1.25e−6 |
 | 5,5 | −2.16e−6 | 0 | 0 | 0 | −1.66e−9 | 0 | 0 | 0 | −5.45e−11 | −5.70e−6 |
 | 4,4 | −5.97e−7 | 0 | 0 | 5.52e−6 | 4.15e−6 | 0 | 0 | 0 | −1.25e−5 | −6.54e−6 |
-| 3,3 | 3.29e−6 | −2.54e−6 | −5.38e−6 | −1.01e−5 | −1.36e−5 | −1.12e−6 | 0 | 0 | −6.92e−5 | −1.47e−6 |
-| 2,2 | −1.87e−6 | −6.33e−6 | −1.10e−5 | −1.32e−5 | −1.71e−5 | −7.66e−6 | 0 | 0 | −8.60e−5 | −1.13e−5 |
+| 3,3 | 2.64e−6 | −2.54e−6 | −5.38e−6 | −1.01e−5 | −1.37e−5 | −1.12e−6 | 0 | 0 | −6.92e−5 | −1.47e−6 |
+| 2,2 | −3.03e−5 | −6.33e−6 | −5.08e−4 | −1.92e−5 | −1.71e−5 | −7.66e−6 | 0 | 0 | −8.60e−5 | −1.13e−5 |
 <!-- resplit-table-bound:end -->
 
 In 41 of the 100 cells the default and the bound agree within 1e-12. Where the
@@ -85,6 +91,29 @@ default never resplits, the cell repeats the two hand study's gap, because the
 default's play there is its two hand play. That covers A,A, since split aces
 are not resplit on this table, and cells such as 7,7 against T where splitting
 is not the best action.
+
+## What the information play adds
+
+Without the fourth play the bound held none of the shared shoe gain where the
+default resplits. The default's own play decides every hand from its own cards,
+and there resplitting is worth more than the two hand value. The information
+play takes back the part of that gain a round without a resplit can hold.
+
+It adds more than 1e-12 in 9 of the 42 cells where the default resplits, and it
+is the largest of the four plays in 11 cells. In two of those, 3,3 and 2,2
+against 7, it is ahead by less than 1e-17, which is rounding. Its largest gain is
+0.000497243 units for 2,2 against 4, where the two hand study found 0.000538738.
+For 7,7 against 2 and 2,2 against 5 it holds all of the two hand gain to
+rounding, 0.000137285 and 0.000005968 units. For 8,8 against T it holds 0.000007526 of
+0.000047233. It leaves out every round where a first card is a pair card,
+because the default resplits there, so it holds none of the gain those rounds
+carry.
+
+The gain also changes which cells sit above the bound. 6,6 against 2 was the
+cell where the default sat furthest above it, by 0.000009505 units. The information play adds 0.000033266 there, so
+the default is now below the bound by 0.000023761. In 3,3 against 2 the gain
+of 0.000000655 is smaller than the default's excess, and the default stays
+above the bound by 0.000002636.
 
 ## What the default's own resplitting earns
 
@@ -143,13 +172,22 @@ single hands played in shoes that differ only in how many pair cards are gone.
 
 Each hand decides from the shoe the default gave it and settles in the shoe the
 shared deal leaves, so the script plays the default's choices through a second
-shoe rather than recomputing them. The full study ran in 78 seconds in one
-process on a shared desktop machine. That is a record of one run, not a speed
-claim.
+shoe rather than recomputing them.
+
+The information play needs one more step. In a round where neither first card
+is a pair card nothing can resplit, so the round is a two hand round, and the
+information play differs from the default's own play only in the second hand's
+choices there. The two hand study's evaluator values both plays on exactly
+those rounds, with the first hand on the default's choices, and the difference
+is what the information play adds to the default's own play. It is never
+negative, because the second hand's best choice includes the default's.
+
+The full study ran in 410 seconds in one process on a shared desktop
+machine. That is a record of one run, not a speed claim.
 
 ## How it is checked
 
-Five checks in `tests/test_resplit_study.py` hold this together.
+Six checks in `tests/test_resplit_study.py` hold this together.
 
 1. A deal by deal enumeration plays the default's choices card by card from one
    shoe and settles every hand against the final shoe. On 16 small shoes, with
@@ -160,15 +198,23 @@ Five checks in `tests/test_resplit_study.py` hold this together.
    16 four hands reach further than three on average, so the second resplit is
    tested too. No deal on those shoes can run out of cards, and the
    enumeration fails if one does.
-2. On 10 of those shoes, each with a resplit the default takes, the play never
+2. The same enumeration plays the information play, with the second hand
+   trying every choice against the real shoe. It agrees with the default's own
+   play plus the information gain within 1e-12 in all 59 cases where the
+   default resplits on those shoes, with three and four hands and under both
+   rule sets. The largest difference on this run was 4.4e-16. The gain is
+   above 1e-5 on 4 shoes under S17 and DAS and on 3 under H17 and no DAS, so
+   the enumeration tests a real gain and not only a gain of 0.
+3. On 10 of those shoes, each with a resplit the default takes, the play never
    beats the bounded three hand optimum in `bj/joint_resplit.py` by more than
-   1e-12, with DAS on and off. On this run it was never above by more than
-   1.1e-16, and it equals the optimum on some shoes.
-3. Rebuilding the default value from the choices the script reads off matches
+   1e-12, with DAS on and off, and neither does the information play. On this
+   run neither was above by more than 1.1e-16, and the play equals the optimum
+   on some shoes.
+4. Rebuilding the default value from the choices the script reads off matches
    `ev_split` within 5.6e-17 in all 100 cells, so the play is the default's.
-4. With two hands the shortcut gives back the default value, which is the two
+5. With two hands the shortcut gives back the default value, which is the two
    hand study's own check.
-5. The saved tables and the numbers in this page and the README follow from the
+6. The saved tables and the numbers in this page and the README follow from the
    saved cells.
 
 The slow set runs the script's check mode. It recomputes all 100 cells,
@@ -184,10 +230,11 @@ python tools/resplit_study.py --output new-resplit-study.json
 
 I ran the same comparison on two more tables, changing one rule at a time. One
 has the dealer hit soft 17, the other allows no double after split. Each table
-reads its own two hand results as the third play in the bound, and each has its
-own saved file: [H17](resplit-study-h17-results.json) and
-[no DAS](resplit-study-no-das-results.json). The shoe, the four hand limit and
-the method are the same.
+reads its own two hand results as the third play in the bound, values its own
+information play as the fourth, and has its own saved file:
+[H17](resplit-study-h17-results.json) and [no
+DAS](resplit-study-no-das-results.json). The shoe, the four hand limit and the
+method are the same.
 
 ```sh
 python tools/resplit_study.py --table h17 --check
@@ -196,16 +243,19 @@ python tools/resplit_study.py --table no-das --check
 
 ### H17
 
-In 95 of the 100 cells the default is not above the bound by more than
-rounding, which reaches 1.1e-16 here. In the other 5 cells it is above by at
-most 0.000008657 units, for 6,6 against 2, and split stays the best action by
+In 96 of the 100 cells the default is not above the bound by more than
+rounding, which reaches 1.1e-16 here. In the other 4 cells it is above by at
+most 0.000005230 units, for 4,4 against 5, and split stays the best action by
 at least 0.0098 units. The largest gap the other way is 0.000094950 units, for
 7,7 against T. No cell changes its best action under the bound. Where split is
 not the best action, the closest call is 3,3 against 8, where split trails by
 0.0106 units. The default and the bound agree within 1e-12 in 44 cells, and the
 default resplits in 42. The own play earns more than the default says in 37
 cells, by up to 0.000086885 units for 8,8 against 7, and less in 5 cells. The
-run took 83 seconds.
+information play adds more than 1e-12 in 11 of the 42 cells and is the largest
+of the four plays in 13 cells, two of them by rounding. Its largest gain is
+0.000032427 units for 6,6 against 2, which takes that cell from 0.000008657
+above the bound to 0.000023769 below it. The run took 421 seconds.
 
 The first table is the default value minus the lower bound. The second is the
 default's own play minus the default value.
@@ -216,13 +266,13 @@ default's own play minus the default value.
 | A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | T,T | 0 | 0 | −8.38e−5 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
 | 9,9 | −8.85e−6 | −2.04e−5 | −2.39e−5 | −2.90e−5 | −3.33e−5 | 0 | −1.29e−5 | −1.10e−5 | −3.75e−5 | 0 |
-| 8,8 | −3.38e−5 | −3.66e−5 | −4.93e−5 | −5.45e−5 | −5.82e−5 | −8.69e−5 | −4.92e−5 | −1.98e−5 | −7.76e−6 | 4.79e−6 |
-| 7,7 | −9.33e−6 | −1.17e−5 | −1.73e−5 | −3.50e−5 | −4.17e−5 | −2.26e−5 | 0 | 0 | −9.49e−5 | 0 |
-| 6,6 | 8.66e−6 | 2.75e−6 | −8.06e−6 | −1.46e−5 | −2.95e−5 | 0 | 0 | 0 | −8.66e−6 | 0 |
+| 8,8 | −3.38e−5 | −3.67e−5 | −4.93e−5 | −5.45e−5 | −5.82e−5 | −8.69e−5 | −4.92e−5 | −1.98e−5 | −1.53e−5 | 4.79e−6 |
+| 7,7 | −2.81e−5 | −1.17e−5 | −1.73e−5 | −3.50e−5 | −4.17e−5 | −2.26e−5 | 0 | 0 | −9.49e−5 | 0 |
+| 6,6 | −2.38e−5 | 2.75e−6 | −8.06e−6 | −1.46e−5 | −2.95e−5 | 0 | 0 | 0 | −8.66e−6 | 0 |
 | 5,5 | −1.62e−6 | −8.34e−8 | 0 | 0 | −1.71e−9 | 0 | 0 | 0 | −5.45e−11 | 0 |
 | 4,4 | −5.57e−7 | −8.13e−7 | 0 | 5.23e−6 | −6.41e−8 | 0 | 0 | 0 | −1.25e−5 | 0 |
-| 3,3 | 3.21e−6 | −2.65e−6 | −5.51e−6 | −1.02e−5 | −1.46e−5 | −1.12e−6 | 0 | 0 | −6.92e−5 | 0 |
-| 2,2 | −1.59e−6 | −6.07e−6 | −1.12e−5 | −1.33e−5 | −1.83e−5 | −7.66e−6 | 0 | 0 | −8.60e−5 | 0 |
+| 3,3 | 2.70e−6 | −2.65e−6 | −5.52e−6 | −1.02e−5 | −1.47e−5 | −1.12e−6 | 0 | 0 | −6.92e−5 | 0 |
+| 2,2 | −2.67e−5 | −6.07e−6 | −1.12e−5 | −1.58e−5 | −1.83e−5 | −7.66e−6 | 0 | 0 | −8.60e−5 | 0 |
 <!-- resplit-table-h17-bound:end -->
 
 <!-- resplit-table-h17-own-play:begin -->
@@ -245,13 +295,16 @@ default's own play minus the default value.
 In 95 of the 100 cells the default is not above the bound by more than
 rounding, which reaches 1.1e-16 here. In the other 5 cells it is above by at
 most 0.000009928 units, for 6,6 against 3, and split stays the best action by
-at least 0.0111 units. The largest gap the other way is 0.000094955 units, for
-7,7 against T. No cell changes its best action under the bound. Where split is
+at least 0.0111 units. The largest gap the other way is 0.000500758 units, for
+2,2 against 4. No cell changes its best action under the bound. Where split is
 not the best action, the closest call is 2,2 against 3, where split trails by
 0.0124 units. The default and the bound agree within 1e-12 in 51 cells, and the
 default resplits in 35. The own play earns more than the default says in 30
 cells, by up to 0.000078700 units for 8,8 against 7, and less in 5 cells. The
-run took 75 seconds.
+information play adds more than 1e-12 in 2 of the 35 cells and is the largest
+of the four plays in 2 cells. Its largest gain is 0.000500049 units for 2,2
+against 4, where the two hand study found 0.000541544. The other cell is 8,8
+against T, at 0.000008016 units. The run took 277 seconds.
 
 <!-- resplit-table-no-das-bound:begin -->
 | Pair | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | T | A |
@@ -259,13 +312,13 @@ run took 75 seconds.
 | A,A | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | T,T | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.38e−5 | 0 |
 | 9,9 | −3.49e−6 | −1.35e−5 | −1.64e−5 | −2.14e−5 | −2.02e−5 | 0 | −9.66e−6 | −9.11e−6 | −4.16e−5 | 0 |
-| 8,8 | −2.77e−5 | −3.03e−5 | −3.90e−5 | −4.24e−5 | −5.15e−5 | −7.87e−5 | −4.37e−5 | −1.83e−5 | −6.94e−6 | −8.33e−6 |
+| 8,8 | −2.77e−5 | −3.03e−5 | −3.90e−5 | −4.24e−5 | −5.15e−5 | −7.87e−5 | −4.37e−5 | −1.83e−5 | −1.50e−5 | −8.33e−6 |
 | 7,7 | −4.45e−6 | −6.61e−6 | −9.26e−6 | −2.01e−5 | −2.76e−5 | −1.62e−5 | 0 | 0 | −9.50e−5 | −2.88e−6 |
 | 6,6 | 0 | 9.93e−6 | 1.98e−7 | −4.28e−6 | −1.34e−5 | 0 | 0 | 0 | −1.53e−5 | −2.65e−8 |
 | 5,5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −8.17e−11 | −3.88e−6 |
 | 4,4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | −1.26e−5 | −6.39e−6 |
 | 3,3 | 0 | 0 | 4.72e−6 | 7.14e−7 | −1.29e−6 | 2.32e−6 | 0 | 0 | −6.98e−5 | −1.46e−6 |
-| 2,2 | 0 | 0 | −7.10e−7 | −2.90e−6 | −5.25e−6 | −3.84e−6 | 0 | 0 | −8.98e−5 | −1.13e−5 |
+| 2,2 | 0 | 0 | −5.01e−4 | −2.90e−6 | −5.25e−6 | −3.84e−6 | 0 | 0 | −8.98e−5 | −1.13e−5 |
 <!-- resplit-table-no-das-bound:end -->
 
 <!-- resplit-table-no-das-own-play:begin -->
@@ -284,8 +337,12 @@ run took 75 seconds.
 <!-- resplit-table-no-das-own-play:end -->
 
 Both tables agree with the default table on the main point. Where the default
-resplits it holds none of the shared shoe gain, and a better shared shoe play
-would have to gain more than the closest call above to change a best action.
+resplits, the information play holds part of the shared shoe gain in a few
+cells, and a better shared shoe play would have to gain more than the closest
+call above to change a best action. Where
+that gain sits differs. Under H17 it is largest for 6,6 against 2, and 2,2
+against 4 gains nothing, where the two hand study found no gap either. Without
+double after split nearly all of it is in 2,2 against 4.
 Two things in the H17 table are new. T,T against 4 is 0.0000838 units below the
 bound, where the default table shows no gap for it, and 8,8 against an ace is
 above the bound by 0.0000048 units. Against a dealer 7, 8, 9 or T a soft 17
@@ -294,11 +351,16 @@ cannot come up, and the H17 cells there equal the default table's exactly.
 ## What this does not show
 
 The bound is not the best shared shoe play. The real gap can be larger in every
-cell, and in the 5 cells where the default is above the bound its sign is open.
+cell, and in the 4 cells where the default is above the bound its sign is open.
+The information play uses what the shared shoe shows only in rounds with no
+resplit, and only for the second hand. After a resplit no hand uses another
+hand's cards, and the first hand never weighs what its choices do to the
+second.
 Where split is not the best action, the closest call is 3,3 against 8, where
 split trails by 0.0106 units. A better shared shoe play would have to gain that
-much over these values for a best action to change. The largest gain the two
-hand study found for using the shared shoe was 0.000538738 units.
+much over these values for a best action to change. On the six deck default
+table the largest gain the two hand study found for using the shared shoe was
+0.000538738 units.
 
 These are three tables. The dealer hitting soft 17 together with no double after
 split, other deck counts, resplitting aces, hitting split aces and depleted

@@ -8,7 +8,7 @@ dealt from one shared shoe, in every pair and upcard cell of the six deck table.
 The best play from one shared shoe with up to four hands is not computed here.
 Its state is the ending of every earlier hand, and one 2,2 hand alone can end
 in 8,050 ways, so I expect it to be far past one machine at six decks and did
-not attempt it. Three values below it are computed instead, and the largest
+not attempt it. Four values below it are computed instead, and the largest
 one is a lower bound on it.
 
 1. The default's own choices played from one shared shoe. Every hand still
@@ -19,6 +19,11 @@ one is a lower bound on it.
    may decline, so that play is legal too.
 3. The two hand shared shoe value from `docs/split-error-study-results.json`.
    A player here may decline every resplit, so that value is a legal play too.
+4. The information play, in the cells where the default resplits. It is the
+   default's own play except in rounds where neither of the first two hands
+   resplits. There the second hand sees the first hand's cards and makes every
+   choice on the combined value of both hands, as in the two hand study. The
+   player knows by then that no resplit has happened, so this play is legal.
 
 How the first two are computed. Suppose every split hand took its first card
 before any hand played on. Every complete deal, meaning the cards each hand and
@@ -31,6 +36,12 @@ behind. So the value needs only the first cards. The chance of a first card
 that is not a pair card is the chance of any card less the chance of a pair
 card, and any card drops out by the same averaging. What is left is single
 hands played in shoes that differ only in how many pair cards are gone.
+
+How the fourth is computed. In a round where neither first card is a pair card
+nothing can resplit, so that round is a two hand round, and the information
+play and the default's play differ only in the second hand's choices there.
+The two hand evaluator values both on exactly those rounds, with the first
+hand on the default's choices, and the difference is added to the first value.
 
     python tools/resplit_study.py --output docs/resplit-study-results.json
     python tools/resplit_study.py --check
@@ -319,6 +330,29 @@ def clear_caches():
     ev.clear_caches()
 
 
+def information_gain(pair, up, shoe, rules=TABLE):
+    """What the information play adds to the default's own play, or None.
+
+    None where the default never resplits, because the information play is
+    then a two hand play and the two hand value already holds at least as
+    much. Otherwise the rounds in which neither first card is a pair card are
+    two hand rounds. On those rounds alone the first hand plays the default's
+    choices, and the second plays either the default's choices or the best
+    choice on the combined value. The difference is the gain, and it is never
+    negative because the best choice includes the default's.
+    """
+    model = DefaultResplit(pair, up, shoe, rules)
+    if not model.resplits(0, model.pool):
+        return None
+    hands = two_hand.TwoHandSplit(pair, up, shoe, double_after_split=rules.das,
+                                  stand_soft_17=rules.s17)
+    policy = two_hand.default_policy(hands, rules)
+    skip = (RANK_INDEX[pair],)
+    informed = hands.value(policy, second=None, skip=skip)
+    default = hands.value(policy, skip=skip)
+    return informed - default
+
+
 # --- the study ---------------------------------------------------------------
 
 def _ranking(values):
@@ -351,7 +385,12 @@ def study_cell(pair, up, two_hand_cell, rules=TABLE):
     # The three hand default's play is legal here too. It never takes a fourth hand.
     three = DefaultResplit(pair, up, shoe, replace(rules, max_hands=3)).shared_shoe_value()
     two = two_hand_cell['common_shoe_split']
+    gain = information_gain(pair, up, shoe, rules)
+    informed = None if gain is None else own_play + gain
     bounds = {'default play': own_play, 'three hand play': three, 'two hand': two}
+    if informed is not None:
+        # Listed last, so a tie with an exact gain of 0 keeps the default play.
+        bounds['information play'] = informed
     source = max(bounds, key=bounds.get)
     bound = bounds[source]
     _, others, _ = ev.best_action((pair, pair), up, shoe, rules, can_split=False)
@@ -364,6 +403,8 @@ def study_cell(pair, up, two_hand_cell, rules=TABLE):
         default_play_in_common_shoe=own_play,
         three_hand_play_in_common_shoe=three,
         two_hand_common_shoe_split=two,
+        information_gain=gain,
+        information_play_in_common_shoe=informed,
         common_shoe_lower_bound=bound,
         lower_bound_source=source,
         difference=default - bound,
@@ -384,6 +425,8 @@ def summarize(cells):
     gain = max(cells, key=lambda cell: cell['default_policy_difference'])
     trailing = [cell for cell in cells if SPLIT not in cell['lower_bound_best']]
     closest = min(trailing, key=lambda cell: cell['split_shortfall'], default=None)
+    informed = [cell for cell in cells if cell['information_gain'] is not None]
+    best_gain = max(informed, key=lambda cell: cell['information_gain'], default=None)
     return dict(
         cells=len(cells),
         worst=dict(pair=worst['pair'], up=worst['up'], difference=worst['difference']),
@@ -404,6 +447,13 @@ def summarize(cells):
         # None when split is the best action in every cell, as for A,A alone.
         closest_split_shortfall=None if closest is None else dict(
             pair=closest['pair'], up=closest['up'], shortfall=closest['split_shortfall']),
+        information_play_cells=len(informed),
+        information_play_gains=sum(c['information_gain'] > TOLERANCE for c in informed),
+        information_play_largest=sum(c['lower_bound_source'] == 'information play'
+                                     for c in cells),
+        largest_information_gain=None if best_gain is None else dict(
+            pair=best_gain['pair'], up=best_gain['up'],
+            difference=best_gain['information_gain']),
     )
 
 
@@ -489,7 +539,7 @@ def compare(saved, fresh):
             problems.append(f"{cell['pair']} vs {cell['up']}: not recomputed")
             continue
         for name, value in cell.items():
-            if isinstance(value, float):
+            if isinstance(value, float) and isinstance(other[name], float):
                 if not abs(value - other[name]) <= TOLERANCE:
                     problems.append(f"{cell['pair']} vs {cell['up']}: {name} "
                                     f"{value!r} became {other[name]!r}")
