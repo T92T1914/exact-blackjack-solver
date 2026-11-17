@@ -303,8 +303,8 @@ def test_hand_counts_follow_the_pool():
 
 def test_study_refuses_other_tables():
     cell = study.two_hand_cells()[('8', '7')]
-    for rules in (Rules(hit_split_aces=True), Rules(decks=2),
-                  Rules(s17=False, das=False, decks=2)):
+    for rules in (Rules(hit_split_aces=True), Rules(decks=3),
+                  Rules(s17=False, das=False, decks=2), Rules(decks=2, max_hands=2)):
         assert study.table_name(rules) is None
         with pytest.raises(ValueError, match='variants only'):
             study.study_cell('8', '7', cell, rules)
@@ -435,13 +435,16 @@ def test_saved_study_matches_its_document_and_the_readme():
 def _section(document, name):
     """The document text of one variant: from its heading to the next heading."""
     heading = {'h17': '### H17\n', 'no-das': '### No double after split\n',
-               'h17-no-das': '### H17 and no double after split\n'}[name]
+               'h17-no-das': '### H17 and no double after split\n',
+               'decks-1': '### One deck\n', 'decks-2': '### Two decks\n',
+               'decks-4': '### Four decks\n', 'decks-8': '### Eight decks\n'}[name]
     start = document.index(heading) + len(heading)
     end = document.find('\n#', start)
     return ' '.join(document[start:end].split())
 
 
-@pytest.mark.parametrize('name', ['h17', 'no-das', 'h17-no-das'])
+@pytest.mark.parametrize('name', ['h17', 'no-das', 'h17-no-das', 'decks-1', 'decks-2', 'decks-4',
+                                  'decks-8'])
 def test_saved_variant_studies_match_their_document(name):
     path = study.results_path(name)
     results = json.loads(path.read_text(encoding='utf-8'))
@@ -475,21 +478,28 @@ def test_saved_variant_studies_match_their_document(name):
     text = _section(document, name)
     worst, gain = summary['worst'], summary['largest_own_play_gain']
     excess, closest = summary['largest_default_excess'], summary['closest_split_shortfall']
-    for cell in (worst, gain, excess, closest):
+    for cell in (worst, gain, closest, *([excess] if above else [])):
         assert f"{cell['pair']},{cell['pair']} against {cell['up']}" in text
     assert f"{-worst['difference']:.9f} units" in text
     assert f"{gain['difference']:.9f} units" in text
-    assert f"{excess['difference']:.9f} units" in text
+    if above:
+        assert f"{excess['difference']:.9f} units" in text
     assert f"{closest['shortfall']:.4f} units" in text
-    assert f"{_at_least(min(cell['lower_bound_margin'] for cell in above))} units" in text
+    if above:
+        assert f"{_at_least(min(cell['lower_bound_margin'] for cell in above))} units" in text
     assert f"{summary['own_play_above_default']} cells" in text
     assert f"less in {summary['own_play_below_default']} cells" in text
-    assert f"In the other {summary['default_above_lower_bound']} cells" in text
+    if above:
+        count = summary['default_above_lower_bound']
+        assert f"In the other {count} cell{'s' if count > 1 else ''}" in text
     assert f"within 1e-12 in {summary['within_tolerance']} cells" in text
     assert f"resplits in {summary['resplitting_cells']}" in text
     assert f"In {100 - summary['default_above_lower_bound']} of the 100 cells" in text
-    rounding = max(c['difference'] for c in results['cells'] if c not in above)
-    assert f"rounding, which reaches {rounding:.1e} here" in text
+    if above:
+        rounding = max(c['difference'] for c in results['cells'] if c not in above)
+        assert f"rounding, which reaches {rounding:.1e} here" in text
+    else:
+        assert 'not above the bound, not even by rounding' in text
     assert f"{round(results['elapsed_seconds'])} seconds" in text
     _check_information_prose(summary, text)
 
@@ -524,7 +534,8 @@ def test_h17_equals_the_default_where_no_soft_17_arises():
             assert cell['difference'] == other['difference']
 
 
-@pytest.mark.parametrize('name', ['default', 'h17', 'no-das', 'h17-no-das'])
+@pytest.mark.parametrize('name', ['default', 'h17', 'no-das', 'h17-no-das', 'decks-1', 'decks-2',
+                                  'decks-4', 'decks-8'])
 @pytest.mark.parametrize('pair', ['A', 'T'])
 def test_cheap_saved_cells_recompute(pair, name):
     path = study.results_path(name)
@@ -537,7 +548,8 @@ def test_cheap_saved_cells_recompute(pair, name):
 
 @SLOW
 @pytest.mark.slow
-@pytest.mark.parametrize('name', ['default', 'h17', 'no-das', 'h17-no-das'])
+@pytest.mark.parametrize('name', ['default', 'h17', 'no-das', 'h17-no-das', 'decks-1', 'decks-2',
+                                  'decks-4', 'decks-8'])
 def test_check_mode_recomputes_every_saved_cell(name):
     result = subprocess.run([sys.executable, str(study.ROOT / 'tools/resplit_study.py'),
                              '--check', '--table', name], capture_output=True, text=True,
@@ -548,3 +560,38 @@ def test_check_mode_recomputes_every_saved_cell(name):
 
 def test_ranks_are_in_production_order():
     assert tuple(RANKS) == study.RANKS
+
+
+def test_one_deck_cannot_run_out():
+    # The shortcut needs a shoe that cannot run out. A hand that stops drawing
+    # counts at most 21 with every ace as 1, and one that busts at most 30, since
+    # it only draws below 21. The dealer ends at most at 26. So the cards drawn
+    # in the whole round cannot total more than 4 * 30 + 26, and the most cards
+    # that can total that is found by taking the smallest ones first.
+    budget = 4 * 30 + 26
+    values = {rank: 1 if rank == 'A' else 10 if rank in 'TJQK' else int(rank) for rank in RANKS}
+    for pair in study.PAIRS:
+        for up in study.UPCARDS:
+            shoe = ev.initial_shoe_for((pair, pair), up, Rules(decks=1))
+            smallest = sorted(values[rank] for rank, count in zip(RANKS, shoe)
+                              for _ in range(count))
+            drawn, total = 0, 0
+            for value in smallest:
+                total += value
+                if total > budget:
+                    break
+                drawn += 1
+            assert drawn < len(smallest), (pair, up)
+
+
+def test_the_readme_states_the_deck_count_results():
+    readme = ' '.join((study.ROOT / 'README.md').read_text(encoding='utf-8').split())
+    summaries = [json.loads(study.results_path(f'decks-{n}').read_text(encoding='utf-8'))['summary']
+                 for n in (1, 2, 4, 8)]
+    assert [s['default_above_lower_bound'] for s in summaries] == [0, 1, 3, 5]
+    assert all(s['decision_changes'] == [] for s in summaries)
+    most_above = max(s['largest_default_excess']['difference'] for s in summaries)
+    assert f'by at most {most_above:.9f} units' in readme
+    assert f"{-summaries[0]['worst']['difference']:.9f} units" in readme
+    eight = -summaries[3]['worst']['difference']
+    assert f'{eight:.9f} units for 2,2 against 4 with eight' in readme

@@ -105,8 +105,9 @@ reports is `bj.__version__`.
   `docs/resplit-study-results.json`, and `docs/resplit-study.md` explains the
   bound, the two tables and their limits (#75). The script takes `--table h17`,
   `--table no-das` and `--table h17-no-das` for the dealer hitting soft 17, for
-  no double after split and for both, each reading its own two hand results and
-  writing its own saved results file.
+  no double after split and for both, and `--table decks-1`, `decks-2`,
+  `decks-4` and `decks-8` for those deck counts, each reading its own two hand
+  results and writing its own saved results file.
 
 ### Changed
 * GitHub Actions moved to the Node 24 releases: `actions/checkout@v5`,

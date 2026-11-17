@@ -48,6 +48,7 @@ hand on the default's choices, and the difference is added to the first value.
     python tools/resplit_study.py --table h17 --check
     python tools/resplit_study.py --table no-das --check
     python tools/resplit_study.py --table h17-no-das --check
+    python tools/resplit_study.py --table decks-1 --check
 """
 from __future__ import annotations
 
@@ -79,11 +80,12 @@ SOURCE_FILES = ('tools/resplit_study.py', 'tools/split_error_study.py', 'bj/ev.p
 #: The default table: six decks, S17, DAS, peek, up to four hands, one card to
 #: each split ace and no resplitting aces.
 TABLE = Rules()
-#: Study tables by option name: the default, each of two one rule changes and both
-#: rule changes together.
+#: Study tables by option name: the default, each of two one rule changes, both
+#: rule changes together and the default with one, two, four or eight decks.
 RULE_TABLES = {'default': TABLE, 'h17': replace(TABLE, s17=False),
                'no-das': replace(TABLE, das=False),
-               'h17-no-das': replace(TABLE, s17=False, das=False)}
+               'h17-no-das': replace(TABLE, s17=False, das=False),
+               **{f'decks-{n}': replace(TABLE, decks=n) for n in (1, 2, 4, 8)}}
 TOLERANCE = two_hand.TOLERANCE
 RANKS = two_hand.RANKS
 PAIRS = two_hand.PAIRS
@@ -377,7 +379,7 @@ def study_cell(pair, up, two_hand_cell, rules=TABLE):
     """One cell of the study on a fresh shoe minus the pair and the upcard."""
     if table_name(rules) is None:
         raise ValueError('the study covers the default table and its H17, no DAS and '
-                         'H17 with no DAS variants only')
+                         'H17 with no DAS and deck count variants only')
     shoe = ev.initial_shoe_for((pair, pair), up, rules)
     if (two_hand_cell['pair'], two_hand_cell['up'], two_hand_cell['shoe']) != (
             pair, up, list(shoe)):
@@ -589,7 +591,7 @@ def main(argv=None):
                         help='recompute every saved cell and compare it with the saved study')
     parser.add_argument('--table', choices=sorted(RULE_TABLES), default='default',
                         help='default is the default table; h17 and no-das change one rule and '
-                             'h17-no-das changes both')
+                             'h17-no-das changes both and decks-N changes the deck count')
     parser.add_argument('--results', type=Path,
                         help="saved results to check, by default the table's own file")
     args = parser.parse_args(argv)
