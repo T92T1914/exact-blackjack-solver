@@ -77,7 +77,10 @@ def post_peek_cells(cards, up, counts, s17):
         except exact.Refused:
             return {'refused': True}
         raise AssertionError(f'{names} v {exact.RANKS[up]} refused only by the engine')
-    values = reference.values(cards, counts)
+    try:
+        values = reference.values(cards, counts)
+    except exact.Refused:
+        raise AssertionError(f'{names} v {exact.RANKS[up]} refused only by the reference')
     assert set(values) == set(engine), (names, up)
     return {action: _cell(engine[action], values[action]) for action in sorted(values)}
 
@@ -97,7 +100,11 @@ def split_cell(pair, up, counts, s17):
         except exact.Refused:
             return {'refused': True}
         raise AssertionError(f'{pair},{pair} v {up} refused only by the engine')
-    return _cell(found, exact.common_shoe_split(*arguments, extra_slots=0, **options))
+    try:
+        value = exact.common_shoe_split(*arguments, extra_slots=0, **options)
+    except exact.Refused:
+        raise AssertionError(f'{pair},{pair} v {up} refused only by the reference')
+    return _cell(found, value)
 
 
 def compute(names=None):
@@ -167,6 +174,8 @@ def main(argv=None):
     action.add_argument('--check', action='store_true',
                         help='recompute every cell and compare it with the saved table')
     args = parser.parse_args(argv)
+    if args.output and args.output.exists():
+        parser.error(f'{args.output} exists. Choose a new path.')
     results = compute()
     results['summary'] = summary(results)
     for shoe, line in results['summary'].items():
@@ -177,8 +186,6 @@ def main(argv=None):
                 if isinstance(value, dict) and 'difference' in value:
                     assert abs(Fraction(value['difference'])) < BOUND, (shoe, key, action_)
     if args.output:
-        if args.output.exists():
-            parser.error(f'{args.output} exists. Choose a new path.')
         args.output.write_text(dump(results), encoding='utf-8', newline='\n')
         return 0
     saved = json.loads(RESULTS.read_text(encoding='utf-8'))

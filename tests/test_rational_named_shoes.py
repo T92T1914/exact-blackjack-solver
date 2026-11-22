@@ -84,3 +84,6 @@ def test_the_document_states_what_the_table_holds(saved):
         assert row in text, row
     largest = max(summary.values(), key=lambda line: abs(line['largest']['difference']))
     assert f"{abs(largest['largest']['difference']):.2e}" in text
+    readme = ' '.join((ROOT / 'README.md').read_text(encoding='utf-8').split())
+    assert f"{sum(line['values'] for line in summary.values()):,} values" in readme
+    assert f"{abs(largest['largest']['difference']):.2e}" in readme
