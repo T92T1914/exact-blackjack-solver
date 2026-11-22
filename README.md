@@ -399,7 +399,10 @@ three six deck tables, with two hands and no resplit. The
 [resplit study](docs/resplit-study.md) covers the default table with up to four
 hands. The best play from one shared shoe is out of reach there, so it compares
 the default with the best of four plays from one shared shoe that it values
-to rounding.
+to rounding. At one deck, 151 of its cells also sit beside a published exact
+table in a [comparison](docs/published-resplit-comparison.md). The two agree
+to about a thousandth on average in 123 of them. The other 28 are resplit cells
+where the published value is below its own no resplit value.
 
 The supported common shoe calculation families above expose joint computation
 through named requests and saved model identities. Their declared resplit,
