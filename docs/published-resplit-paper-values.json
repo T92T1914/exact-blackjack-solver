@@ -9,7 +9,7 @@
    "no_resplit": "first row of each cell, no resplitting",
    "resplit_to_4": "second row of each cell, resplitting to a maximum of 4 hands"
   },
-  "transcription": "Read from the PDF text by a script that checks every hand has ten lines of two values, and that the two columns of the A,A and T,T no resplit rows are equal, as the paper says they must be. Not checked against the page images.",
+  "transcription": "Read from the PDF text by a one off script that was not kept. While reading, it checked that every hand has ten lines of two values, and that the two columns of the A,A and T,T no resplit rows are equal, as the paper says they must be. Not checked against the page images.",
   "unreadable": "Table 2, 8,8 against 8, resplit row, doubling allowed: printed as -59524.5, so it is left out."
  },
  "values": {

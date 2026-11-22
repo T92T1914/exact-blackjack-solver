@@ -25,10 +25,12 @@ row of A,A, because the paper resplits aces and this table does not. It leaves
 out one cell, 8,8 against 8 with resplitting, because Table 2 prints that
 value as `-59524.5`, which I cannot read as a value.
 
-I read the published values from the PDF text with a script, not from the page
-images. The script checks that every hand has ten lines of two values, and that
-the two columns of the A,A and T,T no resplit rows are equal, as the paper says
-they must be. I did not check the values against the printed page.
+I read the published values from the PDF text with a one off script that I did
+not keep, not from the page images. While reading, the script checked that every
+hand has ten lines of two values, and that the two columns of the A,A and T,T
+no resplit rows are equal, as the paper says they must be. The tests here check
+only the shape of the saved transcription. I did not check any value against
+the printed page, so a mistyped value would pass every check in this repository.
 
 ## What differs
 

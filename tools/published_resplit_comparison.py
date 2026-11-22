@@ -68,7 +68,9 @@ def compute():
         rules = json.loads(path.read_text(encoding='utf-8'))['rules']
         want = dict(decks=1, s17=True, das=True, peek=True, resplit_aces=False,
                     double_any_two=True, max_hands=2 if table == 'two hand' else 4)
-        assert all(rules[key] == value for key, value in want.items()), (table, rules)
+        wrong = {key: rules[key] for key, value in want.items() if rules[key] != value}
+        if wrong:
+            raise ValueError(f'the {table} study does not use the published rules: {wrong}')
     cells = []
     for hand, rows in source['values'].items():
         pair = hand[0]

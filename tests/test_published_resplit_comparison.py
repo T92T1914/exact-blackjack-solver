@@ -86,3 +86,11 @@ def test_the_document_and_readme_state_what_the_comparison_finds(saved):
             and f"{last['max_abs_play_vs_published_no_resplit']:.5f}" in text)
     assert last['play_below_published'] == 0
     assert 'published-resplit-comparison.md' in readme
+    agreeing = first['cells'] + summary[names[1]]['cells']
+    assert f"{sum(line['cells'] for line in summary.values())} of its cells" in readme
+    assert f'to about a thousandth on average in {agreeing} of them' in readme
+    assert f"The other {last['cells']} are resplit cells" in readme
+    assert (f"{last['cells']} cells differ by "
+            f"{last['mean_abs_play_vs_published_no_resplit']:.5f} on average and by at most "
+            f"{last['max_abs_play_vs_published_no_resplit']:.5f}") in text
+    assert f"In those {last['cells']} cells" in text
