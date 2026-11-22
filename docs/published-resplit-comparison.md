@@ -26,11 +26,13 @@ out one cell, 8,8 against 8 with resplitting, because Table 2 prints that
 value as `-59524.5`, which I cannot read as a value.
 
 I read the published values from the PDF text with a one off script that I did
-not keep, not from the page images. While reading, the script checked that every
-hand has ten lines of two values, and that the two columns of the A,A and T,T
-no resplit rows are equal, as the paper says they must be. The tests here check
-only the shape of the saved transcription. I did not check any value against
-the printed page, so a mistyped value would pass every check in this repository.
+not keep. While reading, the script checked that every hand has ten lines of two
+values, and that the two columns of the A,A and T,T no resplit rows are equal, as
+the paper says they must be. On 2026-11-22 I then rendered the pages of Tables 1
+and 2 as images and compared every transcribed cell with the printed page by eye,
+159 cells for dealer up cards 2 to 9, and none differed. That was one read by
+one person with no second pass, and the tests here still check only the shape of
+the saved transcription.
 
 ## What differs
 
