@@ -73,6 +73,48 @@ only works for a handful of cards (`tests/test_ev_physical_reference.py` and
 the two resplit references). This one works from card counts, so it reaches
 the full six deck shoe.
 
+## Named small shoes, every cell
+
+Random shoes show that the models agree, but they leave no table to read. So
+[`tools/rational_named_shoes.py`](../tools/rational_named_shoes.py) takes five
+named shoes and compares every cell. Each cell is one two card hand that is not
+a natural, one dealer upcard and one soft 17 rule, S17 or H17. It holds stand,
+hit and double from `bj.ev.best_action`, and for a pair the two hand split from
+`bj.joint_split` with doubling after a split. The exact value comes from the
+same test reference as above. The saved table is
+[`docs/rational-named-shoes-results.json`](rational-named-shoes-results.json),
+and every cell in it keeps the engine value, the exact value and the exact
+difference.
+
+Counts are the unseen cards, including the hole card. A refusal is a cell where
+both the engine and the reference need a card the shoe does not have, which they
+must agree on. A limit is a split cell where the engine's own reference stopped
+at its 100,000 state cap, so there is no value to compare. That cap is the only
+stop, not the clock, so a rerun finds the same cells.
+
+| Shoe | Cards | Values compared | Refused | Limited | Largest difference | Cell |
+| --- | --- | --- | --- | --- | --- | --- |
+| `one of each rank` | 10 | 3,280 | 44 | 116 | 2.58e-16 | S17 2,2 v A D |
+| `ten rich` | 11 | 3,368 | 0 | 72 | 2.50e-16 | S17 T,T v T D |
+| `aces and tens` | 8 | 3,440 | 0 | 0 | 4.44e-16 | S17 A,7 v 6 D |
+| `low cards` | 11 | 3,266 | 172 | 2 | 4.44e-16 | S17 2,5 v T D |
+| `middle cards` | 12 | 3,380 | 0 | 60 | 4.74e-16 | S17 2,2 v A D |
+
+That is 16,734 values, and every one is within 4.74e-16 of exact, in units of the
+original wager. These shoes hold at most twelve cards, so every difference here
+comes from short recursions. They say nothing new about the six deck shoe, which
+the published cells above cover. The table leaves out resplits and the other
+bounded families, which the random shoes and the example requests cover.
+
+```sh
+python tools/rational_named_shoes.py --check
+```
+
+The check recomputes all five shoes and takes several minutes on one core, so
+`tests/test_rational_named_shoes.py` runs it only with `BJ_SLOW=1`. The ordinary
+set recomputes the `aces and tens` shoe and checks the rest of the saved table
+for completeness, for the bound and for this section.
+
 ## What it shows and what it does not
 
 On these inputs every floating point value is within 2.05e-16 of exact. Where

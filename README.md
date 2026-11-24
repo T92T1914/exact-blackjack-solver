@@ -546,8 +546,9 @@ itself:
 * Binary64 vs. exact fractions. A separate test reference recomputes those 45
   cells and every action of the bounded example requests with Python
   fractions. The largest difference from the floating point values is
-  2.05e-16 units of the original wager
-  ([rational cross check](docs/rational-cross-check.md)).
+  2.05e-16 units of the original wager. Five named small shoes are also
+  compared cell by cell, 16,734 values with the largest difference at
+  4.74e-16 ([rational cross check](docs/rational-cross-check.md)).
 * Two decision paths agree. A compiled fast path action function is checked
   against the solver's `basic_action` across every hand shape and dealer upcard.
 * The transcription equals the derivation. The chart typed into
